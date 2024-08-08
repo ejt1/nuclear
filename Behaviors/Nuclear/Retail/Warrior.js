@@ -12,10 +12,6 @@ export class WarriorFuryBehavior extends Behavior {
     return new bt.Selector(
       common.waitForTarget(),
       common.waitForCastOrChannel(),
-
-      new bt.Action(() => {
-        console.log('test');
-      })
     );
   }
 }

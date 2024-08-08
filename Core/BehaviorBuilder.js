@@ -29,7 +29,7 @@ export default class BehaviorBuilder {
   }
 
   getComposites(spec, context){
-    return this.behaviors.filter(v => v.specialization == spec && ((v.context & context) == context || v.context == BehaviorContext.Any));
+    return this.behaviors.filter(v => v.specialization == spec && ((v.context & context) == context));
   }
 
   async searchDir(path, behaviors) {

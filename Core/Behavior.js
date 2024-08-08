@@ -5,7 +5,6 @@ export const BehaviorContext = {
   Normal: 1,
   Instance: 2,
   BattleGround: 4,
-  Any: 8,
 }
 BehaviorContext.Any = BehaviorContext.Normal | BehaviorContext.Instance | BehaviorContext.BattleGround
 
