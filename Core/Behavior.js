@@ -5,11 +5,12 @@ export const BehaviorContext = {
   Normal: 1,
   Instance: 2,
   BattleGround: 4,
+  Any: 8,
 }
 BehaviorContext.Any = BehaviorContext.Normal | BehaviorContext.Instance | BehaviorContext.BattleGround
 
 export class Behavior {
   context = BehaviorContext.None;
   specialization = Specialization.Invalid;
-  flavor = -1;
+  version = -1;
 }

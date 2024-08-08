@@ -21,7 +21,7 @@ nuclear.initialize().then(() => {
 });
 
 objMgr.tick();
-if (objMgr.me){
+if (objMgr.me) {
   const me = objMgr.me;
   const arcaneShot = wow.SpellBook.getSpellByName("Arcane Shot");
   console.debug(`Arcane Shot? ${arcaneShot?.id}`);

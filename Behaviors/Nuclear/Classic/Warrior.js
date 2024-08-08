@@ -7,7 +7,7 @@ import Spell from '../../../Core/Spell';
 export class WarriorFuryBehavior extends Behavior {
   context = BehaviorContext.Any;
   specialization = Specialization.Warrior.Fury;
-  flavor = wow.GameVersion.Classic;
+  version = wow.GameVersion.Classic;
 
   build() {
     return new bt.Selector(

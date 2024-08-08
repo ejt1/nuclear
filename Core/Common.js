@@ -3,7 +3,7 @@ import objMgr from './ObjectManager'
 
 class Common {
   waitForCastOrChannel() {
-    return bt.Selector(
+    return new bt.Selector(
       this.waitForCast(),
       this.waitForChannel(),
     );
@@ -19,7 +19,7 @@ class Common {
     });
   }
 
-  waitForCchannel() {
+  waitForChannel() {
     return new bt.Action(() => {
       const me = objMgr.me;
       if (me.isChanneling) {
@@ -27,6 +27,27 @@ class Common {
       }
       return bt.Status.Failure;
     });
+  }
+
+  waitForTarget() {
+    return new bt.Action(() => {
+      const me = objMgr.me;
+      if (!me.target || !this.validTarget(me.target)) {
+        return bt.Status.Success;
+      }
+      return bt.Status.Failure;
+    });
+  }
+
+  validTarget(u) {
+    const me = objMgr.me;
+    if (!u) {
+      return false;
+    }
+    if (!me.canAttack(u)) {
+      return false;
+    }
+    return true;
   }
 }
 
