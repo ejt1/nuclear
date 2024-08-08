@@ -1,0 +1,9 @@
+{
+    "name": "nuclear",
+    "author": "ejt",
+    "games": [
+        "wow_wrath",
+        "wow_retail"
+    ],
+    "entry": "app.js"
+}
