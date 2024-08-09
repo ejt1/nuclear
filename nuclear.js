@@ -1,6 +1,7 @@
 import { BehaviorContext } from "./Core/Behavior";
 import BehaviorBuilder from "./Core/BehaviorBuilder";
 import objMgr from "./Core/ObjectManager";
+import { me } from './Core/ObjectManager';
 
 class Nuclear {
   async initialize() {
@@ -10,7 +11,7 @@ class Nuclear {
   }
 
   tick() {
-    if (objMgr.me) {
+    if (me) {
       try {
         this.rootBehavior?.tick();
       } catch (e) {
@@ -23,7 +24,7 @@ class Nuclear {
 
   rebuild() {
     objMgr.tick();
-    if (objMgr.me) {
+    if (me) {
       console.info('Rebuilding behaviors');
       this.rootBehavior = this.builder.build(wow.SpecializationInfo.activeSpecializationId, BehaviorContext.Normal);
     }

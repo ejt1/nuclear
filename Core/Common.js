@@ -1,17 +1,16 @@
 import * as bt from './BehaviorTree'
-import objMgr from './ObjectManager'
+import { me } from './ObjectManager'
 
 class Common {
-  waitForCastOrChannel() {
+  static waitForCastOrChannel() {
     return new bt.Selector(
-      this.waitForCast(),
-      this.waitForChannel(),
+      Common.waitForCast(),
+      Common.waitForChannel(),
     );
   }
 
-  waitForCast() {
+  static waitForCast() {
     return new bt.Action(() => {
-      const me = objMgr.me;
       if (me.isCasting) {
         return bt.Status.Success;
       }
@@ -19,9 +18,8 @@ class Common {
     });
   }
 
-  waitForChannel() {
+  static waitForChannel() {
     return new bt.Action(() => {
-      const me = objMgr.me;
       if (me.isChanneling) {
         return bt.Status.Success;
       }
@@ -29,26 +27,25 @@ class Common {
     });
   }
 
-  waitForTarget() {
+  static waitForTarget() {
     return new bt.Action(() => {
-      const me = objMgr.me;
-      if (!me.target || !this.validTarget(me.target)) {
+      if (!me.target || !Common.validTarget(me.target)) {
         return bt.Status.Success;
       }
       return bt.Status.Failure;
     });
   }
 
-  validTarget(u) {
-    const me = objMgr.me;
+  static validTarget(u) {
     if (!u) {
       return false;
     }
     if (!me.canAttack(u)) {
       return false;
     }
+
     return true;
   }
 }
 
-export default new Common();
+export default Common;

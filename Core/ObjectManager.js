@@ -1,5 +1,10 @@
 import perfMgr from "../Debug/PerfMgr";
 
+/**
+* @type {wow.CGActivePlayer}
+*/
+export let me = null;
+
 class ObjectManager {
   constructor() {
     this.reset();
@@ -9,11 +14,6 @@ class ObjectManager {
    * @type {Map<BigInt, wow.CGObject>}
    */
   objects = new Map();
-
-  /**
-  * @type {wow.CGActivePlayer}
-  */
-  me = null;
 
   reset() {
     this.objects = new Map();
@@ -32,6 +32,11 @@ class ObjectManager {
         this.objects.delete(hash);
       }
     });
+
+    // invalidate 'me' if removed
+    if (me && (!curMgr.localGuid || !newObjects.has(curMgr.localGuid.hash))) {
+      me = null;
+    }
 
     // add new objects
     newObjects.forEach((obj, hash) => {
@@ -66,7 +71,7 @@ class ObjectManager {
         break;
       case wow.ObjectTypeID.ActivePlayer:
         obj = new wow.CGActivePlayer(base.guid);
-        this.me = obj;
+        me = obj;
         break;
       case wow.ObjectTypeID.GameObject:
         obj = new wow.CGGameObject(base.guid);

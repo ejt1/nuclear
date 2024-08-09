@@ -19,12 +19,3 @@ nuclear.initialize().then(() => {
   console.error(`${reason}`);
   console.error(`${reason.stack}`);
 });
-
-objMgr.tick();
-if (objMgr.me) {
-  const me = objMgr.me;
-  const arcaneShot = wow.SpellBook.getSpellByName("Arcane Shot");
-  console.debug(`Arcane Shot? ${arcaneShot?.id}`);
-  const bloodThirst = wow.SpellBook.getSpellByName("Bloodthirst");
-  console.debug(`Bloodthirst? ${bloodThirst?.id}`);
-}
