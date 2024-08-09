@@ -74,7 +74,7 @@ export class Sequence extends GroupComposite {
   }
 
   tick() {
-    for (const child in this.children){
+    for (const child of this.children) {
       child.start?.();
       let status = child.tick?.();
       child.stop?.();
@@ -97,7 +97,7 @@ export class Selector extends GroupComposite {
   }
 
   tick() {
-    for (const child of this.children){
+    for (const child of this.children) {
       child.start?.();
       let status = child.tick?.();
       child.stop?.();
