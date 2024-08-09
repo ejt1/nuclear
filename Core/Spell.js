@@ -41,10 +41,16 @@ class Spell {
     if (!spell.isUsable) {
       return false;
     }
+
     const cooldown = spell.cooldown;
     if (!cooldown.ready || !cooldown.active) {
       return false;
     }
+
+    if (!spell.inRange(me.target)){
+      return false;
+    }
+
     return true;
   }
 
