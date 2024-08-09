@@ -24,6 +24,7 @@ export default class BehaviorBuilder {
   build(spec, context) {
     const root = new bt.Selector();
     const behaviors = this.getComposites(spec, context);
+    console.debug(`Built ${behaviors.length} composites`);
     behaviors.forEach(v => root.addChild(v.build()));
     return root;
   }
