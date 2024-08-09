@@ -96,6 +96,9 @@ class DebugWindow {
       if (imgui.button("Copy base")) {
         imgui.setClipboardText(`0x${object.baseAddress.toString(16)}`);
       }
+      if (imgui.button("Target")) {
+        wow.CGGameUI.setTarget(object);
+      }
       imgui.separator();
       if (imgui.beginTable("data", 2)) {
         imgui.tableSetupColumn('key', imgui.TableColumnFlags.WidthFixed);
