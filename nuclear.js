@@ -3,7 +3,7 @@ import BehaviorBuilder from "./Core/BehaviorBuilder";
 import objMgr from "./Core/ObjectManager";
 import { me } from './Core/ObjectManager';
 
-class Nuclear {
+class Nuclear extends wow.EventListener {
   async initialize() {
     this.builder = new BehaviorBuilder;
     await this.builder.initialize();
@@ -27,6 +27,12 @@ class Nuclear {
     if (me) {
       console.info('Rebuilding behaviors');
       this.rootBehavior = this.builder.build(wow.SpecializationInfo.activeSpecializationId, BehaviorContext.Normal);
+    }
+  }
+
+  onEvent(event) {
+    if (event.name == 'PLAYER_ENTERING_WORLD'){
+      this.rebuild();
     }
   }
 }
