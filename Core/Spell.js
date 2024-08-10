@@ -9,8 +9,8 @@ class Spell {
     const spell = arguments[0];
     const rest = Array.prototype.slice.call(arguments, 1);
     let predicate = null;
-    for (let i = 0; i < rest.length; ++i){
-      if (typeof rest[i] === 'function'){
+    for (let i = 0; i < rest.length; ++i) {
+      if (typeof rest[i] === 'function') {
         predicate = rest[i];
       }
     }
@@ -25,7 +25,7 @@ class Spell {
   static castById(id, predicate = null) {
     return new bt.Sequence(
       new bt.Action(() => {
-        if (predicate && !predicate()){
+        if (predicate && !predicate()) {
           return bt.Status.Failure;
         }
 
@@ -57,7 +57,7 @@ class Spell {
   static castByName(name, predicate = null) {
     return new bt.Sequence(
       new bt.Action(() => {
-        if (predicate && !predicate()){
+        if (predicate && !predicate()) {
           return bt.Status.Failure;
         }
 

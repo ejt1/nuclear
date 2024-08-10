@@ -31,7 +31,7 @@ class Nuclear extends wow.EventListener {
   }
 
   onEvent(event) {
-    if (event.name == 'PLAYER_ENTERING_WORLD'){
+    if (event.name == 'PLAYER_ENTERING_WORLD') {
       this.rebuild();
     }
   }
