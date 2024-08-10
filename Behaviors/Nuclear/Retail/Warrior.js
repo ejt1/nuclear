@@ -16,9 +16,9 @@ export class WarriorFuryBehavior extends Behavior {
         common.waitForTarget(),
         common.waitForCastOrChannel(),
 
-        spell.cast("Execute"),
-        spell.cast("Rampage"),
-        spell.cast("Raging Blow"),
+        spell.cast("Execute", null, null, ret => true),
+        spell.cast("Rampage", null, ret => true, null),
+        spell.cast("Raging Blow", ret => false),
         //spell.cast("Bloodbath"),
         spell.cast("Bloodthirst"),
         spell.cast("Whirlwind"),

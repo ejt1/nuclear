@@ -82,7 +82,7 @@ export default class BehaviorBuilder {
       return false;
     }
     if (o.version != wow.gameVersion) {
-      console.debug(`${name}: ${o.version} does match game version ${wow.gameVersion}`)
+      //console.debug(`${name}: ${o.version} does match game version ${wow.gameVersion}`)
       // current game version mismatch, ignore this behavior
       return false;
     }
@@ -90,7 +90,7 @@ export default class BehaviorBuilder {
       console.error(`${name} missing build() function`);
       return false;
     }
-    console.log(`${name} is for ${o.specialization}`);
+    //console.log(`${name} is for ${o.specialization}`);
     return true;
   }
 }
