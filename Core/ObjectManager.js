@@ -17,7 +17,6 @@ class ObjectManager {
 
   reset() {
     this.objects = new Map();
-    this.me = null;
   }
 
   tick() {
@@ -46,6 +45,13 @@ class ObjectManager {
     });
 
     perfMgr.end("objmgr");
+  }
+
+  getObjectByGuid(guid) {
+    if (this.objects.has(guid.hash)) {
+      return this.objects.get(guid.hash);
+    }
+    return null;
   }
 
   createObj(base) {
