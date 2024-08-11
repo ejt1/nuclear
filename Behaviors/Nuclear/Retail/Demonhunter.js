@@ -1,4 +1,4 @@
-import { Behavior, BehaviorContext } from "../../../Core/Behavior";
+import {Behavior, BehaviorContext} from "../../../Core/Behavior";
 import * as bt from '../../../Core/BehaviorTree';
 import Specialization from '../../../Core/Specialization';
 import common from '../../../Core/Common';
@@ -17,21 +17,18 @@ export class DemonhunterHavocBehavior extends Behavior {
         common.waitForTarget(),
         common.waitForCastOrChannel(),
         spell.cast("Throw Glaive", null, null, ret => me.power > 45), // should be a range check such as NOT target.HasAura("Master of the Glaive")
-        spell.cast("Essence Break", null, null, ret => true), // should check cds 
+        spell.cast("Essence Break", null, null, ret => true), // should check cds
         spell.cast("Eye Beam", null, null, ret => me.power > 49),
-        this.isMetamorphosis()
-          ? spell.cast("Death Sweep", null, null, ret => me.power > 50)
-          : spell.cast("Blade Dance", null, null, ret => me.power > 50),
-        this.isMetamorphosis()
-          ? spell.cast("Annihilation", null, null, ret => me.power > 50)
-          : spell.cast("Chaos Strike", null, null, ret => me.power > 50),
         spell.cast("Felblade", null, ret => true, null),
+        spell.cast("Death Sweep", null, null, ret => this.isMetamorphosis() && me.power > 50),
+        spell.cast("Blade Dance", null, null, ret => !this.isMetamorphosis() && me.power > 50),
+        spell.cast("Chaos Strike", null, null, ret => me.power > 50),
         spell.cast("Throw Glaive", null, null, ret => me.power > 80),
       )
     );
   }
 
-  hasAura(auras, name) {
+  haAura(auras, name) {
     // should change to hasAuras by Me, and check hasCaster & caster guid === me?
     return auras.some(aura => aura.name === name);
   }
@@ -46,10 +43,11 @@ export class DemonhunterHavocBehavior extends Behavior {
   }
 
   isMetamorphosis() {
-    if (this.hasAura(me.auras, "Metamorphosis")) {
-      console.debug("For it is ---- metamorphosis!");
+    if (this.haAura(me.auras, "Metamorphosis")) {
+      console.info("For it is ---- metamorphosis!" + Math.random() * Math.random());
       return true;
     }
+    console.info("NOT --- metamorphosis!" + Math.random() * Math.random());
     return false;
   }
 }
