@@ -48,7 +48,7 @@ class ObjectManager {
   }
 
   getObjectByGuid(guid) {
-    if (this.objects.has(guid.hash)) {
+    if (guid instanceof wow.Guid && this.objects.has(guid.hash)) {
       return this.objects.get(guid.hash);
     }
     return null;

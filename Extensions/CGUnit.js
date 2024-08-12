@@ -1,4 +1,4 @@
-import { me } from "../Core/ObjectManager";
+import objMgr, {me} from "../Core/ObjectManager";
 
 Object.defineProperties(wow.CGUnit.prototype, {
   hasAuraByMe: {
@@ -7,7 +7,7 @@ Object.defineProperties(wow.CGUnit.prototype, {
         aura.name === name &&
         aura.casterGuid &&
         me.guid &&
-        me.equals(aura.casterGuid)
+        me.guid.equals(aura.casterGuid)
       );
     }
   },
@@ -28,6 +28,12 @@ Object.defineProperties(wow.CGUnit.prototype, {
       return null;
     }
   },
+
+  targetUnit: {
+    get: function () {
+      return objMgr.getObjectByGuid(this.target);
+    }
+  }
 });
 
 export default true;
