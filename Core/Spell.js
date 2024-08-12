@@ -3,26 +3,35 @@ import { me } from './ObjectManager';
 
 class Spell {
   static cast(...args) {
-    if (arguments.length == 0) {
+    if (arguments.length === 0) {
       throw "no arguments given to Spell.cast";
     }
     const spell = arguments[0];
     const rest = Array.prototype.slice.call(arguments, 1);
     let predicate = null;
-    for (let i = 0; i < rest.length; ++i) {
-      if (typeof rest[i] === 'function') {
-        predicate = rest[i];
+    let target = me.target;
+
+    for (const element of rest) {
+      if (element && typeof element === 'object') { // todo used to have a guid hasProperty check but it appears the properties are {} empty object?
+        console.info('setting target from function');
+        target = element;
+      } else if (typeof element === 'function') {
+        predicate = element;
       }
     }
-    if (typeof spell === 'number') {
-      return Spell.castById(spell, predicate);
-    } else if (typeof spell === 'string') {
-      return Spell.castByName(spell, predicate);
+
+    if (!target) {
+      return bt.Status.Failure;
     }
-    // XXX: add support for casting by wow.Spell object
+
+    if (typeof spell === 'number') {
+      return Spell.castById(spell, target, predicate);
+    } else if (typeof spell === 'string') {
+      return Spell.castByName(spell, target, predicate);
+    }
   }
 
-  static castById(id, predicate = null) {
+  static castById(id, target, predicate = null) {
     return new bt.Sequence(
       new bt.Action(() => {
         if (predicate && !predicate()) {
@@ -31,14 +40,13 @@ class Spell {
 
         const spell = new Spell(id);
         if (!spell) {
-          console.error(`failed to construct spell with id ${id}`);
           return bt.Status.Failure;
         }
 
-        if (!Spell.canCast(spell)) {
+        if (!Spell.canCast(spell, target)) {
           return bt.Status.Failure;
         }
-        if (!Spell.castPrimitive(spell)) {
+        if (!Spell.castPrimitive(spell, target)) {
           return bt.Status.Failure;
         }
 
@@ -49,12 +57,10 @@ class Spell {
         console.log(`Cast ${id}`);
         return bt.Status.Success;
       }),
-
-      // XXX: here we can wait for GCD and/or cast/channel
     );
   }
 
-  static castByName(name, predicate = null) {
+  static castByName(name, target, predicate = null) {
     return new bt.Sequence(
       new bt.Action(() => {
         if (predicate && !predicate()) {
@@ -67,10 +73,10 @@ class Spell {
           return bt.Status.Failure;
         }
 
-        if (!Spell.canCast(spell)) {
+        if (!Spell.canCast(spell, target)) {
           return bt.Status.Failure;
         }
-        if (!Spell.castPrimitive(spell)) {
+        if (!Spell.castPrimitive(spell, target)) {
           return bt.Status.Failure;
         }
 
@@ -81,18 +87,17 @@ class Spell {
         console.log(`Cast ${name}`);
         return bt.Status.Success;
       }),
-
-      // XXX: here we can wait for GCD and/or cast/channel
     );
   }
 
-  /**
-   *
-   * @param {wow.Spell} spell
-   * @returns {boolean}
-   */
-  static canCast(spell) {
-    if (!spell) { return false; }
+  static canCast(spell, target) {
+    if (!spell) {
+      return false;
+    }
+
+    if (!target) {
+      return false;
+    }
 
     if (!spell.isUsable) {
       return false;
@@ -103,7 +108,7 @@ class Spell {
       return false;
     }
 
-    if (!spell.inRange(me.target)) {
+    if (!spell.inRange(target)) {
       return false;
     }
 

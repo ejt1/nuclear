@@ -16,14 +16,13 @@ export class DemonhunterHavocBehavior extends Behavior {
       new bt.Selector(
         common.waitForTarget(),
         common.waitForCastOrChannel(),
-        spell.cast("Throw Glaive", null, null, ret => me.power > 45), // should be a range check such as NOT target.HasAura("Master of the Glaive")
-        spell.cast("Essence Break", null, null, ret => true), // should check cds
-        spell.cast("Eye Beam", null, null, ret => me.power > 49),
-        spell.cast("Felblade", null, ret => true, null),
-        spell.cast("Death Sweep", null, null, ret => this.isMetamorphosis() && me.power > 50),
-        spell.cast("Blade Dance", null, null, ret => !this.isMetamorphosis() && me.power > 50),
-        spell.cast("Chaos Strike", null, null, ret => me.power > 50),
-        spell.cast("Throw Glaive", null, null, ret => me.power > 80),
+        spell.cast("Throw Glaive", ret => me.power > 45), // should be a range check such as NOT target.HasAura("Master of the Glaive")
+        spell.cast("Essence Break", ret => true), // should check cds
+        spell.cast("Eye Beam", ret => me.power > 49),
+        spell.cast("Felblade", ret => true),
+        spell.cast("Blade Dance", me, ret => me.power > 45),
+        spell.cast("Chaos Strike", ret => me.power > 50),
+        spell.cast("Throw Glaive", ret => me.power > 80),
       )
     );
   }
@@ -42,12 +41,4 @@ export class DemonhunterHavocBehavior extends Behavior {
     return null; // Return null if the aura is not found
   }
 
-  isMetamorphosis() {
-    if (this.haAura(me.auras, "Metamorphosis")) {
-      console.info("For it is ---- metamorphosis!" + Math.random() * Math.random());
-      return true;
-    }
-    console.info("NOT --- metamorphosis!" + Math.random() * Math.random());
-    return false;
-  }
 }
