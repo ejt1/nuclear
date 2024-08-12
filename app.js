@@ -1,7 +1,8 @@
-import objMgr from './Core/ObjectManager';
+import objMgr, { me } from './Core/ObjectManager';
 import dbgWindow from './Debug/DebugWindow';
 import perfMgr from './Debug/PerfMgr';
 import nuclear from './nuclear'
+import _ from './Extensions/Extensions';
 
 nuclear.initialize().then(() => {
   // our "main loop", called every tick
@@ -19,3 +20,6 @@ nuclear.initialize().then(() => {
   console.error(`${reason}`);
   console.error(`${reason.stack}`);
 });
+
+objMgr.tick();
+console.debug(`has battle shout? ${me.hasAura('Battle Shout')}`);
