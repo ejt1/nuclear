@@ -12,8 +12,7 @@ class Spell {
     let target = me.target;
 
     for (const element of rest) {
-      if (element && typeof element === 'object') { // todo used to have a guid hasProperty check but it appears the properties are {} empty object?
-        console.info('setting target from function');
+      if (element && element instanceof wow.CGUnit) {
         target = element;
       } else if (typeof element === 'function') {
         predicate = element;
