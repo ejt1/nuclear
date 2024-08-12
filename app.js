@@ -20,6 +20,3 @@ nuclear.initialize().then(() => {
   console.error(`${reason}`);
   console.error(`${reason.stack}`);
 });
-
-objMgr.tick();
-console.debug(`has battle shout? ${me.hasAura('Battle Shout')}`);
