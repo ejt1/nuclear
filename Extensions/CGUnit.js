@@ -1,4 +1,4 @@
-import { me } from "../../../Core/ObjectManager";
+import { me } from "../Core/ObjectManager";
 
 Object.defineProperties(wow.CGUnit.prototype, {
   hasAuraByMe: {
