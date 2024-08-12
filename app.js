@@ -2,6 +2,7 @@ import objMgr from './Core/ObjectManager';
 import dbgWindow from './Debug/DebugWindow';
 import perfMgr from './Debug/PerfMgr';
 import nuclear from './nuclear'
+import _ from './Extensions/CGUnit';
 
 nuclear.initialize().then(() => {
   // our "main loop", called every tick

@@ -16,7 +16,7 @@ export class DemonhunterHavocBehavior extends Behavior {
       new bt.Selector(
         common.waitForTarget(),
         common.waitForCastOrChannel(),
-        spell.cast("Throw Glaive", ret => me.power > 45), // should be a range check such as NOT target.HasAura("Master of the Glaive")
+        spell.cast("Throw Glaive", ret => !me.hasAura("Metamorphosis")),
         spell.cast("Essence Break", ret => true), // should check cds
         spell.cast("Eye Beam", ret => me.power > 49),
         spell.cast("Felblade", ret => true),
@@ -27,18 +27,6 @@ export class DemonhunterHavocBehavior extends Behavior {
     );
   }
 
-  haAura(auras, name) {
-    // should change to hasAuras by Me, and check hasCaster & caster guid === me?
-    return auras.some(aura => aura.name === name);
-  }
 
-  getAura(auras, name) {
-    for (let aura of auras) {
-      if (aura.name === name) {
-        return aura;
-      }
-    }
-    return null; // Return null if the aura is not found
-  }
 
 }
