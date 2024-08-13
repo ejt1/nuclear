@@ -16,5 +16,8 @@ export function flagsComponents(flags, bits = 32){
       }
     }
   }
+  if (components.length === 0) {
+    components = 'None';
+  }
   return components;
 }
