@@ -16,16 +16,45 @@ export class DemonhunterHavocBehavior extends Behavior {
       new bt.Selector(
         common.waitForTarget(),
         common.waitForCastOrChannel(),
+        spell.cast("Blur", me, ret => me.pctHealth < 55),
+        spell.cast("Darkness", me, ret => me.pctHealth < 35),
+        spell.cast("The Hunt", me, ret => me.targetUnit?.pctHealth < 75),
+        spell.cast("Throw Glaive", ret => me.power > 25 && me.target && !me.isWithinMeleeRange(me.target)),
         spell.cast("Throw Glaive", ret => me.power > 25 && !me.targetUnit?.hasAuraByMe("Master of the Glaive")),
+        spell.cast("Eye Beam", ret => me.power > 49 && me.target && me.isWithinMeleeRange(me.target)),
         spell.cast("Essence Break", ret => me.target && me.targetUnit.pctHealth < 77),
-        spell.cast("Eye Beam", ret => me.power > 49), // check cds
+        spell.cast("Metamorphosis", ret => this.checkMetamorphosis()),
         spell.cast("Felblade"),
         spell.cast("Blade Dance", me, this.checkBladeDance()),
         spell.cast("Chaos Strike", ret => me.power > 50),
-        //spell.cast("Throw Glaive", ret => me.power > 25 && wow.SpellBook.getSpellByName("Throw Glaive")?.charges > 1),
+        spell.cast("Throw Glaive", ret => me.power > 25 && wow.SpellBook.getSpellByName("Throw Glaive")?.charges.charges > 1),
+        // spell.cast("Sigil of Flame", ret => me.power < 70),
+        spell.cast("Arcane Torrent", me)
       )
     );
   }
+
+  logHelper() {
+    console.log('blah' + me.unitFlags + ' ' + me.unitFlags2 + ' ' + me.unitFlags3)
+    return true;
+  }
+
+  doBurstToggle() {
+    if (imgui.isKeyPressed(imgui.Key.F11, false)) {
+      console.info('BURST TOGGLE');
+      return true;
+    }
+    return false;
+  }
+
+  checkMetamorphosis() {
+    if (me.target) {
+      const bladeDance = wow.SpellBook.getSpellByName("Blade Dance");
+      const eyeBeam = wow.SpellBook.getSpellByName("Eye Beam");
+      return bladeDance && bladeDance.cooldown.duration > 0 && eyeBeam && eyeBeam.cooldown.duration > 0;
+    }
+    return false
+  };
 
   checkBladeDance() {
     if (me.target && me.power > 35 && me.isWithinMeleeRange(me.target)) {
@@ -35,7 +64,6 @@ export class DemonhunterHavocBehavior extends Behavior {
     }
     return false
   };
-
 
 
 }
