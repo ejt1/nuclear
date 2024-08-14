@@ -40,13 +40,12 @@ class Nuclear extends wow.EventListener {
   }
 
   gameReady() {
-    const gameui = new wow.CGGameUI;
-    if (gameui.state != this.previous_state) {
-      console.debug(`state changed to ${flagsComponents(gameui.state, 16)}`);
-      this.previous_state = gameui.state;
+    if (wow.GameUI.state != this.previous_state) {
+      console.debug(`state changed to ${flagsComponents(wow.GameUI.state, 16)}`);
+      this.previous_state = wow.GameUI.state;
     }
     // XXX: figure out game state flags, 0x211 is "in game" mask for retail
-    if (gameui.state != 0x211) {
+    if (wow.GameUI.state != 0x211) {
       return false;
     }
 

@@ -97,7 +97,12 @@ class DebugWindow {
         imgui.setClipboardText(`0x${object.baseAddress.toString(16)}`);
       }
       if (imgui.button("Target")) {
-        wow.CGGameUI.setTarget(object);
+        wow.GameUI.setTarget(object);
+      }
+      const screenCoordinates = wow.WorldFrame.getScreenCoordinates(object.position);
+      if (screenCoordinates) {
+        const x = parseInt(screenCoordinates.x.toString());
+        imgui.text(`screen coordinates: <${x}, ${screenCoordinates.y}, ${screenCoordinates.z}>`);
       }
       imgui.separator();
       if (imgui.beginTable("data", 2)) {
@@ -137,12 +142,11 @@ class DebugWindow {
   }
 
   renderGameUI() {
-    const gameUi = new wow.CGGameUI;
     if (imgui.beginTable("CGGameUI##data", 2)) {
       imgui.tableSetupColumn('key', imgui.TableColumnFlags.WidthFixed);
       imgui.tableSetupColumn('value', imgui.TableColumnFlags.WidthStretch);
       imgui.tableHeadersRow();
-      Object.getOwnPropertyNames(Object.getPrototypeOf(gameUi)).forEach(prop => {
+      Object.keys(wow.GameUI).forEach(prop => {
         try {
           if (prop === 'constructor') {
             return;
@@ -152,7 +156,7 @@ class DebugWindow {
           imgui.text(prop);
           imgui.tableNextColumn();
 
-          const val = gameUi[prop];
+          const val = wow.GameUI[prop];
           if (typeof val === 'object') {
             imgui.text(JSON.stringify(val, (k, v) => {
               if (typeof v === 'bigint') {
