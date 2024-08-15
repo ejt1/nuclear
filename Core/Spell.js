@@ -2,39 +2,54 @@ import * as bt from './BehaviorTree';
 import { me } from './ObjectManager';
 
 class Spell {
+  /** @type {wow.CGUnit | wow.Guid | null} */
+  static _currentTarget;
+
   static cast(...args) {
     if (arguments.length === 0) {
       throw "no arguments given to Spell.cast";
     }
     const spell = arguments[0];
     const rest = Array.prototype.slice.call(arguments, 1);
-    let predicate = null;
-    let target = me.target;
+    const sequence = new bt.Sequence();
 
-    for (const element of rest) {
-      if (element && element instanceof wow.CGUnit) {
-        target = element;
-      } else if (typeof element === 'function') {
-        predicate = element;
+    // start with setting target to null
+    sequence.addChild(new bt.Action(() => {
+      Spell._currentTarget = null;
+    }));
+
+    for (const arg of rest) {
+      if (typeof arg === 'function') {
+        sequence.addChild(new bt.Action(() => {
+          const r = arg();
+          if (r === false) {
+            // function returned a boolean predicate
+            return bt.Status.Failure;
+          } else if (r instanceof wow.CGUnit || r instanceof wow.Guid) {
+            // function returned a target
+            Spell._currentTarget = r;
+          }
+          return bt.Status.Success;
+        }));
       }
-    }
-
-    if (!target) {
-      return bt.Status.Failure;
+      // XXX: output error to indicate invalid argument?
     }
 
     if (typeof spell === 'number') {
-      return Spell.castById(spell, target, predicate);
+      sequence.addChild(Spell.castById(spell));
     } else if (typeof spell === 'string') {
-      return Spell.castByName(spell, target, predicate);
+      sequence.addChild(Spell.castByName(spell));
     }
+
+    return sequence;
   }
 
-  static castById(id, target, predicate = null) {
+  static castById(id) {
     return new bt.Sequence(
       new bt.Action(() => {
-        if (predicate && !predicate()) {
-          return bt.Status.Failure;
+        let target = Spell._currentTarget;
+        if (!target) {
+          target = me.target;
         }
 
         const spell = new Spell(id);
@@ -59,11 +74,12 @@ class Spell {
     );
   }
 
-  static castByName(name, target, predicate = null) {
+  static castByName(name) {
     return new bt.Sequence(
       new bt.Action(() => {
-        if (predicate && !predicate()) {
-          return bt.Status.Failure;
+        let target = Spell._currentTarget;
+        if (!target) {
+          target = me.target;
         }
 
         const spell = wow.SpellBook.getSpellByName(name);
