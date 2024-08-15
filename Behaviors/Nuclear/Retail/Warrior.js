@@ -17,7 +17,7 @@ export class WarriorFuryBehavior extends Behavior {
         common.waitForTarget(),
         common.waitForCastOrChannel(),
 
-        spell.cast("Battle Shout", on => me, req => me.hasAuraByMe("Battle Shout")),
+        spell.cast("Battle Shout", on => me, req => !me.hasAuraByMe("Battle Shout")),
         spell.cast("Execute"),
         spell.cast("Rampage"),
         spell.cast("Raging Blow"),
