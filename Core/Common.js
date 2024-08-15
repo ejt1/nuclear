@@ -1,5 +1,5 @@
 import * as bt from './BehaviorTree'
-import { me } from './ObjectManager'
+import objMgr, { me } from './ObjectManager'
 
 class Common {
   static waitForCastOrChannel() {
@@ -40,7 +40,13 @@ class Common {
     if (!u) {
       return false;
     }
-    if (!me.canAttack(u)) {
+
+    const targetUnit = objMgr.getObjectByGuid(u)
+    if (targetUnit?.deadOrGhost) {
+      return false;
+    }
+
+    if (!me.canAttack(targetUnit)) {
       return false;
     }
 
