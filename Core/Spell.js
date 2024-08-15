@@ -9,32 +9,30 @@ class Spell {
     const spell = arguments[0];
     const rest = Array.prototype.slice.call(arguments, 1);
     let predicate = null;
-    let target = me.target;
 
     for (const element of rest) {
-      if (element && element instanceof wow.CGUnit) {
-        target = element;
-      } else if (typeof element === 'function') {
+      if (typeof element === 'function') {
         predicate = element;
       }
     }
 
-    if (!target) {
-      return bt.Status.Failure;
-    }
-
     if (typeof spell === 'number') {
-      return Spell.castById(spell, target, predicate);
+      return Spell.castById(spell, predicate);
     } else if (typeof spell === 'string') {
-      return Spell.castByName(spell, target, predicate);
+      return Spell.castByName(spell, predicate);
     }
   }
 
-  static castById(id, target, predicate = null) {
+  static castById(id, predicate = null) {
     return new bt.Sequence(
       new bt.Action(() => {
         if (predicate && !predicate()) {
           return bt.Status.Failure;
+        }
+
+        let target = me.target;
+        if (!target) {
+          target = me;
         }
 
         const spell = new Spell(id);
@@ -64,6 +62,11 @@ class Spell {
       new bt.Action(() => {
         if (predicate && !predicate()) {
           return bt.Status.Failure;
+        }
+
+        let target = me.target;
+        if (!target) {
+          target = me;
         }
 
         const spell = wow.SpellBook.getSpellByName(name);
