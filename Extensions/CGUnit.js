@@ -5,7 +5,9 @@ Object.defineProperties(wow.CGUnit.prototype, {
     value: function (name) {
       return this.auras.find(aura =>
         aura.name === name &&
-        me.equals(aura.casterGuid)
+        aura.casterGuid &&
+        me.guid &&
+        me.guid.equals(aura.casterGuid)
       ) !== undefined;
     }
   },
