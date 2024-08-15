@@ -16,9 +16,13 @@ export class DeathKnightFrostBehavior extends Behavior {
       new bt.Selector(
         common.waitForTarget(),
         common.waitForCastOrChannel(),
+        spell.cast("Death Strike", ret =>  me.pctHealth < 95 && me.hasAuraById(101568)), // dark succor
         spell.cast("Death Strike", ret => me.pctHealth < 65 && me.power > 35),
+        spell.cast("Remorseless Winter", me),
+        spell.cast("Rune Strike", ret =>  me.hasAuraById(51124)), // killing machine aura
+        spell.cast("Howling Blast", ret =>  me.hasAuraById(59052)), // Rime aura
         spell.cast("Frost Strike", ret => me.power > 45),
-        spell.cast("Obliterate"),
+        spell.cast("Rune Strike"),
       )
     );
   }

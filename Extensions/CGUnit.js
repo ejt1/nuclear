@@ -14,7 +14,20 @@ Object.defineProperties(wow.CGUnit.prototype, {
 
   hasAura: {
     value: function (name) {
-      return this.auras.some(aura => aura.name === name) !== undefined;
+      return this.auras.some(aura => aura.name === name);
+    }
+  },
+
+  hasAuraById: {
+    value: function (id) {
+      return this.auras.some(aura => aura.spellId === id)
+    }
+  },
+
+
+  hasVisibleAura: {
+    value: function (name) {
+      return this.visibleAuras.some(visibleAura => visibleAura.name === name);
     }
   },
 

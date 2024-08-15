@@ -110,7 +110,7 @@ class Spell {
       return false;
     }
 
-    if (!target) {
+    if (!target || target === null) {
       return false;
     }
 
@@ -123,7 +123,8 @@ class Spell {
       return false;
     }
 
-    if (!spell.inRange(target)) {
+
+    if (spell && spell !== null && !spell.inRange(target)) {
       return false;
     }
 
