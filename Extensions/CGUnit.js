@@ -1,31 +1,24 @@
-import objMgr, {me} from "../Core/ObjectManager";
+import objMgr, { me } from "../Core/ObjectManager";
 
 Object.defineProperties(wow.CGUnit.prototype, {
   hasAuraByMe: {
     value: function (name) {
       return this.auras.find(aura =>
         aura.name === name &&
-        aura.casterGuid &&
-        me.guid &&
-        me.guid.equals(aura.casterGuid)
-      );
+        me.equals(aura.casterGuid)
+      ) !== undefined;
     }
   },
 
   hasAura: {
     value: function (name) {
-      return this.auras.some(aura => aura.name === name);
+      return this.auras.some(aura => aura.name === name) !== undefined;
     }
   },
 
   getAura: {
     value: function (name) {
-      for (let aura of this.auras) {
-        if (aura.name === name) {
-          return aura;
-        }
-      }
-      return null;
+      return this.auras.find(aura => aura.name === name);
     }
   },
 
