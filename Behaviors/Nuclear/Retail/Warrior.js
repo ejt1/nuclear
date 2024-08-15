@@ -3,6 +3,7 @@ import * as bt from '../../../Core/BehaviorTree';
 import Specialization from '../../../Core/Specialization';
 import common from '../../../Core/Common';
 import spell from "../../../Core/Spell";
+import { me } from "../../../Core/ObjectManager";
 
 export class WarriorFuryBehavior extends Behavior {
   context = BehaviorContext.Any;
@@ -16,6 +17,7 @@ export class WarriorFuryBehavior extends Behavior {
         common.waitForTarget(),
         common.waitForCastOrChannel(),
 
+        spell.cast("Battle Shout", on => me, req => me.hasAuraByMe("Battle Shout")),
         spell.cast("Execute"),
         spell.cast("Rampage"),
         spell.cast("Raging Blow"),
