@@ -35,7 +35,7 @@ export class DemonhunterHavocBehavior extends Behavior {
   }
 
   logHelper() {
-    console.log('blah' + me.unitFlags + ' ' + me.unitFlags2 + ' ' + me.unitFlags3)
+    console.info('blah' + me.unitFlags + ' ' + me.unitFlags2 + ' ' + me.unitFlags3)
     return true;
   }
 

@@ -38,7 +38,7 @@ class Common {
   }
 
   static validTarget(u) {
-    if (!u || u.deadOrGhost || !me.canAttack(u)) {
+    if (!u || !objMgr.findObject(u) || u.deadOrGhost || !me.canAttack(u)) {
       return false;
     }
 

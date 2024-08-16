@@ -72,7 +72,7 @@ class Spell {
       }),
 
       new bt.Action(() => {
-        console.log(`Cast ${id}`);
+        console.info(`Cast ${id}`);
         return bt.Status.Success;
       }),
     );
@@ -107,7 +107,7 @@ class Spell {
       }),
 
       new bt.Action(() => {
-        console.log(`Cast ${name}`);
+        console.info(`Cast ${name}`);
         return bt.Status.Success;
       }),
     );
@@ -159,7 +159,7 @@ class Spell {
     return new bt.Sequence(
       new bt.Action(() => {
         if (!unit) {
-          console.log("No unit passed to function Apply");
+          console.info("No unit passed to function Apply");
           return bt.Status.Failure;
         }
 
