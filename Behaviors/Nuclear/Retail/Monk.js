@@ -6,22 +6,37 @@ import spell from "../../../Core/Spell";
 import { me } from "../../../Core/ObjectManager";
 
 export class MonkMistweaverBehavior extends Behavior {
-    context = BehaviorContext.Any;
-    specialization = Specialization.Monk.Mistweaver;
-    version = wow.GameVersion.Retail;
+  context = BehaviorContext.Any;
+  specialization = Specialization.Monk.Mistweaver;
+  version = wow.GameVersion.Retail;
 
-    build() {
-        return new bt.Decorator(
-            ret => !spell.isGlobalCooldown(),
-            new bt.Selector(
-                common.waitForTarget(),
-                common.waitForCastOrChannel(),
-                spell.apply("Renewing Mist", me),
-                spell.cast("Spinning Crane Kick", ret => me.unitsAroundCount() > 1),
-                spell.cast("Rising Sun Kick"),
-                spell.cast("Blackout Kick"),
-                spell.cast("Tiger Palm"),
-            )
-        );
-    }
+  findClosestUnit(range) {
+    const units = me.unitsAround(range);
+    if (units.length === 0) return null;
+
+    return units.reduce((closest, unit) => {
+      const distance = me.distanceTo(unit);
+      return distance < me.distanceTo(closest) ? unit : closest;
+    });
+  }
+
+  summonJadeSerpentStatue() {
+    return spell.cast("Summon Jade Serpent Statue", () => this.findClosestUnit(15));
+  }
+
+  build() {
+    return new bt.Decorator(
+      ret => !spell.isGlobalCooldown(),
+      new bt.Selector(
+        this.summonJadeSerpentStatue(),
+        spell.apply("Renewing Mist", me),
+        common.waitForCastOrChannel(),
+        common.waitForTarget(),
+        spell.cast("Spinning Crane Kick", ret => me.unitsAroundCount() > 1),
+        spell.cast("Rising Sun Kick"),
+        spell.cast("Blackout Kick"),
+        spell.cast("Tiger Palm"),
+      )
+    );
+  }
 }
