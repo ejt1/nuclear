@@ -52,7 +52,7 @@ class Spell {
           target = me.target;
         }
 
-        if (target instanceof wow.Guid && !objMgr.getObjectByGuid(target)) {
+        if (target instanceof wow.Guid && !objMgr.findObject(target)) {
           return bt.Status.Failure;
         }
 
@@ -86,7 +86,7 @@ class Spell {
           target = me.target;
         }
 
-        if (target instanceof wow.Guid && !objMgr.getObjectByGuid(target)) {
+        if (target instanceof wow.Guid && !objMgr.findObject(target)) {
           return bt.Status.Failure;
         }
 

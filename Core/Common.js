@@ -37,25 +37,16 @@ class Common {
   }
 
   static validTarget(u) {
-    if (!u) {
-      return false;
-    }
+    // Retrieve the target unit using the enhanced getObjectByGuid
+    const targetUnit = objMgr.findObject(u);
 
-    const targetUnit = objMgr.getObjectByGuid(u)
-    if (targetUnit === null) {
-      return false;
-    }
-
-    if (targetUnit.deadOrGhost) {
-      return false;
-    }
-
-    if (targetUnit && !me.canAttack(targetUnit)) {
+    if (!targetUnit || targetUnit.deadOrGhost || !me.canAttack(targetUnit)) {
       return false;
     }
 
     return true;
   }
+
 }
 
 export default Common;

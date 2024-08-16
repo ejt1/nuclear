@@ -1,4 +1,5 @@
 import objMgr, { me } from "../Core/ObjectManager";
+import Common from "../Core/Common";
 
 Object.defineProperties(wow.CGUnit.prototype, {
   hasAuraByMe: {
@@ -92,7 +93,40 @@ Object.defineProperties(wow.CGUnit.prototype, {
 
   targetUnit: {
     get: function () {
-      return objMgr.getObjectByGuid(this.target);
+      return objMgr.findObject(this.target);
+    }
+  },
+
+  unitsAround: {
+    /**
+     * Get an array of units within a specified distance of this unit.
+     * @param {number} distance - The maximum distance to check for nearby units.
+     * @returns {Array<wow.CGUnit>} - An array of CGUnit objects within the specified distance.
+     */
+    value: function (distance) {
+      const nearbyUnits = [];
+
+      objMgr.objects.forEach((obj) => {
+        if (obj instanceof wow.CGUnit && obj !== this && Common.validTarget(obj)) {
+          const distanceToUnit = this.distanceTo(obj);
+          if (distanceToUnit <= distance) {
+            nearbyUnits.push(obj);
+          }
+        }
+      });
+
+      return nearbyUnits;
+    }
+  },
+
+  unitsAroundCount: {
+    /**
+     * Get the count of units within a specified distance of this unit.
+     * @param {number} [distance=5] - The maximum distance to check for nearby units. Defaults to 5 if not specified.
+     * @returns {number} - The count of units within the specified distance.
+     */
+    value: function (distance = 5) {
+      return this.unitsAround(distance).length;
     }
   }
 });
