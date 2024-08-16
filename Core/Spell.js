@@ -15,7 +15,7 @@ class Spell {
 
     // start with setting target to null
     sequence.addChild(new bt.Action(() => {
-      Spell._currentTarget = null;
+      Spell._currentTarget = undefined;
     }));
 
     for (const arg of rest) {
