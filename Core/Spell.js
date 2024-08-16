@@ -1,5 +1,5 @@
 import * as bt from './BehaviorTree';
-import { me } from './ObjectManager';
+import objMgr, { me } from './ObjectManager';
 
 class Spell {
   /** @type {wow.CGUnit | wow.Guid | null} */
@@ -13,9 +13,9 @@ class Spell {
     const rest = Array.prototype.slice.call(arguments, 1);
     const sequence = new bt.Sequence();
 
-    // start with setting target to null
+    // start with setting target to undefined
     sequence.addChild(new bt.Action(() => {
-      Spell._currentTarget = null;
+      Spell._currentTarget = undefined;
     }));
 
     for (const arg of rest) {
@@ -52,6 +52,10 @@ class Spell {
           target = me.target;
         }
 
+        if (target instanceof wow.Guid && !objMgr.getObjectByGuid(target)) {
+          return bt.Status.Failure;
+        }
+
         const spell = new Spell(id);
         if (!spell) {
           return bt.Status.Failure;
@@ -82,9 +86,13 @@ class Spell {
           target = me.target;
         }
 
+        if (target instanceof wow.Guid && !objMgr.getObjectByGuid(target)) {
+          return bt.Status.Failure;
+        }
+
         const spell = wow.SpellBook.getSpellByName(name);
         if (!spell) {
-          console.error(`failed to find spell ${name}`);
+          //console.error(`failed to find spell ${name}`);
           return bt.Status.Failure;
         }
 
