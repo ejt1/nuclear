@@ -12,12 +12,9 @@ export class MonkMistweaverBehavior extends Behavior {
 
   findClosestUnit(range) {
     const units = me.unitsAround(range);
-    if (units.length === 0) return null;
-
-    return units.reduce((closest, unit) => {
-      const distance = me.distanceTo(unit);
-      return distance < me.distanceTo(closest) ? unit : closest;
-    });
+    return units.length ? units.reduce((closest, unit) =>
+      me.distanceTo(unit) < me.distanceTo(closest) ? unit : closest
+    ) : null;
   }
 
   summonJadeSerpentStatue() {

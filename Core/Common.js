@@ -1,3 +1,4 @@
+import { CreatureType } from '../Enums/UnitEnums';
 import * as bt from './BehaviorTree'
 import objMgr, { me } from './ObjectManager'
 
@@ -37,16 +38,12 @@ class Common {
   }
 
   static validTarget(u) {
-    // Retrieve the target unit using the enhanced getObjectByGuid
-    const targetUnit = objMgr.findObject(u);
-
-    if (!targetUnit || targetUnit.deadOrGhost || !me.canAttack(targetUnit)) {
+    if (!u || u.deadOrGhost || !me.canAttack(u)) {
       return false;
     }
 
     return true;
   }
-
 }
 
 export default Common;
