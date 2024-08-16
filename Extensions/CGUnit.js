@@ -2,8 +2,13 @@ import objMgr, { me } from "../Core/ObjectManager";
 
 Object.defineProperties(wow.CGUnit.prototype, {
   hasAuraByMe: {
+    /**
+     * @param {string} name
+     */
     value: function (name) {
-      return this.auras.find(aura =>
+      /** @type {Array<wow.AuraData>} */
+      const auras = this.auras;
+      return auras.find((aura) =>
         aura.name === name &&
         aura.casterGuid &&
         me.guid &&

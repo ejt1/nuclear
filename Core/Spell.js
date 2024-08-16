@@ -123,7 +123,7 @@ class Spell {
       return false;
     }
 
-    if (!spell.inRange(target)) {
+    if (target instanceof wow.CGUnit && !spell.inRange(target)) {
       return false;
     }
 
@@ -135,8 +135,8 @@ class Spell {
    * @param {wow.Spell} spell
    * @returns {boolean}
    */
-  static castPrimitive(spell) {
-    return spell.cast(me.target);
+  static castPrimitive(spell, target) {
+    return spell.cast(target);
   }
 
   static isGlobalCooldown() {
