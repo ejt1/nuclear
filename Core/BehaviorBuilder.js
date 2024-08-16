@@ -1,5 +1,5 @@
 import { Behavior, BehaviorContext } from './Behavior';
-import Specialization from './Specialization';
+import Specialization from '../Enums/Specialization';
 import * as bt from './BehaviorTree';
 
 const kBehaviorPath = __rootDir + '/behaviors';

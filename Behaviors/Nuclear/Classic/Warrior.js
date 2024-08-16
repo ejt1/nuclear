@@ -1,7 +1,7 @@
 import { Behavior, BehaviorContext } from '../../../Core/Behavior';
 import * as bt from '../../../Core/BehaviorTree';
 import Common from '../../../Core/Common';
-import Specialization from '../../../Core/Specialization';
+import Specialization from '../../../Enums/Specialization';
 import Spell from '../../../Core/Spell';
 
 export class WarriorFuryBehavior extends Behavior {

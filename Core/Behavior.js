@@ -1,4 +1,4 @@
-import Specialization from "./Specialization";
+import Specialization from "../Enums/Specialization";
 
 export const BehaviorContext = {
   None: 0,
