@@ -89,7 +89,8 @@ class ObjectManager {
       case wow.ObjectTypeID.Dynamic:
         return new wow.CGDynamicObject(base.guid);
       default:
-        console.warn(`Unknown object type: ${base.type}`);
+        // obj number 10 and 11 appearing, whut this? Help me Tovarish Ian.
+       // console.warn(`Unknown object type: ${base.type}`);
         return null;
     }
   }
