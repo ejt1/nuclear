@@ -18,7 +18,7 @@ export class DeathKnightFrostBehavior extends Behavior {
         common.waitForCastOrChannel(),
         spell.cast("Death Strike", ret =>  me.pctHealth < 95 && me.hasAura(101568)), // dark succor
         spell.cast("Death Strike", ret => me.pctHealth < 65 && me.power > 35),
-        spell.cast("Remorseless Winter", on => me),
+        spell.cast("Remorseless Winter", on => me, ret => me.target && me.isWithinMeleeRange(me.target)),
         spell.cast("Rune Strike", ret =>  me.hasAura(51124)), // killing machine aura
         spell.cast("Howling Blast", ret =>  me.hasAura(59052)), // Rime aura
         spell.cast("Frost Strike", ret => me.power > 45),

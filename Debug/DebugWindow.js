@@ -55,7 +55,7 @@ class DebugWindow {
 
   renderObjectManager() {
     imgui.beginChild("object list", { x: 150, y: 0 });
-    /** @type {Map<wow.ObjectTypeID, Array<wow.CGObject>} */
+    /** @type {Map<wow.ObjectTypeID, Array<wow.CGObject>>} */
     let sortedObjects = new Map();
     for (const typename in wow.ObjectTypeID) {
       const id = wow.ObjectTypeID[typename];

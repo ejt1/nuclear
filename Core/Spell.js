@@ -1,5 +1,5 @@
 import * as bt from './BehaviorTree';
-import { me } from './ObjectManager';
+import objMgr, { me } from './ObjectManager';
 
 class Spell {
   /** @type {wow.CGUnit | wow.Guid | null} */
@@ -13,7 +13,7 @@ class Spell {
     const rest = Array.prototype.slice.call(arguments, 1);
     const sequence = new bt.Sequence();
 
-    // start with setting target to null
+    // start with setting target to undefined
     sequence.addChild(new bt.Action(() => {
       Spell._currentTarget = undefined;
     }));
@@ -52,6 +52,10 @@ class Spell {
           target = me.target;
         }
 
+        if (target instanceof wow.Guid && !objMgr.getObjectByGuid(target)) {
+          return bt.Status.Failure;
+        }
+
         const spell = new Spell(id);
         if (!spell) {
           return bt.Status.Failure;
@@ -82,9 +86,13 @@ class Spell {
           target = me.target;
         }
 
+        if (target instanceof wow.Guid && !objMgr.getObjectByGuid(target)) {
+          return bt.Status.Failure;
+        }
+
         const spell = wow.SpellBook.getSpellByName(name);
         if (!spell) {
-          console.error(`failed to find spell ${name}`);
+          //console.error(`failed to find spell ${name}`);
           return bt.Status.Failure;
         }
 
@@ -110,7 +118,7 @@ class Spell {
       return false;
     }
 
-    if (!target || target === null) {
+    if (!target) {
       return false;
     }
 
@@ -123,8 +131,7 @@ class Spell {
       return false;
     }
 
-
-    if (spell && spell !== null && !spell.inRange(target)) {
+    if (target instanceof wow.CGUnit && !spell.inRange(target)) {
       return false;
     }
 
@@ -136,8 +143,8 @@ class Spell {
    * @param {wow.Spell} spell
    * @returns {boolean}
    */
-  static castPrimitive(spell) {
-    return spell.cast(me.target);
+  static castPrimitive(spell, target) {
+    return spell.cast(target);
   }
 
   static isGlobalCooldown() {
