@@ -19,6 +19,7 @@ Object.defineProperties(wow.CGUnit.prototype, {
       });
     }
   },
+
   hasAura: {
     /**
      * Check if the unit has an aura by name or spell ID.
@@ -49,6 +50,25 @@ Object.defineProperties(wow.CGUnit.prototype, {
         return this.visibleAuras.some(visibleAura => visibleAura.name === nameOrId);
       }
       return false;
+    }
+  },
+
+  hasVisibleAuraByMe: {
+    /**
+     * Check if the unit has a visible aura by name or spell ID, cast by the player.
+     * @param {string|number} nameOrId - The name of the visible aura or the spell ID.
+     * @returns {boolean} - Returns true if the visible aura is found and cast by the player.
+     */
+    value: function (nameOrId) {
+      /** @type {Array<wow.AuraData>} */
+      const visibleAuras = this.visibleAuras;
+      return visibleAuras.some((visibleAura) => {
+        const isMatch =
+          (typeof nameOrId === 'number' && visibleAura.spellId === nameOrId) ||
+          (typeof nameOrId === 'string' && visibleAura.name === nameOrId);
+
+        return isMatch && visibleAura.casterGuid && me.guid && me.guid.equals(visibleAura.casterGuid);
+      });
     }
   },
 
