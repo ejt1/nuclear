@@ -50,7 +50,7 @@ class Common {
       return false;
     }
 
-    if (!me.canAttack(targetUnit)) {
+    if (targetUnit && !me.canAttack(targetUnit)) {
       return false;
     }
 
