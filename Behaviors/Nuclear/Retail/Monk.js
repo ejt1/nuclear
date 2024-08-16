@@ -16,6 +16,7 @@ export class MonkMistweaverBehavior extends Behavior {
             new bt.Selector(
                 common.waitForTarget(),
                 common.waitForCastOrChannel(),
+                spell.apply("Renewing Mist", me),
                 spell.cast("Spinning Crane Kick", ret => me.unitsAroundCount() > 1),
                 spell.cast("Rising Sun Kick"),
                 spell.cast("Blackout Kick"),

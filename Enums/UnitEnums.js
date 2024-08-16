@@ -17,3 +17,11 @@ export const Classification = {
     Rare: 4,
     Boss: 3
 };
+
+export const CreatureFamily = {
+    None: 0,
+    Wolf: 1,
+    Bear: 4,
+    crab: 8,
+    Worm: 42
+}

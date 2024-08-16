@@ -154,6 +154,26 @@ class Spell {
     }
     return false;
   }
+
+  static apply(spellNameOrId, unit, expire = false) {
+    return new bt.Sequence(
+      new bt.Action(() => {
+        if (!unit) {
+          console.log("No unit passed to function Apply");
+          return bt.Status.Failure;
+        }
+
+        const aura = unit.getAura(spellNameOrId);
+        if (aura && ((aura.remaining > 2000 || aura.remaining === 0) || expire)) {
+          return bt.Status.Failure;
+        }
+
+        Spell._currentTarget = unit;
+        return bt.Status.Success;
+      }),
+      typeof spellNameOrId === 'number' ? Spell.castById(spellNameOrId) : Spell.castByName(spellNameOrId)
+    );
+  }
 }
 
 export default Spell;
