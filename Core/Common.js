@@ -42,7 +42,11 @@ class Common {
     }
 
     const targetUnit = objMgr.getObjectByGuid(u)
-    if (targetUnit?.deadOrGhost) {
+    if (targetUnit === null) {
+      return false;
+    }
+
+    if (targetUnit.deadOrGhost) {
       return false;
     }
 
