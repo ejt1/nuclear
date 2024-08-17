@@ -138,12 +138,12 @@ Object.defineProperties(wow.CGUnit.prototype, {
      */
     value: function () {
       const movementFlags = this.movementInfo.flags;
-      const isMovingForward = (movementFlags & MovementFlags.MOVEFLAG_FORWARD) !== 0;
-      const isMovingBackward = (movementFlags & MovementFlags.MOVEFLAG_BACKWARD) !== 0;
-      const isStrafingLeft = (movementFlags & MovementFlags.MOVEFLAG_STRAFE_LEFT) !== 0;
-      const isStrafingRight = (movementFlags & MovementFlags.MOVEFLAG_STRAFE_RIGHT) !== 0;
-      const isTurningLeft = (movementFlags & MovementFlags.MOVEFLAG_TURN_LEFT) !== 0;
-      const isTurningRight = (movementFlags & MovementFlags.MOVEFLAG_TURN_RIGHT) !== 0;
+      const isMovingForward = (movementFlags & MovementFlags.MOVEMENTFLAG_FORWARD) !== 0;
+      const isMovingBackward = (movementFlags & MovementFlags.MOVEMENTFLAG_BACKWARD) !== 0;
+      const isStrafingLeft = (movementFlags & MovementFlags.MOVEMENTFLAG_STRAFE_LEFT) !== 0;
+      const isStrafingRight = (movementFlags & MovementFlags.MOVEMENTFLAG_STRAFE_RIGHT) !== 0;
+      const isTurningLeft = (movementFlags & MovementFlags.MOVEMENTFLAG_TURN_LEFT) !== 0;
+      const isTurningRight = (movementFlags & MovementFlags.MOVEMENTFLAG_TURN_RIGHT) !== 0;
 
       return isMovingForward || isMovingBackward || isStrafingLeft || isStrafingRight || isTurningLeft || isTurningRight;
     }
@@ -155,7 +155,7 @@ Object.defineProperties(wow.CGUnit.prototype, {
      * @returns {boolean} - Returns true if the unit is swimming.
      */
     value: function () {
-      return (this.movementInfo.flags & MovementFlags.MOVEFLAG_SWIMMING) !== 0;
+      return (this.movementInfo.flags & MovementFlags.MOVEMENTFLAG_SWIMMING) !== 0;
     }
   },
 
@@ -175,7 +175,7 @@ Object.defineProperties(wow.CGUnit.prototype, {
      * @returns {boolean} - Returns true if the unit is rooted.
      */
     value: function () {
-      return (this.movementInfo.flags & MovementFlags.MOVEFLAG_ROOT) !== 0;
+      return (this.movementInfo.flags & MovementFlags.MOVEMENTFLAG_ROOT) !== 0;
     }
   },
 
