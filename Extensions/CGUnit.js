@@ -1,6 +1,6 @@
-import objMgr, { me } from "../Core/ObjectManager";
+import objMgr, {me} from "../Core/ObjectManager";
 import Common from "../Core/Common";
-import { MovementFlags } from "../Enums/MovementFlags";
+import {MovementFlags, UnitFlags} from "../Enums/Flags";
 
 Object.defineProperties(wow.CGUnit.prototype, {
   hasAuraByMe: {
@@ -147,7 +147,57 @@ Object.defineProperties(wow.CGUnit.prototype, {
 
       return isMovingForward || isMovingBackward || isStrafingLeft || isStrafingRight || isTurningLeft || isTurningRight;
     }
-  }
+  },
+
+  IsSwimming: {
+    /**
+     * Check if the unit is swimming based on movement flags.
+     * @returns {boolean} - Returns true if the unit is swimming.
+     */
+    value: function () {
+      return (this.movementInfo.flags & MovementFlags.MOVEFLAG_SWIMMING) !== 0;
+    }
+  },
+
+  IsStunned: {
+    /**
+     * Check if the unit is stunned based on unit flags.
+     * @returns {boolean} - Returns true if the unit is stunned.
+     */
+    value: function () {
+      return (this.unitFlags & UnitFlags.STUNNED) !== 0;
+    }
+  },
+
+  IsRooted: {
+    /**
+     * Check if the unit is rooted based on movement flags.
+     * @returns {boolean} - Returns true if the unit is rooted.
+     */
+    value: function () {
+      return (this.movementInfo.flags & MovementFlags.MOVEFLAG_ROOT) !== 0;
+    }
+  },
+
+  IsSilenced: {
+    /**
+     * Check if the unit is silenced based on unit flags.
+     * @returns {boolean} - Returns true if the unit is silenced.
+     */
+    value: function () {
+      return (this.unitFlags & UnitFlags.PACIFIED) !== 0;
+    }
+  },
+
+  IsFeared: {
+    /**
+     * Check if the unit is feared based on unit flags.
+     * @returns {boolean} - Returns true if the unit is feared.
+     */
+    value: function () {
+      return (this.unitFlags & UnitFlags.FLEEING) !== 0;
+    }
+  },
 
 });
 
