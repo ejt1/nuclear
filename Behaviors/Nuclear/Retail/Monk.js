@@ -4,6 +4,7 @@ import Specialization from '../../../Enums/Specialization';
 import common from '../../../Core/Common';
 import spell from "../../../Core/Spell";
 import { me } from "../../../Core/ObjectManager";
+import { MovementFlags } from "../../../Enums/MovementFlags";
 
 export class MonkMistweaverBehavior extends Behavior {
   context = BehaviorContext.Any;
@@ -25,14 +26,12 @@ export class MonkMistweaverBehavior extends Behavior {
     return new bt.Decorator(
       ret => !spell.isGlobalCooldown(),
       new bt.Selector(
-        this.summonJadeSerpentStatue(),
-        spell.apply("Renewing Mist", me),
         common.waitForCastOrChannel(),
         common.waitForTarget(),
         spell.cast("Spinning Crane Kick", ret => me.unitsAroundCount() > 1),
         spell.cast("Rising Sun Kick"),
         spell.cast("Blackout Kick"),
-        spell.cast("Tiger Palm"),
+        spell.cast("Tiger Palm")
       )
     );
   }

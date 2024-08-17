@@ -126,6 +126,10 @@ class Spell {
       return false;
     }
 
+    if (spell.castTime > 0 && me.IsMoving()) {
+      return false;
+    }
+
     const cooldown = spell.cooldown;
     if (!cooldown.ready || !cooldown.active) {
       return false;

@@ -1,5 +1,6 @@
 import objMgr, { me } from "../Core/ObjectManager";
 import Common from "../Core/Common";
+import { MovementFlags } from "../Enums/MovementFlags";
 
 Object.defineProperties(wow.CGUnit.prototype, {
   hasAuraByMe: {
@@ -128,7 +129,26 @@ Object.defineProperties(wow.CGUnit.prototype, {
     value: function (distance = 5) {
       return this.unitsAround(distance).length;
     }
+  },
+
+  IsMoving: {
+    /**
+     * Check if the unit is moving based on movement flags.
+     * @returns {boolean} - Returns true if the unit is moving in any direction.
+     */
+    value: function () {
+      const movementFlags = this.movementInfo.flags;
+      const isMovingForward = (movementFlags & MovementFlags.MOVEFLAG_FORWARD) !== 0;
+      const isMovingBackward = (movementFlags & MovementFlags.MOVEFLAG_BACKWARD) !== 0;
+      const isStrafingLeft = (movementFlags & MovementFlags.MOVEFLAG_STRAFE_LEFT) !== 0;
+      const isStrafingRight = (movementFlags & MovementFlags.MOVEFLAG_STRAFE_RIGHT) !== 0;
+      const isTurningLeft = (movementFlags & MovementFlags.MOVEFLAG_TURN_LEFT) !== 0;
+      const isTurningRight = (movementFlags & MovementFlags.MOVEFLAG_TURN_RIGHT) !== 0;
+
+      return isMovingForward || isMovingBackward || isStrafingLeft || isStrafingRight || isTurningLeft || isTurningRight;
+    }
   }
+
 });
 
 export default true;
