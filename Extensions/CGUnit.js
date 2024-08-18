@@ -131,35 +131,36 @@ Object.defineProperties(wow.CGUnit.prototype, {
     }
   },
 
-  IsMoving: {
+  isMoving: {
     /**
      * Check if the unit is moving based on movement flags.
      * @returns {boolean} - Returns true if the unit is moving in any direction.
      */
     value: function () {
-      const movementFlags = this.movementInfo.flags;
-      const isMovingForward = (movementFlags & MovementFlags.MOVEMENTFLAG_FORWARD) !== 0;
-      const isMovingBackward = (movementFlags & MovementFlags.MOVEMENTFLAG_BACKWARD) !== 0;
-      const isStrafingLeft = (movementFlags & MovementFlags.MOVEMENTFLAG_STRAFE_LEFT) !== 0;
-      const isStrafingRight = (movementFlags & MovementFlags.MOVEMENTFLAG_STRAFE_RIGHT) !== 0;
-      const isTurningLeft = (movementFlags & MovementFlags.MOVEMENTFLAG_TURN_LEFT) !== 0;
-      const isTurningRight = (movementFlags & MovementFlags.MOVEMENTFLAG_TURN_RIGHT) !== 0;
+      const movingMask =
+        MovementFlags.FORWARD |
+        MovementFlags.BACKWARD |
+        MovementFlags.STRAFE_LEFT |
+        MovementFlags.STRAFE_RIGHT |
+        MovementFlags.FALLING |
+        MovementFlags.PITCH_UP | // Ascending equivalent
+        MovementFlags.PITCH_DOWN; // Descending equivalent
 
-      return isMovingForward || isMovingBackward || isStrafingLeft || isStrafingRight || isTurningLeft || isTurningRight;
+      return (this.movementInfo.flags & movingMask) !== 0;
     }
   },
 
-  IsSwimming: {
+  isSwimming: {
     /**
      * Check if the unit is swimming based on movement flags.
      * @returns {boolean} - Returns true if the unit is swimming.
      */
     value: function () {
-      return (this.movementInfo.flags & MovementFlags.MOVEMENTFLAG_SWIMMING) !== 0;
+      return (this.movementInfo.flags & MovementFlags.SWIMMING) !== 0;
     }
   },
 
-  IsStunned: {
+  isStunned: {
     /**
      * Check if the unit is stunned based on unit flags.
      * @returns {boolean} - Returns true if the unit is stunned.
@@ -169,17 +170,17 @@ Object.defineProperties(wow.CGUnit.prototype, {
     }
   },
 
-  IsRooted: {
+  isRooted: {
     /**
      * Check if the unit is rooted based on movement flags.
      * @returns {boolean} - Returns true if the unit is rooted.
      */
     value: function () {
-      return (this.movementInfo.flags & MovementFlags.MOVEMENTFLAG_ROOT) !== 0;
+      return (this.movementInfo.flags & MovementFlags.ROOT) !== 0;
     }
   },
 
-  IsSilenced: {
+  isSilenced: {
     /**
      * Check if the unit is silenced based on unit flags.
      * @returns {boolean} - Returns true if the unit is silenced.
@@ -189,7 +190,7 @@ Object.defineProperties(wow.CGUnit.prototype, {
     }
   },
 
-  IsFeared: {
+  isFeared: {
     /**
      * Check if the unit is feared based on unit flags.
      * @returns {boolean} - Returns true if the unit is feared.

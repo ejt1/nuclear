@@ -18,7 +18,7 @@ export class DemonhunterHavocBehavior extends Behavior {
         common.waitForCastOrChannel(),
         spell.cast("Blur", on => me, ret => me.pctHealth < 55),
         spell.cast("Darkness", on => me, ret => me.pctHealth < 35),
-        spell.cast("The Hunt", on => me, ret => !me.isRooted && me.targetUnit?.pctHealth < 75),
+        spell.cast("The Hunt", on => me, ret => !me.isRooted() && me.targetUnit?.pctHealth < 75),
         spell.cast("Throw Glaive", ret => me.power > 25 && me.target && !me.isWithinMeleeRange(me.target)),
         spell.cast("Throw Glaive", ret => me.power > 25 && !me.targetUnit?.hasAuraByMe("Master of the Glaive")),
         spell.cast("Eye Beam", ret => me.power > 49 && me.target && me.isWithinMeleeRange(me.target)),

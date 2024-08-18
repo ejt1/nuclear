@@ -126,7 +126,7 @@ class Spell {
       return false;
     }
 
-    if (spell.castTime > 0 && me.IsMoving()) {
+    if (spell.castTime > 0 && me.isMoving()) {
       return false;
     }
 
