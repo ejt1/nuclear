@@ -1,4 +1,3 @@
-import { CreatureType } from '../Enums/UnitEnums';
 import * as bt from './BehaviorTree'
 import objMgr, { me } from './ObjectManager'
 
@@ -31,6 +30,15 @@ class Common {
   static waitForTarget() {
     return new bt.Action(() => {
       if (!me.target || !Common.validTarget(me.target)) {
+        return bt.Status.Success;
+      }
+      return bt.Status.Failure;
+    });
+  }
+
+  static waitForFacing() {
+    return new bt.Action(() => {
+      if (!me.target || !me.isFacing(me.target)) {
         return bt.Status.Success;
       }
       return bt.Status.Failure;

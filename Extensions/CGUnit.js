@@ -201,7 +201,7 @@ Object.defineProperties(wow.CGUnit.prototype, {
     }
   },
 
-  AngleToXY: {
+  angleToXY: {
     /**
      * Calculate the angle from one set of coordinates to another, taking into account the unit's facing direction.
      * @param {number} x1 - The X coordinate of the starting point.
@@ -233,7 +233,7 @@ Object.defineProperties(wow.CGUnit.prototype, {
   },
 
 
-  AngleToPos: {
+  angleToPos: {
     /**
      * Calculate the angle between two positions, considering the unit's facing direction.
      * @param {Vector3} from - The starting position {x, y, z}.
@@ -241,22 +241,22 @@ Object.defineProperties(wow.CGUnit.prototype, {
      * @returns {number} - The angle in degrees between the unit's facing direction and the target position.
      */
     value: function (from, to) {
-      return this.AngleToXY(from.x, from.y, to.x, to.y);
+      return this.angleToXY(from.x, from.y, to.x, to.y);
     }
   },
 
-  AngleTo: {
+  angleTo: {
     /**
      * Calculate the angle between the unit's current position and another unit's position.
      * @param {wow.CGUnit} target - The target unit.
      * @returns {number} - The angle in degrees between the unit's facing direction and the target unit.
      */
     value: function (target) {
-      return this.AngleToPos(this.position, target.position);
+      return this.angleToPos(this.position, target.position);
     }
   },
 
-  IsFacing: {
+  isFacing: {
     /**
      * Check if the unit is facing towards the target within a certain angle.
      * @param {wow.CGUnit | wow.Guid | null} target - The target unit.
@@ -277,7 +277,7 @@ Object.defineProperties(wow.CGUnit.prototype, {
         target = objMgr.findObject(target);
       }
 
-      const angle = this.AngleTo(target);
+      const angle = this.angleTo(target);
 
       // Check if the absolute angle is within the specified range
       return Math.abs(angle) < ang;

@@ -16,6 +16,7 @@ export class DeathKnightFrostBehavior extends Behavior {
       new bt.Selector(
         common.waitForTarget(),
         common.waitForCastOrChannel(),
+        common.waitForFacing(),
         spell.cast("Death Strike", ret => me.pctHealth < 95 && me.hasAura(101568)), // dark succor
         spell.cast("Death Strike", ret => me.pctHealth < 65 && me.power > 35),
         spell.cast("Pillar of Frost", on => me, ret => me.target && me.isWithinMeleeRange(me.target)),
