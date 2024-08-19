@@ -259,7 +259,7 @@ Object.defineProperties(wow.CGUnit.prototype, {
   IsFacing: {
     /**
      * Check if the unit is facing towards the target within a certain angle.
-     * @param {wow.CGUnit} target - The target unit.
+     * @param {wow.CGUnit | wow.Guid | null} target - The target unit.
      * @param {number} [ang=90] - The acceptable angle in degrees for the facing check. Defaults to 90 degrees.
      * @returns {boolean} - Returns true if the unit is facing the target within the specified angle.
      */
