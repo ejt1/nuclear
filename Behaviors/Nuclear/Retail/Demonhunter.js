@@ -1,6 +1,6 @@
 import {Behavior, BehaviorContext} from "../../../Core/Behavior";
 import * as bt from '../../../Core/BehaviorTree';
-import Specialization from '../../../Core/Specialization';
+import Specialization from '../../../Enums/Specialization';
 import common from '../../../Core/Common';
 import spell from "../../../Core/Spell";
 import {me} from "../../../Core/ObjectManager";
@@ -18,7 +18,7 @@ export class DemonhunterHavocBehavior extends Behavior {
         common.waitForCastOrChannel(),
         spell.cast("Blur", on => me, ret => me.pctHealth < 55),
         spell.cast("Darkness", on => me, ret => me.pctHealth < 35),
-        spell.cast("The Hunt", on => me, ret => me.targetUnit?.pctHealth < 75),
+        spell.cast("The Hunt", on => me, ret => !me.isRooted() && me.targetUnit?.pctHealth < 75),
         spell.cast("Throw Glaive", ret => me.power > 25 && me.target && !me.isWithinMeleeRange(me.target)),
         spell.cast("Throw Glaive", ret => me.power > 25 && !me.targetUnit?.hasAuraByMe("Master of the Glaive")),
         spell.cast("Eye Beam", ret => me.power > 49 && me.target && me.isWithinMeleeRange(me.target)),
@@ -35,7 +35,7 @@ export class DemonhunterHavocBehavior extends Behavior {
   }
 
   logHelper() {
-    console.log('blah' + me.unitFlags + ' ' + me.unitFlags2 + ' ' + me.unitFlags3)
+    console.info('blah' + me.unitFlags + ' ' + me.unitFlags2 + ' ' + me.unitFlags3)
     return true;
   }
 

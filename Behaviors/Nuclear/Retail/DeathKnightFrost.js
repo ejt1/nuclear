@@ -1,6 +1,6 @@
 import {Behavior, BehaviorContext} from "../../../Core/Behavior";
 import * as bt from '../../../Core/BehaviorTree';
-import Specialization from '../../../Core/Specialization';
+import Specialization from '../../../Enums/Specialization';
 import common from '../../../Core/Common';
 import spell from "../../../Core/Spell";
 import {me} from "../../../Core/ObjectManager";
@@ -16,14 +16,29 @@ export class DeathKnightFrostBehavior extends Behavior {
       new bt.Selector(
         common.waitForTarget(),
         common.waitForCastOrChannel(),
-        spell.cast("Death Strike", ret =>  me.pctHealth < 95 && me.hasAura(101568)), // dark succor
+        common.waitForFacing(),
+        spell.cast("Death Strike", ret => me.pctHealth < 95 && me.hasAura(101568)), // dark succor
         spell.cast("Death Strike", ret => me.pctHealth < 65 && me.power > 35),
+        spell.cast("Pillar of Frost", on => me, ret => me.target && me.isWithinMeleeRange(me.target)),
         spell.cast("Remorseless Winter", on => me, ret => me.target && me.isWithinMeleeRange(me.target)),
-        spell.cast("Rune Strike", ret =>  me.hasAura(51124)), // killing machine aura
-        spell.cast("Howling Blast", ret =>  me.hasAura(59052)), // Rime aura
+        this.multiTargetRotation(),
+        spell.cast("Rune Strike", ret => me.hasAura(51124)), // killing machine aura
+        spell.cast("Howling Blast", ret => me.hasAura(59052)), // Rime aura
+        spell.cast("Chains of Ice", ret => {
+          const coldHeart = me.getAura(281209);
+          return coldHeart && coldHeart.stacks === 20;
+        }),
         spell.cast("Frost Strike", ret => me.power > 45),
         spell.cast("Rune Strike"),
+        spell.cast("Horn of Winter", ret => me.target && me.power < 70),
       )
+    );
+  }
+
+  multiTargetRotation() {
+    return new bt.Sequence(
+      spell.cast("Frostscythe", on => me, ret => me.unitsAroundCount(8) >= 2 && me.target && me.isWithinMeleeRange(me.target) && me.isFacing(me.target)),
+      spell.cast("Death and Decay", ret => me.unitsAroundCount(10) >= 2 && me.target && me.isWithinMeleeRange(me.target) && me.hasAura(51271)), // Pillar of Frost
     );
   }
 

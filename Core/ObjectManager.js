@@ -16,78 +16,85 @@ class ObjectManager {
   objects = new Map();
 
   reset() {
-    this.objects = new Map();
+    this.objects.clear();
   }
 
   tick() {
     perfMgr.begin("objmgr");
 
-    const curMgr = new wow.ClntObjMgr();
-    const newObjects = curMgr.active;
+    const currentManager = new wow.ClntObjMgr();
+    const newObjects = currentManager.active;
 
-    // remove invalidated objects
+    // Remove invalidated objects
     this.objects.forEach((_, hash) => {
       if (!newObjects.has(hash)) {
         this.objects.delete(hash);
       }
     });
 
-    // invalidate 'me' if removed
-    if (me && (!curMgr.localGuid || !newObjects.has(curMgr.localGuid.hash))) {
+    // Invalidate 'me' if removed
+    if (me && (!currentManager.localGuid || !newObjects.has(currentManager.localGuid.hash))) {
       me = null;
     }
 
-    // add new objects
+    // Add new objects
     newObjects.forEach((obj, hash) => {
       if (!this.objects.has(hash)) {
-        this.objects.set(hash, this.createObj(obj));
+        const newObject = this.createObj(obj);
+        if (newObject) {
+          this.objects.set(hash, newObject);
+        }
       }
     });
 
     perfMgr.end("objmgr");
   }
 
-  getObjectByGuid(guid) {
-    if (guid instanceof wow.Guid && this.objects.has(guid.hash)) {
-      return this.objects.get(guid.hash);
+  findObject(identifier) {
+    // If it's an instance of wow.Guid, get the object by its hash
+    if (identifier instanceof wow.Guid) {
+      return this.objects.get(identifier.hash) || null;
     }
-    return null;
+
+    // If it's an object that has a guid property, verify and return it
+    if (identifier && typeof identifier === 'object' && 'guid' in identifier) {
+      const object = this.objects.get(identifier.guid.hash);
+      return object ? object : null;
+    }
+
+    // If it's a direct GUID hash
+    return this.objects.get(identifier) || null;
   }
 
   createObj(base) {
-    let obj = base;
     switch (base.type) {
       case wow.ObjectTypeID.Item:
-        obj = new wow.CGItem(base.guid);
-        break;
+        return new wow.CGItem(base.guid);
       case wow.ObjectTypeID.Container:
-        obj = new wow.CGContainer(base.guid);
-        break;
+        return new wow.CGContainer(base.guid);
       case wow.ObjectTypeID.AzeriteEmpoweredItem:
-        obj = new wow.CGAzeriteEmpoweredItem(base.guid);
-        break;
+        return new wow.CGAzeriteEmpoweredItem(base.guid);
       case wow.ObjectTypeID.AzeriteItem:
-        obj = new wow.CGAzeriteItem(base.guid);
-        break;
+        return new wow.CGAzeriteItem(base.guid);
       case wow.ObjectTypeID.Unit:
-        obj = new wow.CGUnit(base.guid);
-        break;
+        return new wow.CGUnit(base.guid);
       case wow.ObjectTypeID.Player:
-        obj = new wow.CGPlayer(base.guid);
-        break;
+        return new wow.CGPlayer(base.guid);
       case wow.ObjectTypeID.ActivePlayer:
-        obj = new wow.CGActivePlayer(base.guid);
-        me = obj;
-        break;
+        const activePlayer = new wow.CGActivePlayer(base.guid);
+        me = activePlayer;
+        return activePlayer;
       case wow.ObjectTypeID.GameObject:
-        obj = new wow.CGGameObject(base.guid);
-        break;
+        return new wow.CGGameObject(base.guid);
       case wow.ObjectTypeID.Dynamic:
-        obj = new wow.CGDynamicObject(base.guid);
-        break;
+        return new wow.CGDynamicObject(base.guid);
+      default:
+        // obj number 10 and 11 appearing, whut this? Help me Tovarish Ian.
+       // console.warn(`Unknown object type: ${base.type}`);
+        return null;
     }
-    return obj;
   }
 }
 
 export default new ObjectManager();
+

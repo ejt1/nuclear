@@ -36,21 +36,17 @@ class Common {
     });
   }
 
+  static waitForFacing() {
+    return new bt.Action(() => {
+      if (!me.target || !me.isFacing(me.target)) {
+        return bt.Status.Success;
+      }
+      return bt.Status.Failure;
+    });
+  }
+
   static validTarget(u) {
-    if (!u) {
-      return false;
-    }
-
-    const targetUnit = objMgr.getObjectByGuid(u)
-    if (targetUnit === null) {
-      return false;
-    }
-
-    if (targetUnit.deadOrGhost) {
-      return false;
-    }
-
-    if (targetUnit && !me.canAttack(targetUnit)) {
+    if (!u || !objMgr.findObject(u) || u.deadOrGhost || !me.canAttack(u)) {
       return false;
     }
 

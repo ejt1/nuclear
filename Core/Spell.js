@@ -52,7 +52,7 @@ class Spell {
           target = me.target;
         }
 
-        if (target instanceof wow.Guid && !objMgr.getObjectByGuid(target)) {
+        if (target instanceof wow.Guid && !objMgr.findObject(target)) {
           return bt.Status.Failure;
         }
 
@@ -72,7 +72,7 @@ class Spell {
       }),
 
       new bt.Action(() => {
-        console.log(`Cast ${id}`);
+        console.info(`Cast ${id}`);
         return bt.Status.Success;
       }),
     );
@@ -86,7 +86,7 @@ class Spell {
           target = me.target;
         }
 
-        if (target instanceof wow.Guid && !objMgr.getObjectByGuid(target)) {
+        if (target instanceof wow.Guid && !objMgr.findObject(target)) {
           return bt.Status.Failure;
         }
 
@@ -107,7 +107,7 @@ class Spell {
       }),
 
       new bt.Action(() => {
-        console.log(`Cast ${name}`);
+        console.info(`Cast ${name}`);
         return bt.Status.Success;
       }),
     );
@@ -123,6 +123,10 @@ class Spell {
     }
 
     if (!spell.isUsable) {
+      return false;
+    }
+
+    if (spell.castTime > 0 && me.isMoving()) {
       return false;
     }
 
@@ -153,6 +157,26 @@ class Spell {
       return true;
     }
     return false;
+  }
+
+  static apply(spellNameOrId, unit, expire = false) {
+    return new bt.Sequence(
+      new bt.Action(() => {
+        if (!unit) {
+          console.info("No unit passed to function Apply");
+          return bt.Status.Failure;
+        }
+
+        const aura = unit.getAura(spellNameOrId);
+        if (aura && ((aura.remaining > 2000 || aura.remaining === 0) || expire)) {
+          return bt.Status.Failure;
+        }
+
+        Spell._currentTarget = unit;
+        return bt.Status.Success;
+      }),
+      typeof spellNameOrId === 'number' ? Spell.castById(spellNameOrId) : Spell.castByName(spellNameOrId)
+    );
   }
 }
 
