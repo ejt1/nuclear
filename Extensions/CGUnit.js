@@ -1,6 +1,7 @@
 import objMgr, {me} from "../Core/ObjectManager";
 import Common from "../Core/Common";
 import {MovementFlags, UnitFlags} from "../Enums/Flags";
+import Guid from "./Guid";
 
 Object.defineProperties(wow.CGUnit.prototype, {
   hasAuraByMe: {
@@ -199,6 +200,100 @@ Object.defineProperties(wow.CGUnit.prototype, {
       return (this.unitFlags & UnitFlags.FLEEING) !== 0;
     }
   },
+
+  AngleToXY: {
+    /**
+     * Calculate the angle from one set of coordinates to another, taking into account the unit's facing direction.
+     * @param {number} x1 - The X coordinate of the starting point.
+     * @param {number} y1 - The Y coordinate of the starting point.
+     * @param {number} x2 - The X coordinate of the target point.
+     * @param {number} y2 - The Y coordinate of the target point.
+     * @returns {number} - The angle in degrees between the unit's facing direction and the target.
+     */
+    value: function (x1, y1, x2, y2) {
+      // Calculate the angle to the target
+      let angle = Math.atan2(y2 - y1, x2 - x1);
+
+      // Adjust for the unit's facing direction
+      let diff = angle - this.facing;
+
+      // Normalize the difference to be within 0 to 2 * PI
+      if (diff < 0) {
+        diff += Math.PI * 2;
+      }
+
+      // Adjust the difference to be between -PI and PI
+      if (diff > Math.PI) {
+        diff -= Math.PI * 2;
+      }
+
+      // Return the difference in degrees
+      return this.radToDeg(diff);
+    }
+  },
+
+
+  AngleToPos: {
+    /**
+     * Calculate the angle between two positions, considering the unit's facing direction.
+     * @param {Vector3} from - The starting position {x, y, z}.
+     * @param {Vector3} to - The target position {x, y, z}.
+     * @returns {number} - The angle in degrees between the unit's facing direction and the target position.
+     */
+    value: function (from, to) {
+      return this.AngleToXY(from.x, from.y, to.x, to.y);
+    }
+  },
+
+  AngleTo: {
+    /**
+     * Calculate the angle between the unit's current position and another unit's position.
+     * @param {wow.CGUnit} target - The target unit.
+     * @returns {number} - The angle in degrees between the unit's facing direction and the target unit.
+     */
+    value: function (target) {
+      return this.AngleToPos(this.position, target.position);
+    }
+  },
+
+  IsFacing: {
+    /**
+     * Check if the unit is facing towards the target within a certain angle.
+     * @param {wow.CGUnit} target - The target unit.
+     * @param {number} [ang=90] - The acceptable angle in degrees for the facing check. Defaults to 90 degrees.
+     * @returns {boolean} - Returns true if the unit is facing the target within the specified angle.
+     */
+    value: function (target, ang = 90) {
+      if (!target) {
+        return false;
+      }
+
+      // Special case: if both units are the player, always return true
+      if (target === me && this === me) {
+        return true;
+      }
+
+      if (!(target instanceof wow.CGUnit) && target instanceof wow.Guid) {
+        target = objMgr.findObject(target);
+      }
+
+      const angle = this.AngleTo(target);
+
+      // Check if the absolute angle is within the specified range
+      return Math.abs(angle) < ang;
+    }
+  },
+
+  radToDeg: {
+    /**
+     * Convert radians to degrees.
+     * @param {number} radians - The angle in radians.
+     * @returns {number} - The angle in degrees.
+     */
+    value: function (radians) {
+      return radians * (180 / Math.PI);
+    }
+  }
 
 });
 

@@ -36,8 +36,8 @@ export class DeathKnightFrostBehavior extends Behavior {
 
   multiTargetRotation() {
     return new bt.Sequence(
+      spell.cast("Frostscythe", on => me, ret => me.unitsAroundCount(8) >= 2 && me.target && me.isWithinMeleeRange(me.target) && me.isFacing(me.target)),
       spell.cast("Death and Decay", ret => me.unitsAroundCount(10) >= 2 && me.target && me.isWithinMeleeRange(me.target) && me.hasAura(51271)), // Pillar of Frost
-      spell.cast("Frostscythe", me, ret => true),
     );
   }
 
