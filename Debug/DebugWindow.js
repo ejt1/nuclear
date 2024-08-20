@@ -48,6 +48,11 @@ class DebugWindow {
         this.renderSpecializationInfo();
         imgui.endTabItem();
       }
+
+      if (imgui.beginTabItem("Party Info")) {
+        this.renderPartyInfo();
+        imgui.endTabItem();
+      }
     }
 
     imgui.end();
@@ -262,6 +267,46 @@ class DebugWindow {
           imgui.tableNextColumn();
 
           const val = wow.SpecializationInfo[prop];
+          if (typeof val === 'object') {
+            imgui.text(JSON.stringify(val, (k, v) => {
+              if (typeof v === 'bigint') {
+                return '0x' + v.toString(16);
+              }
+              return v;
+            }, 2));
+          } else {
+            imgui.text(`${val}`);
+          }
+        } catch (e) {
+          imgui.text(e.message);
+        }
+      });
+      imgui.endTable();
+    }
+  }
+
+  renderPartyInfo() {
+    const party = wow.Party.currentParty;
+    if (!party){
+      imgui.text("No party");
+      return;
+    }
+    if (imgui.beginTable("Party##data", 2)) {
+      imgui.tableSetupColumn('key', imgui.TableColumnFlags.WidthFixed);
+      imgui.tableSetupColumn('value', imgui.TableColumnFlags.WidthStretch);
+      imgui.tableHeadersRow();
+
+      Object.getOwnPropertyNames(Object.getPrototypeOf(party)).forEach(prop => {
+        try {
+          if (prop === 'constructor') {
+            return;
+          }
+          imgui.tableNextRow();
+          imgui.tableNextColumn();
+          imgui.text(prop);
+          imgui.tableNextColumn();
+
+          const val = party[prop];
           if (typeof val === 'object') {
             imgui.text(JSON.stringify(val, (k, v) => {
               if (typeof v === 'bigint') {
