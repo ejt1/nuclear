@@ -21,7 +21,8 @@ export class DeathKnightFrostBehavior extends Behavior {
         spell.cast("Death Strike", ret => me.pctHealth < 65 && me.power > 35),
         spell.cast("Pillar of Frost", on => me, ret => me.target && me.isWithinMeleeRange(me.target)),
         spell.cast("Remorseless Winter", on => me, ret => me.target && me.isWithinMeleeRange(me.target)),
-        this.multiTargetRotation(),
+        spell.cast("Frostscythe", on => me, ret => me.unitsAroundCount(8) >= 2 && me.target && me.isWithinMeleeRange(me.target) && me.isFacing(me.target)),
+        spell.cast("Death and Decay", ret => me.unitsAroundCount(10) >= 2 && me.target && me.isWithinMeleeRange(me.target) && me.hasAura(51271)), // Pillar of Frost
         spell.cast("Rune Strike", ret => me.hasAura(51124)), // killing machine aura
         spell.cast("Howling Blast", ret => me.hasAura(59052)), // Rime aura
         spell.cast("Chains of Ice", ret => {
@@ -34,13 +35,5 @@ export class DeathKnightFrostBehavior extends Behavior {
       )
     );
   }
-
-  multiTargetRotation() {
-    return new bt.Sequence(
-      spell.cast("Frostscythe", on => me, ret => me.unitsAroundCount(8) >= 2 && me.target && me.isWithinMeleeRange(me.target) && me.isFacing(me.target)),
-      spell.cast("Death and Decay", ret => me.unitsAroundCount(10) >= 2 && me.target && me.isWithinMeleeRange(me.target) && me.hasAura(51271)), // Pillar of Frost
-    );
-  }
-
 
 }

@@ -35,6 +35,8 @@ class ObjectManager {
     // Invalidate 'me' if removed
     if (me && (!currentManager.localGuid || !newObjects.has(currentManager.localGuid.hash))) {
       me = null;
+    } else if (me) {
+      this.tickLogging();
     }
 
     // Add new objects
@@ -94,7 +96,16 @@ class ObjectManager {
         return null;
     }
   }
+
+  /**
+   * This is purely for debug, can be removed once bootstrapping is complete
+   */
+  tickLogging() {
+    //console.log(me.currentParty);
+  }
 }
+
+
 
 export default new ObjectManager();
 

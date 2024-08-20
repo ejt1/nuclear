@@ -34,19 +34,6 @@ export class DemonhunterHavocBehavior extends Behavior {
     );
   }
 
-  logHelper() {
-    console.info('blah' + me.unitFlags + ' ' + me.unitFlags2 + ' ' + me.unitFlags3)
-    return true;
-  }
-
-  doBurstToggle() {
-    if (imgui.isKeyPressed(imgui.Key.F11, false)) {
-      console.info('BURST TOGGLE');
-      return true;
-    }
-    return false;
-  }
-
   checkMetamorphosis() {
     if (me.target) {
       const bladeDance = wow.SpellBook.getSpellByName("Blade Dance");
