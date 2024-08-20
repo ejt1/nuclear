@@ -293,6 +293,30 @@ Object.defineProperties(wow.CGUnit.prototype, {
     value: function (radians) {
       return radians * (180 / Math.PI);
     }
+  },
+
+  inMyGroup: {
+    /**
+     * Check if the unit is in the player's current group.
+     * @returns {boolean} - Returns true if the unit is in the player's group, false otherwise.
+     */
+    value: function () {
+      const group = wow.Party.currentParty; // Get the current party
+
+      // If the player is not in a group, return false
+      if (!group || group.numMembers === 0) {
+        return false;
+      }
+
+      // Iterate through the group members
+      for (const member of group.members) {
+        if (member.guid.equals(this.guid)) {
+          return true; // The unit is in the group
+        }
+      }
+
+      return false; // The unit is not in the group
+    }
   }
 
 });
