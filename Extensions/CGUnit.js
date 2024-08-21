@@ -316,11 +316,11 @@ Object.defineProperties(wow.CGUnit.prototype, {
   withinLineOfSight: {
     /**
      * Check if the target unit is within line of sight.
-     * @param {wow.CGUnit} target - The target unit to check line of sight against.
+     * @param {wow.CGUnit | wow.Guid} target - The target unit to check line of sight against.
      * @returns {boolean} - Returns true if the target is within line of sight, false otherwise.
      */
     value: function (target) {
-      target = target.toUnit();
+      target = target instanceof wow.CGUnit ? target : target.toUnit();
       if (!target || !target.position || !this.position) {
         return false;
       }
