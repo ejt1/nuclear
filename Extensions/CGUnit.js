@@ -1,6 +1,6 @@
 import objMgr, {me} from "../Core/ObjectManager";
 import Common from "../Core/Common";
-import {MovementFlags, UnitFlags} from "../Enums/Flags";
+import {MovementFlags, TraceLineHitFlags, UnitFlags} from "../Enums/Flags";
 import Guid from "./Guid";
 
 Object.defineProperties(wow.CGUnit.prototype, {
@@ -316,6 +316,30 @@ Object.defineProperties(wow.CGUnit.prototype, {
       }
 
       return false; // The unit is not in the group
+    }
+  },
+
+  withinLineOfSight: {
+    /**
+     * Check if the target unit is within line of sight.
+     * @param {wow.CGUnit} target - The target unit to check line of sight against.
+     * @returns {boolean} - Returns true if the target is within line of sight, false otherwise.
+     */
+    value: function (target) {
+      target = objMgr.findObject(target);
+      if (!target || !target.position || !this.position) {
+        return false;
+      }
+      // Adjust positions to account for the display height of both units
+      const from = { ...this.position, z: this.position.z + this.displayHeight };
+      const to = { ...target.position, z: target.position.z + target.displayHeight };
+
+      // Define the flags for line of sight checking
+      const flags = TraceLineHitFlags.SPELL_LINE_OF_SIGHT;
+
+      // Perform the trace line check
+      const traceResult = wow.World.traceLine(from, to, flags);
+      return !traceResult.hit; // If traceResult.hit is false, we have line of sight
     }
   }
 
