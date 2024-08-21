@@ -1,6 +1,6 @@
 import objMgr, {me} from "../Core/ObjectManager";
 import Common from "../Core/Common";
-import {MovementFlags, UnitFlags} from "../Enums/Flags";
+import {MovementFlags, TraceLineHitFlags, UnitFlags} from "../Enums/Flags";
 import Guid from "./Guid";
 
 Object.defineProperties(wow.CGUnit.prototype, {
@@ -90,12 +90,6 @@ Object.defineProperties(wow.CGUnit.prototype, {
         return this.auras.find(aura => aura.name === nameOrId) || null;
       }
       return null;
-    }
-  },
-
-  targetUnit: {
-    get: function () {
-      return objMgr.findObject(this.target);
     }
   },
 
@@ -292,6 +286,54 @@ Object.defineProperties(wow.CGUnit.prototype, {
      */
     value: function (radians) {
       return radians * (180 / Math.PI);
+    }
+  },
+
+  inMyGroup: {
+    /**
+     * Check if the unit is in the player's current group.
+     * @returns {boolean} - Returns true if the unit is in the player's group, false otherwise.
+     */
+    value: function () {
+      const group = wow.Party.currentParty; // Get the current party
+
+      // If the player is not in a group, return false
+      if (!group || group.numMembers === 0) {
+        return false;
+      }
+
+      // Iterate through the group members
+      for (const member of group.members) {
+        if (member.guid.equals(this.guid)) {
+          return true; // The unit is in the group
+        }
+      }
+
+      return false; // The unit is not in the group
+    }
+  },
+
+  withinLineOfSight: {
+    /**
+     * Check if the target unit is within line of sight.
+     * @param {wow.CGUnit | wow.Guid} target - The target unit to check line of sight against.
+     * @returns {boolean} - Returns true if the target is within line of sight, false otherwise.
+     */
+    value: function (target) {
+      target = target instanceof wow.CGUnit ? target : target.toUnit();
+      if (!target || !target.position || !this.position) {
+        return false;
+      }
+      // Adjust positions to account for the display height of both units
+      const from = { ...this.position, z: this.position.z + this.displayHeight };
+      const to = { ...target.position, z: target.position.z + target.displayHeight };
+
+      // Define the flags for line of sight checking
+      const flags = TraceLineHitFlags.SPELL_LINE_OF_SIGHT;
+
+      // Perform the trace line check
+      const traceResult = wow.World.traceLine(from, to, flags);
+      return !traceResult.hit; // If traceResult.hit is false, we have line of sight
     }
   }
 

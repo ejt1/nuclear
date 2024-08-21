@@ -1,5 +1,6 @@
 import * as bt from './BehaviorTree';
 import objMgr, { me } from './ObjectManager';
+import {losExclude} from "../Data/Exclusions";
 
 class Spell {
   /** @type {wow.CGUnit | wow.Guid | null} */
@@ -52,7 +53,7 @@ class Spell {
           target = me.target;
         }
 
-        if (target instanceof wow.Guid && !objMgr.findObject(target)) {
+        if (target instanceof wow.Guid && !target.toUnit()) {
           return bt.Status.Failure;
         }
 
@@ -86,7 +87,7 @@ class Spell {
           target = me.target;
         }
 
-        if (target instanceof wow.Guid && !objMgr.findObject(target)) {
+        if (target instanceof wow.Guid && !target.toUnit()) {
           return bt.Status.Failure;
         }
 
@@ -130,12 +131,16 @@ class Spell {
       return false;
     }
 
+    if ((target instanceof wow.CGUnit && !losExclude[target.entryId]) && !me.withinLineOfSight(target)) {
+      return false;
+    }
+
     const cooldown = spell.cooldown;
     if (!cooldown.ready || !cooldown.active) {
       return false;
     }
 
-    if (target instanceof wow.CGUnit && !spell.inRange(target)) {
+    if ((target instanceof wow.CGUnit && !losExclude[target.entryId]) && !spell.inRange(target)) {
       return false;
     }
 

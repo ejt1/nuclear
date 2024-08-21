@@ -1,8 +1,8 @@
 import perfMgr from "../Debug/PerfMgr";
 
 /**
-* @type {wow.CGActivePlayer}
-*/
+ * @type {wow.CGActivePlayer}
+ */
 export let me = null;
 
 class ObjectManager {
@@ -81,20 +81,20 @@ class ObjectManager {
       case wow.ObjectTypeID.Player:
         return new wow.CGPlayer(base.guid);
       case wow.ObjectTypeID.ActivePlayer:
-        const activePlayer = new wow.CGActivePlayer(base.guid);
-        me = activePlayer;
-        return activePlayer;
+        me = new wow.CGActivePlayer(base.guid);
+        return me;
       case wow.ObjectTypeID.GameObject:
         return new wow.CGGameObject(base.guid);
       case wow.ObjectTypeID.Dynamic:
         return new wow.CGDynamicObject(base.guid);
       default:
         // obj number 10 and 11 appearing, whut this? Help me Tovarish Ian.
-       // console.warn(`Unknown object type: ${base.type}`);
+        // console.warn(`Unknown object type: ${base.type}`);
         return null;
     }
   }
 }
+
 
 export default new ObjectManager();
 
