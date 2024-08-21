@@ -1,5 +1,6 @@
 import * as bt from './BehaviorTree';
 import objMgr, { me } from './ObjectManager';
+import {losExclude} from "../Data/Exclusions";
 
 class Spell {
   /** @type {wow.CGUnit | wow.Guid | null} */
@@ -130,7 +131,7 @@ class Spell {
       return false;
     }
 
-    if (!me.withinLineOfSight(target)) {
+    if (target instanceof wow.CGUnit && !losExclude[target.entryId] && !me.withinLineOfSight(target)) {
       return false;
     }
 
@@ -139,7 +140,7 @@ class Spell {
       return false;
     }
 
-    if (target instanceof wow.CGUnit && !spell.inRange(target)) {
+    if (target instanceof wow.CGUnit && !losExclude[target.entryId] && !spell.inRange(target)) {
       return false;
     }
 
