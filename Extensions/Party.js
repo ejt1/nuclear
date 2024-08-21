@@ -28,7 +28,7 @@ Object.defineProperties(wow.Party.prototype, {
       } else {
         // Iterate over party members and retrieve valid units within range
         for (const m of group.members) {
-          const unit = objMgr.findObject(m.guid);
+          const unit = m.toUnit();
           if (unit && me.distanceTo(unit) <= 40) {
             // Check if the unit is alive and not a ghost
             const valid = !unit.deadOrGhost;
@@ -60,8 +60,8 @@ Object.defineProperties(wow.Party.prototype, {
       // Iterate through the party members
       for (const m of group.members) {
         // Check if the member has a Tank role
-        if ((m.combatRole & GroupRole.Tank) !== 0) {
-          const unit = objMgr.findObject(m.guid); // Retrieve object by GUID
+        if (m.isTank()) {
+          const unit = m.guid.toUnit(); // Retrieve object by GUID
 
           // Check if the unit is within 40 yards and is valid
           if (unit && me.distanceTo(unit) <= 40) {

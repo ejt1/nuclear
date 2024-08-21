@@ -52,7 +52,7 @@ class Spell {
           target = me.target;
         }
 
-        if (target instanceof wow.Guid && !objMgr.findObject(target)) {
+        if (target instanceof wow.Guid && !target.toUnit()) {
           return bt.Status.Failure;
         }
 
@@ -86,7 +86,7 @@ class Spell {
           target = me.target;
         }
 
-        if (target instanceof wow.Guid && !objMgr.findObject(target)) {
+        if (target instanceof wow.Guid && !target.toUnit()) {
           return bt.Status.Failure;
         }
 
@@ -127,6 +127,10 @@ class Spell {
     }
 
     if (spell.castTime > 0 && me.isMoving()) {
+      return false;
+    }
+
+    if (!me.withinLineOfSight(target)) {
       return false;
     }
 

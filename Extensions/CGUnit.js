@@ -93,12 +93,6 @@ Object.defineProperties(wow.CGUnit.prototype, {
     }
   },
 
-  targetUnit: {
-    get: function () {
-      return objMgr.findObject(this.target);
-    }
-  },
-
   unitsAround: {
     /**
      * Get an array of units within a specified distance of this unit.
@@ -326,7 +320,7 @@ Object.defineProperties(wow.CGUnit.prototype, {
      * @returns {boolean} - Returns true if the target is within line of sight, false otherwise.
      */
     value: function (target) {
-      target = objMgr.findObject(target);
+      target = target.toUnit();
       if (!target || !target.position || !this.position) {
         return false;
       }
