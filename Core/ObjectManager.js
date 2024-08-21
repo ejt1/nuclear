@@ -1,8 +1,8 @@
 import perfMgr from "../Debug/PerfMgr";
 
 /**
-* @type {wow.CGActivePlayer}
-*/
+ * @type {wow.CGActivePlayer}
+ */
 export let me = null;
 
 class ObjectManager {
@@ -83,16 +83,15 @@ class ObjectManager {
       case wow.ObjectTypeID.Player:
         return new wow.CGPlayer(base.guid);
       case wow.ObjectTypeID.ActivePlayer:
-        const activePlayer = new wow.CGActivePlayer(base.guid);
-        me = activePlayer;
-        return activePlayer;
+        me = new wow.CGActivePlayer(base.guid);
+        return me;
       case wow.ObjectTypeID.GameObject:
         return new wow.CGGameObject(base.guid);
       case wow.ObjectTypeID.Dynamic:
         return new wow.CGDynamicObject(base.guid);
       default:
         // obj number 10 and 11 appearing, whut this? Help me Tovarish Ian.
-       // console.warn(`Unknown object type: ${base.type}`);
+        // console.warn(`Unknown object type: ${base.type}`);
         return null;
     }
   }
@@ -101,10 +100,15 @@ class ObjectManager {
    * This is purely for debug, can be removed once bootstrapping is complete
    */
   tickLogging() {
-    //console.log(me.currentParty);
+    // if (me && me.target) {
+    //   if (me.withinLineOfSight(me.target)) {
+    //     console.log('within line of sight');
+    //   } else {
+    //     console.log('not within line of sight');
+    //   }
+    // }
   }
 }
-
 
 
 export default new ObjectManager();
