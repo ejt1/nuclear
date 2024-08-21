@@ -131,7 +131,7 @@ class Spell {
       return false;
     }
 
-    if (target instanceof wow.CGUnit && !losExclude[target.entryId] && !me.withinLineOfSight(target)) {
+    if ((target instanceof wow.CGUnit && !losExclude[target.entryId]) && !me.withinLineOfSight(target)) {
       return false;
     }
 
@@ -140,7 +140,7 @@ class Spell {
       return false;
     }
 
-    if (target instanceof wow.CGUnit && !losExclude[target.entryId] && !spell.inRange(target)) {
+    if ((target instanceof wow.CGUnit && !losExclude[target.entryId]) && !spell.inRange(target)) {
       return false;
     }
 
