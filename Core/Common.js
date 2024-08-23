@@ -1,5 +1,6 @@
 import * as bt from './BehaviorTree'
 import objMgr, { me } from './ObjectManager'
+import CGUnit from "../Extensions/CGUnit";
 
 class Common {
   static waitForCastOrChannel() {
@@ -46,7 +47,12 @@ class Common {
   }
 
   static validTarget(u) {
-    if (!u || !objMgr.findObject(u) || u.deadOrGhost || !me.canAttack(u)) {
+    if (!u) {
+      return false;
+    }
+    const target = (u instanceof wow.CGUnit) ? u : u.toUnit();
+
+    if (!target|| target.deadOrGhost || !me.canAttack(u)) {
       return false;
     }
 
