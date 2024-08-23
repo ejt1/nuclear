@@ -84,12 +84,12 @@ Object.defineProperties(wow.CGUnit.prototype, {
     value: function (nameOrId) {
       if (typeof nameOrId === 'number') {
         // Get by spell ID
-        return this.auras.find(aura => aura.spellId === nameOrId) || null;
+        return this.auras.find(aura => aura.spellId === nameOrId) || undefined;
       } else if (typeof nameOrId === 'string') {
         // Get by aura name
-        return this.auras.find(aura => aura.name === nameOrId) || null;
+        return this.auras.find(aura => aura.name === nameOrId) || undefined;
       }
-      return null;
+      return undefined;
     }
   },
 
