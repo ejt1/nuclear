@@ -23,8 +23,8 @@ export class DeathKnightFrostBehavior extends Behavior {
         spell.cast("Pillar of Frost", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
         spell.cast("Abomination Limb", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
         spell.cast("Remorseless Winter", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
-        spell.cast("Frostscythe", on => me, ret => me.unitsAroundCount(8) >= 2 && me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && me.isFacing(me.targetUnit) && !me.hasAura(51124)),
-        spell.cast("Death and Decay", ret => me.unitsAroundCount(10) >= 2 && me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && me.hasAura(51271)), // Pillar of Frost
+        spell.cast("Frostscythe", on => me, ret => me.getUnitsAroundCount(8) >= 2 && me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && me.isFacing(me.targetUnit) && !me.hasAura(51124)),
+        spell.cast("Death and Decay", ret => me.getUnitsAroundCount(10) >= 2 && me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && me.hasAura(51271)), // Pillar of Frost
         spell.cast("Rune Strike", ret => me.hasAura(51124)), // killing machine aura
         spell.cast("Howling Blast", ret => me.hasAura(59052)), // Rime aura
         spell.cast("Chains of Ice", on => me.targetUnit, ret => {

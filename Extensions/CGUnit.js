@@ -114,7 +114,7 @@ Object.defineProperties(wow.CGUnit.prototype, {
     }
   },
 
-  unitsAround: {
+  getUnitsAround: {
     /**
      * Get an array of units within a specified distance of this unit.
      * @param {number} distance - The maximum distance to check for nearby units.
@@ -136,14 +136,14 @@ Object.defineProperties(wow.CGUnit.prototype, {
     }
   },
 
-  unitsAroundCount: {
+  getUnitsAroundCount: {
     /**
      * Get the count of units within a specified distance of this unit.
      * @param {number} [distance=5] - The maximum distance to check for nearby units. Defaults to 5 if not specified.
      * @returns {number} - The count of units within the specified distance.
      */
     value: function (distance = 5) {
-      return this.unitsAround(distance).length;
+      return this.getUnitsAround(distance).length;
     }
   },
 

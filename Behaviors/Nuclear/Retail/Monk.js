@@ -12,7 +12,7 @@ export class MonkMistweaverBehavior extends Behavior {
   version = wow.GameVersion.Retail;
 
   findClosestUnit(range) {
-    const units = me.unitsAround(range);
+    const units = me.getUnitsAround(range);
     return units.length ? units.reduce((closest, unit) =>
       me.distanceTo(unit) < me.distanceTo(closest) ? unit : closest
     ) : null;
@@ -28,7 +28,7 @@ export class MonkMistweaverBehavior extends Behavior {
       new bt.Selector(
         common.waitForCastOrChannel(),
         common.waitForTarget(),
-        spell.cast("Spinning Crane Kick", ret => me.unitsAroundCount() > 1),
+        spell.cast("Spinning Crane Kick", ret => me.getUnitsAroundCount() > 1),
         spell.cast("Rising Sun Kick"),
         spell.cast("Blackout Kick"),
         spell.cast("Tiger Palm")
