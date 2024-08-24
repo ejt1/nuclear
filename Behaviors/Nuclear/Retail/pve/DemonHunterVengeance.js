@@ -77,7 +77,7 @@ export class DemonhunterVengeanceBehavior extends Behavior {
   }
 
   useReaversGlaive() {
-    return spell.cast("Reaver's Glaive", on => me.target, ret => {
+    return spell.cast("Reaver's Glaive", on => me.targetUnit, ret => {
       const thrillOfTheFight = me.getAura(auras.thrillOfTheFight);
       const artOfTheGlaive = me.getAura(auras.artOfTheGlaive);
 
@@ -88,7 +88,7 @@ export class DemonhunterVengeanceBehavior extends Behavior {
   }
 
   useFracture() {
-    return spell.cast("Fracture", on => me.target, ret => {
+    return spell.cast("Fracture", on => me.targetUnit, ret => {
       const artOfTheGlaive = me.getAura(auras.artOfTheGlaive);
       const soulFragments = me.getAura(auras.soulFragments);
       const currentFragments = soulFragments ? soulFragments.count : 0;
@@ -115,19 +115,19 @@ export class DemonhunterVengeanceBehavior extends Behavior {
 
 
   useSigilOfSpite() {
-    return spell.cast("Sigil of Spite", on => me.target, ret => true); // Use on cooldown
+    return spell.cast("Sigil of Spite", on => me.targetUnit, ret => true); // Use on cooldown
   }
 
   useFieryBrand() {
-    return spell.cast("Fiery Brand", on => me.target, ret => true); // Use Fiery Brand
+    return spell.cast("Fiery Brand", on => me.targetUnit, ret => true); // Use Fiery Brand
   }
 
   useSoulCarver() {
-    return spell.cast("Soul Carver", on => me.target, ret => true); // Use on cooldown
+    return spell.cast("Soul Carver", on => me.targetUnit, ret => true); // Use on cooldown
   }
 
   useFelDevastation(isAoE = false) {
-    return spell.cast("Fel Devastation", on => me.target, ret => {
+    return spell.cast("Fel Devastation", on => me.targetUnit, ret => {
       const thrillOfTheFight = me.getAura(auras.thrillOfTheFight);
       const fieryBrand = me.getAura(auras.fieryBrand);
       return thrillOfTheFight && fieryBrand && fieryBrand.remains > 2;
@@ -135,7 +135,7 @@ export class DemonhunterVengeanceBehavior extends Behavior {
   }
 
   useSigilOfFlame() {
-    return spell.cast("Sigil of Flame", on => me.target, ret => {
+    return spell.cast("Sigil of Flame", on => me.targetUnit, ret => {
       const sigilOfFlameAura = me.getAura("Sigil of Flame");
       return !sigilOfFlameAura || sigilOfFlameAura.charges === 1;
     });
@@ -146,7 +146,7 @@ export class DemonhunterVengeanceBehavior extends Behavior {
   }
 
   useFelblade(isAoE = false) {
-    return spell.cast("Felblade", on => me.target, ret => {
+    return spell.cast("Felblade", on => me.targetUnit, ret => {
       const soulFragments = me.getAura(auras.soulFragments);
       return soulFragments && soulFragments.count >= (isAoE ? 4 : 5) && me.getResource("Fury") < 40;
     });
@@ -160,7 +160,7 @@ export class DemonhunterVengeanceBehavior extends Behavior {
   }
 
   useFractureForFragments(isAoE = false) {
-    return spell.cast("Fracture", on => me.target, ret => {
+    return spell.cast("Fracture", on => me.targetUnit, ret => {
       const soulFragments = me.getAura(auras.soulFragments);
       const currentFragments = soulFragments ? soulFragments.count : 0;
       const neededFragments = isAoE ? 4 : 5;
@@ -173,7 +173,7 @@ export class DemonhunterVengeanceBehavior extends Behavior {
 
 
   useThrowGlaive() {
-    return spell.cast("Throw Glaive", on => me.target, ret => {
+    return spell.cast("Throw Glaive", on => me.targetUnit, ret => {
       return me.distanceTo(me.target) > 10;
     });
   }

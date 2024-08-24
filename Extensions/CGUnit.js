@@ -4,6 +4,27 @@ import {MovementFlags, TraceLineHitFlags, UnitFlags} from "../Enums/Flags";
 import Guid from "./Guid";
 
 Object.defineProperties(wow.CGUnit.prototype, {
+  targetUnit: {
+    /**
+     * Get the resolved target as a CGUnit object, converting from Guid if necessary.
+     * @returns {wow.CGUnit | undefined} - The corresponding CGUnit object or undefined if not found.
+     */
+    get: function () {
+      // If the target is already a CGUnit, return it directly
+      if (this.target instanceof wow.CGUnit) {
+        return this.target;
+      }
+
+      // If the target is a Guid, attempt to resolve it to a CGUnit
+      if (this.target instanceof wow.Guid) {
+        return objMgr.findObject(this.target);
+      }
+
+      // If neither, return undefined
+      return undefined;
+    }
+  },
+
   hasAuraByMe: {
     /**
      * Check if the unit has an aura by name or spell ID, cast by the player.

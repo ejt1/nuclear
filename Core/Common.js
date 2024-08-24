@@ -30,7 +30,7 @@ class Common {
 
   static waitForTarget() {
     return new bt.Action(() => {
-      if (!me.target || !Common.validTarget(me.target)) {
+      if (!me.targetUnit || !Common.validTarget(me.targetUnit)) {
         return bt.Status.Success;
       }
       return bt.Status.Failure;
@@ -39,7 +39,7 @@ class Common {
 
   static waitForFacing() {
     return new bt.Action(() => {
-      if (!me.target || !me.isFacing(me.target)) {
+      if (!me.targetUnit || !me.isFacing(me.targetUnit)) {
         return bt.Status.Success;
       }
       return bt.Status.Failure;
@@ -47,12 +47,7 @@ class Common {
   }
 
   static validTarget(u) {
-    if (!u) {
-      return false;
-    }
-    const target = (u instanceof wow.CGUnit) ? u : u.toUnit();
-
-    if (!target|| target.deadOrGhost || !me.canAttack(u)) {
+    if (!u|| u.deadOrGhost || !me.canAttack(u)) {
       return false;
     }
 
