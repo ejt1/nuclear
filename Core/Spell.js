@@ -115,7 +115,7 @@ class Spell {
   }
 
   static canCast(spell, target) {
-    if (!spell) {
+    if (!spell || spell.name === undefined) {
       return false;
     }
 
@@ -131,6 +131,7 @@ class Spell {
     if (!spell.isUsable) {
       return false;
     }
+
 
     if (spell.castTime > 0 && me.isMoving()) {
       return false;
@@ -172,7 +173,7 @@ class Spell {
           return bt.Status.Failure;
         }
 
-        const aura = unit.getAura(spellNameOrId);
+        const aura = unit.getAuraByMe(spellNameOrId);
         if (aura && ((aura.remaining > 2000 || aura.remaining === 0) || expire)) {
           return bt.Status.Failure;
         }
@@ -212,15 +213,7 @@ class Spell {
       ? new wow.Spell(spellNameOrId)
       : wow.SpellBook.getSpellByName(spellNameOrId);
 
-    if (!spell) {
-      console.error(`Spell ${spellNameOrId} not found`);
-      return { charges: 0, maxCharges: 0 };
-    }
-
-    return {
-      charges: spell.charges.charges,
-      maxCharges: spell.charges.maxCharges
-    };
+    return spell.charges.charges
   }
 }
 
