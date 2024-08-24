@@ -123,6 +123,11 @@ class Spell {
       return false;
     }
 
+    const cooldown = spell.cooldown;
+    if (!cooldown.ready || !cooldown.active) {
+      return false;
+    }
+
     if (!spell.isUsable) {
       return false;
     }
@@ -132,11 +137,6 @@ class Spell {
     }
 
     if ((target instanceof wow.CGUnit && !losExclude[target.entryId]) && !me.withinLineOfSight(target)) {
-      return false;
-    }
-
-    const cooldown = spell.cooldown;
-    if (!cooldown.ready || !cooldown.active) {
       return false;
     }
 

@@ -7,10 +7,10 @@ import { me } from "../../../../Core/ObjectManager";
 
 const auras = {
   soulFragments: 203981,
-  thrillOfTheFight: 347746,
-  fieryBrand: 207744,
-  artOfTheGlaive: 444661, // Added Art of the Glaive aura ID
-};
+  thrillOfTheFight: 999999, // Replace with actual aura ID
+  artOfTheGlaive: 999998, // Replace with actual aura ID
+  fieryBrand: 204021,
+}
 
 export class DemonhunterVengeanceBehavior extends Behavior {
   context = BehaviorContext.Any;
@@ -21,160 +21,121 @@ export class DemonhunterVengeanceBehavior extends Behavior {
     return new bt.Decorator(
       ret => !spell.isGlobalCooldown(),
       new bt.Selector(
-        common.waitForCastOrChannel(),
         common.waitForTarget(),
+        common.waitForCastOrChannel(),
         common.waitForFacing(),
-        this.dynamicRotation(),
+        this.reaversGlaive(),
+        this.fractureBuff(),
+        this.soulCleaveBuff(),
+        this.theHunt(),
+        this.sigilOfSpite(),
+        this.fieryBrand(),
+        this.soulCarver(),
+        this.felDevastation(),
+        this.sigilOfFlame(),
+        this.immolationAura(),
+        this.felblade(),
+        this.spiritBomb(),
+        this.fracture(),
+        this.soulCleave(),
+        this.throwGlaive()
       )
     );
   }
 
-  dynamicRotation() {
-    return new bt.Selector(
-      ret => me.getUnitsAround(8).length > 1 ? this.aoeRotation() : this.singleTargetRotation()
-    );
-  }
-
-  singleTargetRotation() {
-    return new bt.Sequence(
-      this.useReaversGlaive(),
-      this.useFracture(),
-      this.useSoulCleave(),
-      this.useSigilOfSpite(),
-      this.useFieryBrand(),
-      this.useSoulCarver(),
-      this.useFelDevastation(),
-      this.useSigilOfFlame(),
-      this.immolationAura(),
-      this.useFelblade(),
-      this.spiritBomb(),
-      this.useFractureForFragments(),
-      this.useSoulCleave(),
-      this.useFelblade(),
-      this.useFracture(),
-      this.useThrowGlaive()
-    );
-  }
-
-  aoeRotation() {
-    return new bt.Sequence(
-      this.useReaversGlaive(),
-      this.useFracture(),
-      this.useSoulCleave(),
-      this.useSoulCarver(),
-      this.useSigilOfSpite(),
-      this.useSigilOfFlame(),
-      this.useFelDevastation(true),
-      this.immolationAura(),
-      this.useFelblade(true),
-      this.spiritBomb(true),
-      this.useFractureForFragments(true),
-      this.useSoulCleave(),
-      this.useFracture(),
-      this.useFelblade(),
-      this.useThrowGlaive()
-    );
-  }
-
-  useReaversGlaive() {
-    return spell.cast("Reaver's Glaive", on => me.targetUnit, ret => {
+   reaversGlaive() {
+    return spell.cast("Reaver's Glaive", on => me.target, ret => {
       const thrillOfTheFight = me.getAura(auras.thrillOfTheFight);
-      const artOfTheGlaive = me.getAura(auras.artOfTheGlaive);
-
-      // Cast Reaver's Glaive when Thrill of the Fight has less than 3 seconds remaining or isn't active
-      // or when Art of the Glaive is active (Reaver's Glaive will be cast automatically)
-      return (thrillOfTheFight && thrillOfTheFight.remaining < 3000) || !thrillOfTheFight || artOfTheGlaive;
+      return !thrillOfTheFight || thrillOfTheFight.remainingTime <= 3000;
     });
   }
 
-  useFracture() {
-    return spell.cast("Fracture", on => me.targetUnit, ret => {
-      const artOfTheGlaive = me.getAura(auras.artOfTheGlaive);
+   fractureBuff() {
+    return spell.cast("Demon's Bite", on => me.target, ret =>
+      me.hasAura(auras.artOfTheGlaive)
+    );
+  }
+
+   soulCleaveBuff() {
+    return spell.cast("Chaos Strike", on => me.target, ret =>
+      me.hasAura(auras.artOfTheGlaive)
+    );
+  }
+
+   theHunt() {
+    return spell.cast("The Hunt", on => me.target);
+  }
+
+   sigilOfSpite() {
+    return spell.cast("Sigil of Spite", on => me);
+  }
+
+   fieryBrand() {
+    return spell.cast("Fiery Brand", on => me.target, ret => {
+      // Logic for using Fiery Brand defensively or when close to 2 stacks
+      // You might need to track stacks separately if not provided by the game
+      return true; // Placeholder, implement actual logic
+    });
+  }
+
+   soulCarver() {
+    return spell.cast("Soul Carver", on => me.target);
+  }
+
+   felDevastation() {
+    return spell.cast("Fel Devastation", on => me, ret => {
+      const thrillOfTheFight = me.hasAura(auras.thrillOfTheFight);
+      const fieryBrand = me.targetUnit.getAura(auras.fieryBrand);
+      return thrillOfTheFight && fieryBrand && fieryBrand.remainingTime > 2000;
+    });
+  }
+
+   sigilOfFlame() {
+    return spell.cast("Sigil of Flame", on => me, ret => {
+      // Implement logic to avoid overcapping Fury
+      return true; // Placeholder, implement actual logic
+    });
+  }
+
+   immolationAura() {
+    return spell.cast("Immolation Aura", on => me);
+  }
+
+   felblade() {
+    return spell.cast("Felblade", on => me.target, ret => {
       const soulFragments = me.getAura(auras.soulFragments);
-      const currentFragments = soulFragments ? soulFragments.count : 0;
-
-      // If Art of the Glaive is active, prioritize Fracture to generate more Soul Fragments.
-      // Check if casting Fracture will help reach the needed Soul Fragments for a Spirit Bomb or enhanced Soul Cleave.
-      const neededFragments = artOfTheGlaive ? 4 : 5; // Depending on the context, we may need 4 or 5 fragments.
-      const canGenerate = (neededFragments - currentFragments) <= 2;
-
-      // Cast Fracture if it can help generate the necessary Soul Fragments or if Art of the Glaive is active.
-      return canGenerate || artOfTheGlaive;
+      const unitsAroundCount = me.getUnitsAroundCount(8);
+      return (unitsAroundCount === 1 && soulFragments && soulFragments.stacks >= 5 && me.fury < 40) ||
+             (unitsAroundCount > 1 && soulFragments && soulFragments.stacks >= 4 && me.fury < 40);
     });
   }
 
-
-  useSoulCleave() {
-    return spell.cast("Soul Cleave", on => me, ret => {
-      const artOfTheGlaive = me.getAura(auras.artOfTheGlaive);
-
-      // Use Soul Cleave with priority if Art of the Glaive is active, to benefit from the enhancement
-      return artOfTheGlaive;
-    });
-  }
-
-
-  useSigilOfSpite() {
-    return spell.cast("Sigil of Spite", on => me.targetUnit, ret => true); // Use on cooldown
-  }
-
-  useFieryBrand() {
-    return spell.cast("Fiery Brand", on => me.targetUnit, ret => true); // Use Fiery Brand
-  }
-
-  useSoulCarver() {
-    return spell.cast("Soul Carver", on => me.targetUnit, ret => true); // Use on cooldown
-  }
-
-  useFelDevastation(isAoE = false) {
-    return spell.cast("Fel Devastation", on => me.targetUnit, ret => {
-      const thrillOfTheFight = me.getAura(auras.thrillOfTheFight);
-      const fieryBrand = me.getAura(auras.fieryBrand);
-      return thrillOfTheFight && fieryBrand && fieryBrand.remains > 2;
-    });
-  }
-
-  useSigilOfFlame() {
-    return spell.cast("Sigil of Flame", on => me.targetUnit, ret => {
-      const sigilOfFlameAura = me.getAura("Sigil of Flame");
-      return !sigilOfFlameAura || sigilOfFlameAura.charges === 1;
-    });
-  }
-
-  immolationAura() {
-    return spell.cast("Immolation Aura", on => me, ret => true); // Use on cooldown
-  }
-
-  useFelblade(isAoE = false) {
-    return spell.cast("Felblade", on => me.targetUnit, ret => {
-      const soulFragments = me.getAura(auras.soulFragments);
-      return soulFragments && soulFragments.count >= (isAoE ? 4 : 5) && me.getResource("Fury") < 40;
-    });
-  }
-
-  spiritBomb(isAoE = false) {
+   spiritBomb() {
     return spell.cast("Spirit Bomb", on => me, ret => {
-      const soulFragments = me.getAura(auras.soulFragments);
-      return soulFragments && soulFragments.count >= (isAoE ? 4 : 5);
+      const fragments = me.getAura(auras.soulFragments);
+      const unitsAroundCount = me.getUnitsAroundCount(8);
+      return fragments && (
+        (unitsAroundCount === 1 && fragments.stacks >= 5) ||
+        (unitsAroundCount > 1 && fragments.stacks >= 4)
+      );
     });
   }
 
-  useFractureForFragments(isAoE = false) {
-    return spell.cast("Fracture", on => me.targetUnit, ret => {
+   fracture() {
+    return spell.cast("Demon's bite", on => me.target, ret => {
       const soulFragments = me.getAura(auras.soulFragments);
-      const currentFragments = soulFragments ? soulFragments.count : 0;
-      const neededFragments = isAoE ? 4 : 5;
-      const canGenerate = (neededFragments - currentFragments) <= 2;
-
-      // Ensure enough fragments for Art of the Glaive by checking if casting Fracture will help reach the threshold
-      return canGenerate;
+      return !soulFragments || soulFragments.stacks < 4;
     });
   }
 
-
-  useThrowGlaive() {
-    return spell.cast("Throw Glaive", on => me.targetUnit, ret => {
-      return me.distanceTo(me.target) > 10;
+   soulCleave() {
+    return spell.cast(228477, on => me.target, ret => {
+      const soulFragments = me.getAura(auras.soulFragments);
+      return !soulFragments || soulFragments.stacks === 0;
     });
+  }
+
+   throwGlaive() {
+    return spell.cast("Throw Glaive", on => me.target);
   }
 }
