@@ -1,6 +1,6 @@
 import * as bt from './BehaviorTree';
 import objMgr, { me } from './ObjectManager';
-import {losExclude} from "../Data/Exclusions";
+import { losExclude } from "../Data/Exclusions";
 
 class Spell {
   /** @type {wow.CGUnit | wow.Guid | null} */
@@ -50,10 +50,10 @@ class Spell {
       new bt.Action(() => {
         let target = Spell._currentTarget;
         if (!target) {
-          target = me.target;
+          target = me.targetUnit;
         }
 
-        if (target instanceof wow.Guid && !target.toUnit()) {
+        if (!(target instanceof wow.CGUnit)) {
           return bt.Status.Failure;
         }
 
@@ -84,7 +84,7 @@ class Spell {
       new bt.Action(() => {
         let target = Spell._currentTarget;
         if (!target) {
-          target = me.target;
+          target = me.targetUnit;
         }
 
         if (target instanceof wow.Guid && !target.toUnit()) {
@@ -115,7 +115,7 @@ class Spell {
   }
 
   static canCast(spell, target) {
-    if (!spell) {
+    if (!spell || spell.name === undefined) {
       return false;
     }
 
@@ -123,20 +123,21 @@ class Spell {
       return false;
     }
 
+    const cooldown = spell.cooldown;
+    if (!cooldown.ready || !cooldown.active) {
+      return false;
+    }
+
     if (!spell.isUsable) {
       return false;
     }
+
 
     if (spell.castTime > 0 && me.isMoving()) {
       return false;
     }
 
     if ((target instanceof wow.CGUnit && !losExclude[target.entryId]) && !me.withinLineOfSight(target)) {
-      return false;
-    }
-
-    const cooldown = spell.cooldown;
-    if (!cooldown.ready || !cooldown.active) {
       return false;
     }
 
@@ -164,7 +165,7 @@ class Spell {
     return false;
   }
 
-  static apply(spellNameOrId, unit, expire = false) {
+  static applyAura(spellNameOrId, unit, expire = false) {
     return new bt.Sequence(
       new bt.Action(() => {
         if (!unit) {
@@ -172,7 +173,7 @@ class Spell {
           return bt.Status.Failure;
         }
 
-        const aura = unit.getAura(spellNameOrId);
+        const aura = unit.getAuraByMe(spellNameOrId);
         if (aura && ((aura.remaining > 2000 || aura.remaining === 0) || expire)) {
           return bt.Status.Failure;
         }
@@ -182,6 +183,37 @@ class Spell {
       }),
       typeof spellNameOrId === 'number' ? Spell.castById(spellNameOrId) : Spell.castByName(spellNameOrId)
     );
+  }
+
+  /**
+   * Retrieves the cooldown information of a spell.
+   * @param {number | string} spellNameOrId - The name or ID of the spell.
+   * @returns {object | null} - The cooldown information or null if the spell is not found.
+   */
+  static getCooldown(spellNameOrId) {
+    const spell = typeof spellNameOrId === 'number'
+      ? new wow.Spell(spellNameOrId)
+      : wow.SpellBook.getSpellByName(spellNameOrId);
+
+    if (!spell) {
+      console.error(`Spell ${spellNameOrId} not found`);
+      return null;
+    }
+
+    return spell.cooldown;
+  }
+
+  /**
+   * Retrieves the current and maximum charges of a spell.
+   * @param {number | string} spellNameOrId - The name or ID of the spell.
+   * @returns {{ charges: number, maxCharges: number }} - An object containing the current and maximum charges.
+   */
+  static getCharges(spellNameOrId) {
+    const spell = typeof spellNameOrId === 'number'
+      ? new wow.Spell(spellNameOrId)
+      : wow.SpellBook.getSpellByName(spellNameOrId);
+
+    return spell.charges.charges
   }
 }
 

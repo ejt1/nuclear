@@ -1,9 +1,30 @@
-import objMgr, {me} from "../Core/ObjectManager";
+import objMgr, { me } from "../Core/ObjectManager";
 import Common from "../Core/Common";
-import {MovementFlags, TraceLineHitFlags, UnitFlags} from "../Enums/Flags";
+import { MovementFlags, TraceLineHitFlags, UnitFlags } from "../Enums/Flags";
 import Guid from "./Guid";
 
 Object.defineProperties(wow.CGUnit.prototype, {
+  targetUnit: {
+    /**
+     * Get the resolved target as a CGUnit object, converting from Guid if necessary.
+     * @returns {wow.CGUnit | undefined} - The corresponding CGUnit object or undefined if not found.
+     */
+    get: function () {
+      // If the target is already a CGUnit, return it directly
+      if (this.target instanceof wow.CGUnit) {
+        return this.target;
+      }
+
+      // If the target is a Guid, attempt to resolve it to a CGUnit
+      if (this.target instanceof wow.Guid) {
+        return objMgr.findObject(this.target);
+      }
+
+      // If neither, return undefined
+      return undefined;
+    }
+  },
+
   hasAuraByMe: {
     /**
      * Check if the unit has an aura by name or spell ID, cast by the player.
@@ -93,7 +114,45 @@ Object.defineProperties(wow.CGUnit.prototype, {
     }
   },
 
-  unitsAround: {
+  getAuraByMe: {
+    /**
+     * Get the aura by name or spell ID, cast by the player.
+     * @param {string|number} nameOrId - The name of the aura or the spell ID.
+     * @returns {wow.AuraData|undefined} - Returns the aura if found and cast by the player, or undefined if not found.
+     */
+    value: function (nameOrId) {
+      // Retrieve the aura using the getAura method
+      const aura = this.auras.find((aura) => {
+        const isMatch =
+          (typeof nameOrId === 'number' && aura.spellId === nameOrId) ||
+          (typeof nameOrId === 'string' && aura.name === nameOrId);
+
+        // Check if the aura was cast by the player
+        return isMatch && aura.casterGuid && me.guid && me.guid.equals(aura.casterGuid);
+      });
+
+      // Return the aura if found, otherwise return undefined
+      return aura || undefined;
+    }
+  },
+
+
+  getAuraStacks: {
+    /**
+     * Get the number of stacks for the specified aura by name or spell ID.
+     * @param {string|number} nameOrId - The name of the aura or the spell ID.
+     * @returns {number} - Returns the stack count if the aura is found, otherwise returns 0.
+     */
+    value: function (nameOrId) {
+      // Get the aura using the existing getAura method
+      const aura = this.getAuraByMe(nameOrId);
+
+      // If the aura is found, return the stack count, otherwise return 0
+      return aura ? aura.stacks || 0 : 0;
+    }
+  },
+
+  getUnitsAround: {
     /**
      * Get an array of units within a specified distance of this unit.
      * @param {number} distance - The maximum distance to check for nearby units.
@@ -115,14 +174,14 @@ Object.defineProperties(wow.CGUnit.prototype, {
     }
   },
 
-  unitsAroundCount: {
+  getUnitsAroundCount: {
     /**
      * Get the count of units within a specified distance of this unit.
      * @param {number} [distance=5] - The maximum distance to check for nearby units. Defaults to 5 if not specified.
      * @returns {number} - The count of units within the specified distance.
      */
     value: function (distance = 5) {
-      return this.unitsAround(distance).length;
+      return this.getUnitsAround(distance).length;
     }
   },
 

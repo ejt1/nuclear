@@ -1,9 +1,20 @@
-import {Behavior, BehaviorContext} from "../../../../Core/Behavior";
+import { Behavior, BehaviorContext } from "../../../../Core/Behavior";
 import * as bt from '../../../../Core/BehaviorTree';
 import Specialization from '../../../../Enums/Specialization';
 import common from '../../../../Core/Common';
 import spell from "../../../../Core/Spell";
-import {me} from "../../../../Core/ObjectManager";
+import { me } from "../../../../Core/ObjectManager";
+
+const auras = {
+  darkSuccor: 101568,
+  killingMachine: 51124,
+  rime: 59052,
+  coldHeart: 281209,
+  pillarOfFrost: 51271,
+  deathAndDecay: 188290,
+  icyTalons: 194879,
+  unleashedFrenzy: 376907,
+}
 
 export class DeathKnightFrostBehavior extends Behavior {
   context = BehaviorContext.Any; // PVP ?
@@ -17,36 +28,41 @@ export class DeathKnightFrostBehavior extends Behavior {
         common.waitForTarget(),
         common.waitForCastOrChannel(),
         common.waitForFacing(),
-        spell.cast("Death Strike", ret => me.pctHealth < 95 && me.hasAura(101568)), // dark succor
+        spell.cast("Death Strike", ret => me.pctHealth < 95 && me.hasAura(auras.darkSuccor)),
         spell.cast("Death Strike", ret => me.pctHealth < 65 && me.power > 35),
         spell.cast("Frost Strike", ret => this.checkFrostStrikeKeepUpBuffs()),
-        spell.cast("Pillar of Frost", on => me, ret => me.target && me.isWithinMeleeRange(me.target)),
-        spell.cast("Abomination Limb", on => me, ret => me.target && me.isWithinMeleeRange(me.target)),
-        spell.cast("Remorseless Winter", on => me, ret => me.target && me.isWithinMeleeRange(me.target)),
-        spell.cast("Frostscythe", on => me, ret => me.unitsAroundCount(8) >= 2 && me.target && me.isWithinMeleeRange(me.target) && me.isFacing(me.target) && !me.hasAura(51124)),
-        spell.cast("Death and Decay", ret => me.unitsAroundCount(10) >= 2 && me.target && me.isWithinMeleeRange(me.target) && me.hasAura(51271)), // Pillar of Frost
-        spell.cast("Rune Strike", ret => me.hasAura(51124)), // killing machine aura
-        spell.cast("Howling Blast", ret => me.hasAura(59052)), // Rime aura
-        spell.cast("Chains of Ice", on => me.target, ret => {
-          const coldHeart = me.getAura(281209);
+        spell.cast("Pillar of Frost", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+        spell.cast("Abomination Limb", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+        spell.cast("Remorseless Winter", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+        this.multiTargetRotation(),
+        spell.cast("Rune Strike", ret => me.hasAura(auras.killingMachine)),
+        spell.cast("Howling Blast", ret => me.hasAura(auras.rime)),
+        spell.cast("Chains of Ice", on => me.targetUnit, ret => {
+          const coldHeart = me.getAura(auras.coldHeart);
           return !!(coldHeart && coldHeart.stacks === 20);
         }),
         spell.cast("Frost Strike", ret => me.power > 45),
         spell.cast("Rune Strike"),
-        spell.cast("Horn of Winter", ret => me.target && me.power < 70),
-       )
+        spell.cast("Horn of Winter", ret => me.targetUnit && me.power < 70),
+      )
+    );
+  }
+
+  multiTargetRotation() {
+    return new bt.Selector(
+      spell.cast("Frostscythe", on => me, ret => me.getUnitsAroundCount(8) >= 2 && me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && me.isFacing(me.targetUnit) && !me.hasAura(auras.killingMachine)),
+      spell.cast("Death and Decay", ret => me.getUnitsAroundCount(10) >= 2 && me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && !me.hasAura(auras.deathAndDecay))
     );
   }
 
   checkFrostStrikeKeepUpBuffs() {
-    if (me.target && me.isWithinMeleeRange(me.target)) {
-      const icyTalons = me.getAura(194879); // Icy Talons
-      const unleashedFrenzy = me.getAura(376907) // Unleashed frenzy
+    if (me.targetUnit && me.isWithinMeleeRange(me.targetUnit)) {
+      const icyTalons = me.getAura(auras.icyTalons);
+      const unleashedFrenzy = me.getAura(auras.unleashedFrenzy);
       if (icyTalons && unleashedFrenzy && icyTalons.remaining > 2000 && unleashedFrenzy.remaining > 2000) {
         return false;
       }
     }
     return true;
-  };
-
+  }
 }
