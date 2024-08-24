@@ -50,10 +50,10 @@ class Spell {
       new bt.Action(() => {
         let target = Spell._currentTarget;
         if (!target) {
-          target = me.target;
+          target = me.targetUnit;
         }
 
-        if (target instanceof wow.Guid && !target.toUnit()) {
+        if (!(target instanceof wow.CGUnit)) {
           return bt.Status.Failure;
         }
 
@@ -84,7 +84,7 @@ class Spell {
       new bt.Action(() => {
         let target = Spell._currentTarget;
         if (!target) {
-          target = me.target;
+          target = me.targetUnit;
         }
 
         if (target instanceof wow.Guid && !target.toUnit()) {
