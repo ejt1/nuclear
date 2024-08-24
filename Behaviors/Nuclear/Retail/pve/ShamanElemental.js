@@ -11,6 +11,7 @@ const auras = {
   magmaChamber: 381933,
   surgeOfPower: 285514,
   flameShock: 188389,
+  lavaSurge: 77762,
 }
 
 export class ShamanElementalBehavior extends Behavior {
@@ -25,7 +26,6 @@ export class ShamanElementalBehavior extends Behavior {
         common.waitForTarget(),
         common.waitForCastOrChannel(),
         common.waitForFacing(),
-        spell.cast("Flame Shock", on => this.getFlameShockTarget(), ret => this.getFlameShockTarget() !== undefined),
         spell.cast("Primordial Wave", on => me.target, ret => me.hasAura(auras.surgeOfPower)),
         spell.cast("Earth Shock", me.target, ret => me.power > 140 || me.hasAura(auras.masterOfTheElements)),
         spell.cast("Ancestral Swiftness", on => me),
@@ -33,7 +33,11 @@ export class ShamanElementalBehavior extends Behavior {
         spell.cast("Stormkeeper", on => me),
         spell.cast("Liquid Magma Totem", on => me.target, ret => me.targetUnit.getUnitsAroundCount(10) > 2),
         spell.cast("Lava Burst", on => me.target, ret => me.hasAura(auras.primordialWave) && me.power >= 47),
+        spell.cast("Flame Shock", on => this.getFlameShockTarget(), ret => this.getFlameShockTarget() !== undefined),
+        spell.cast("Earthquake", on => me.target, ret => me.targetUnit.getUnitsAroundCount(12) > 1),
+        spell.cast("Chain Lightning", on => me.target, ret => me.targetUnit.getUnitsAroundCount(12) > 1),
         spell.cast("Lightning Bolt", on => me.target),
+        spell.cast("Lava Burst", on => me.target, ret => me.hasAura(auras.lavaSurge) && me.isMoving()),
         spell.cast("Frost Shock", on => me.target, ret => me.isMoving())
       )
     );
