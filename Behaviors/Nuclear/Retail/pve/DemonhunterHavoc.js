@@ -16,19 +16,20 @@ export class DemonhunterHavocBehavior extends Behavior {
       new bt.Selector(
         common.waitForTarget(),
         common.waitForCastOrChannel(),
+        common.waitForFacing(),
         spell.cast("Blur", on => me, ret => me.pctHealth < 55),
         spell.cast("Darkness", on => me, ret => me.pctHealth < 35),
-        spell.cast("The Hunt", on => me, ret => !me.isRooted() && me.toUnit()?.pctHealth < 75),
+        spell.cast("The Hunt", on => me, ret => !me.isRooted() && me.pctHealth < 75),
         spell.cast("Throw Glaive", ret => me.power > 25 && me.targetUnit && !me.isWithinMeleeRange(me.targetUnit)),
-        spell.cast("Throw Glaive", ret => me.power > 25 && !me.toUnit()?.hasAuraByMe("Master of the Glaive")),
+        spell.cast("Throw Glaive", ret => me.power > 25 && !me.targetUnit?.hasAuraByMe("Master of the Glaive")),
         spell.cast("Eye Beam", ret => me.power > 49 && me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
-        spell.cast("Essence Break", ret => me.targetUnit && me.toUnit().pctHealth < 77),
+        spell.cast("Essence Break", ret => me.targetUnit && me.pctHealth < 77),
         spell.cast("Metamorphosis", ret => this.checkMetamorphosis()),
         spell.cast("Felblade"),
         spell.cast("Blade Dance", on => me, this.checkBladeDance()),
         spell.cast("Chaos Strike", ret => me.power > 50),
         spell.cast("Throw Glaive", ret => me.power > 25 && wow.SpellBook.getSpellByName("Throw Glaive")?.charges.charges > 1),
-        // spell.cast("Sigil of Flame", ret => me.power < 70),
+        spell.cast("Sigil of Flame", ret => me.power < 70),
         spell.cast("Arcane Torrent", on => me)
       )
     );
