@@ -86,7 +86,7 @@ export class DemonhunterVengeanceBehavior extends Behavior {
     return spell.cast("Fel Devastation", on => me, ret => {
       const thrillOfTheFight = me.hasAura(auras.thrillOfTheFight);
       const fieryBrand = me.targetUnit.getAura(auras.fieryBrand);
-      return thrillOfTheFight && fieryBrand && fieryBrand.remainingTime > 2000;
+      return fieryBrand && fieryBrand.remaining > 2000;
     });
   }
 
