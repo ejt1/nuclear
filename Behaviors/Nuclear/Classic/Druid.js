@@ -1,12 +1,12 @@
 import { Behavior, BehaviorContext } from '../../../Core/Behavior';
 import * as bt from '../../../Core/BehaviorTree';
-import Specialization from '../../../Core/Specialization';
+import Specialization from '../../../Enums/Specialization';
 import common from '../../../Core/Common';
 
-export class WarriorFuryBehavior extends Behavior {
+export class DruidRestoBehavior extends Behavior {
   context = BehaviorContext.Any;
   specialization = Specialization.Druid.Restoration;
-  flavor = wow.GameVersion.Classic;
+  version = wow.GameVersion.Classic;
 
   build() {
     return new bt.Selector(

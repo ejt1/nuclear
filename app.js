@@ -1,7 +1,9 @@
-import objMgr from './Core/ObjectManager';
+import objMgr, { me } from './Core/ObjectManager';
 import dbgWindow from './Debug/DebugWindow';
 import perfMgr from './Debug/PerfMgr';
 import nuclear from './nuclear'
+import extensions from './Extensions/Extensions';
+import data from './Data/Data';
 
 nuclear.initialize().then(() => {
   // our "main loop", called every tick
@@ -19,12 +21,3 @@ nuclear.initialize().then(() => {
   console.error(`${reason}`);
   console.error(`${reason.stack}`);
 });
-
-objMgr.tick();
-if (objMgr.me){
-  const me = objMgr.me;
-  const arcaneShot = wow.SpellBook.getSpellByName("Arcane Shot");
-  console.debug(`Arcane Shot? ${arcaneShot?.id}`);
-  const bloodThirst = wow.SpellBook.getSpellByName("Bloodthirst");
-  console.debug(`Bloodthirst? ${bloodThirst?.id}`);
-}

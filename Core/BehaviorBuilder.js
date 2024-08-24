@@ -1,5 +1,6 @@
-import { Behavior } from './Behavior';
-import Specialization from './Specialization';
+import { Behavior, BehaviorContext } from './Behavior';
+import Specialization from '../Enums/Specialization';
+import * as bt from './BehaviorTree';
 
 const kBehaviorPath = __rootDir + '/behaviors';
 
@@ -13,6 +14,23 @@ export default class BehaviorBuilder {
     await this.searchDir(kBehaviorPath, behaviors);
     console.log(`Found ${behaviors.length} behaviors`);
     return behaviors;
+  }
+
+  /**
+   *
+   * @param {Specialization} spec
+   * @param {BehaviorContext} context
+   */
+  build(spec, context) {
+    const root = new bt.Selector();
+    const behaviors = this.getComposites(spec, context);
+    console.debug(`Built ${behaviors.length} composites`);
+    behaviors.forEach(v => root.addChild(v.build()));
+    return root;
+  }
+
+  getComposites(spec, context){
+    return this.behaviors.filter(v => v.specialization == spec && ((v.context & context) == context));
   }
 
   async searchDir(path, behaviors) {
@@ -55,23 +73,24 @@ export default class BehaviorBuilder {
       console.error(`Behavior ${name} does not specify specialization`);
       return false;
     }
-    if (o.flavor === undefined) {
-      console.error(`Behavior ${name} does not specify game flavor`);
+    if (o.version === undefined) {
+      console.error(`Behavior ${name} does not specify game version`);
       return false;
     }
     if (o.specialization == Specialization.Invalid) {
       console.error(`${name} invalid specialization`);
       return false;
     }
-    if (o.flavor != wow.GameVersion) {
-      // current game flavor mismatch, ignore this behavior
+    if (o.version != wow.gameVersion) {
+      //console.debug(`${name}: ${o.version} does match game version ${wow.gameVersion}`)
+      // current game version mismatch, ignore this behavior
       return false;
     }
     if (!o.build || !(o.build instanceof Function)) {
       console.error(`${name} missing build() function`);
       return false;
     }
-    console.log(`${name} is for ${o.specialization}`);
+    //console.log(`${name} is for ${o.specialization}`);
     return true;
   }
 }

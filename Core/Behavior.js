@@ -1,4 +1,4 @@
-import Specialization from "./Specialization";
+import Specialization from "../Enums/Specialization";
 
 export const BehaviorContext = {
   None: 0,
@@ -11,5 +11,5 @@ BehaviorContext.Any = BehaviorContext.Normal | BehaviorContext.Instance | Behavi
 export class Behavior {
   context = BehaviorContext.None;
   specialization = Specialization.Invalid;
-  flavor = -1;
+  version = -1;
 }
