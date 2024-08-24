@@ -1,6 +1,6 @@
 import * as bt from './BehaviorTree';
 import objMgr, { me } from './ObjectManager';
-import {losExclude} from "../Data/Exclusions";
+import { losExclude } from "../Data/Exclusions";
 
 class Spell {
   /** @type {wow.CGUnit | wow.Guid | null} */
@@ -164,7 +164,7 @@ class Spell {
     return false;
   }
 
-  static apply(spellNameOrId, unit, expire = false) {
+  static applyAura(spellNameOrId, unit, expire = false) {
     return new bt.Sequence(
       new bt.Action(() => {
         if (!unit) {
@@ -182,6 +182,45 @@ class Spell {
       }),
       typeof spellNameOrId === 'number' ? Spell.castById(spellNameOrId) : Spell.castByName(spellNameOrId)
     );
+  }
+
+  /**
+   * Retrieves the cooldown information of a spell.
+   * @param {number | string} spellNameOrId - The name or ID of the spell.
+   * @returns {object | null} - The cooldown information or null if the spell is not found.
+   */
+  static getCooldown(spellNameOrId) {
+    const spell = typeof spellNameOrId === 'number'
+      ? new wow.Spell(spellNameOrId)
+      : wow.SpellBook.getSpellByName(spellNameOrId);
+
+    if (!spell) {
+      console.error(`Spell ${spellNameOrId} not found`);
+      return null;
+    }
+
+    return spell.cooldown;
+  }
+
+  /**
+   * Retrieves the current and maximum charges of a spell.
+   * @param {number | string} spellNameOrId - The name or ID of the spell.
+   * @returns {{ charges: number, maxCharges: number }} - An object containing the current and maximum charges.
+   */
+  static getCharges(spellNameOrId) {
+    const spell = typeof spellNameOrId === 'number'
+      ? new wow.Spell(spellNameOrId)
+      : wow.SpellBook.getSpellByName(spellNameOrId);
+
+    if (!spell) {
+      console.error(`Spell ${spellNameOrId} not found`);
+      return { charges: 0, maxCharges: 0 };
+    }
+
+    return {
+      charges: spell.charges.charges,
+      maxCharges: spell.charges.maxCharges
+    };
   }
 }
 
