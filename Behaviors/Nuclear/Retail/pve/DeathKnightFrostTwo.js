@@ -17,7 +17,7 @@ const auras = {
 }
 
 export class DeathKnightFrostBehavior extends Behavior {
-  name = "Frost DK PVE";
+  name = "FrostDKTwo";
   context = BehaviorContext.Any; // PVP ?
   specialization = Specialization.DeathKnight.Frost;
   version = wow.GameVersion.Retail;

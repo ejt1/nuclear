@@ -1,6 +1,7 @@
 import { Behavior, BehaviorContext } from './Behavior';
 import Specialization from '../Enums/Specialization';
 import * as bt from './BehaviorTree';
+import Settings from "./Settings";
 
 const kBehaviorPath = __rootDir + '/behaviors';
 
@@ -16,16 +17,30 @@ export default class BehaviorBuilder {
     return behaviors;
   }
 
-  /**
-   *
-   * @param {Specialization} spec
-   * @param {BehaviorContext} context
-   */
   build(spec, context) {
     const root = new bt.Selector();
-    const behaviors = this.getComposites(spec, context);
+    const selectedBehaviorName = Settings[`profile${spec}`];
+
+    let behaviors;
+
+    if (selectedBehaviorName) {
+      // Try to find the behavior by path if it was saved in settings
+      behaviors = this.behaviors.filter(v => v.name === selectedBehaviorName);
+      if (behaviors.length === 0) {
+        console.error(`Selected behavior "${selectedBehaviorName}" not found. Falling back to defaults.`);
+      } else {
+        console.info(`You are using "${selectedBehaviorName}"`);
+      }
+    }
+
+    if (!behaviors || behaviors.length === 0) {
+      // Fallback to default behavior selection based on specialization
+      behaviors = this.getComposites(spec, context);
+    }
+
     console.debug(`Built ${behaviors.length} composites`);
     behaviors.forEach(v => root.addChild(v.build()));
+
     return root;
   }
 
@@ -82,15 +97,12 @@ export default class BehaviorBuilder {
       return false;
     }
     if (o.version != wow.gameVersion) {
-      //console.debug(`${name}: ${o.version} does match game version ${wow.gameVersion}`)
-      // current game version mismatch, ignore this behavior
       return false;
     }
     if (!o.build || !(o.build instanceof Function)) {
       console.error(`${name} missing build() function`);
       return false;
     }
-    //console.log(`${name} is for ${o.specialization}`);
     return true;
   }
 }
