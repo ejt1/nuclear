@@ -67,9 +67,10 @@ class DebugWindow {
 
   renderProfileSettings() {
     const specializationId = wow.SpecializationInfo.activeSpecializationId;
+    const profileKey = `profile${specializationId}`;
 
     // Get the current profile for this specialization
-    const currentProfile = Settings.profile ? Settings.profile[specializationId] : "None selected";
+    const currentProfile = Settings[profileKey] ? Settings[profileKey] : "None selected";
 
     // Find all behaviors that match the current specialization
     const availableProfiles = this.findAvailableProfilesForSpecialization(specializationId);
@@ -81,7 +82,7 @@ class DebugWindow {
         const isSelected = currentProfile === profile;
         if (imgui.selectable(profile, isSelected)) {
           // Save the selected profile
-          Settings.profile = profile;
+          Settings[profileKey] = profile;
           nuclear.rebuild();
         }
         if (isSelected) {

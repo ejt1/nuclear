@@ -19,7 +19,7 @@ export default class BehaviorBuilder {
 
   build(spec, context) {
     const root = new bt.Selector();
-    const selectedBehaviorName = Settings.profile?.[spec];
+    const selectedBehaviorName = Settings[`profile${spec}`];
 
     let behaviors;
 
