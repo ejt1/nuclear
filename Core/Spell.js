@@ -123,6 +123,10 @@ class Spell {
       return false;
     }
 
+    if (!spell.isKnown) {
+      return false;
+    }
+
     const cooldown = spell.cooldown;
     if (!cooldown.ready || !cooldown.active) {
       return false;
