@@ -66,12 +66,10 @@ const Settings = new Proxy(settings, {
     // Ensure character object exists
     if (!settings.Character[playerKey]) {
       settings.Character[playerKey] = {};
-      console.debug(`Created character-specific settings for player: ${playerKey}`);
     }
 
     // Set the value at the last level for the player
     settings.Character[playerKey][key] = value;
-    console.debug(`Set value for key: ${key} to ${value} for player: ${playerKey}`);
 
     // Save the updated settings to the file
     saveSettings();
