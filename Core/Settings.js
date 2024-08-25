@@ -11,14 +11,12 @@ const settingsPath = `${__dataDir}/settings.json`;
 // Function to load settings from the file
 function loadSettings() {
   try {
-    console.info(`Loading settings from: ${settingsPath}`);
 
     // Check if the settings.json file exists
     try {
       fs.access(settingsPath, fs.constants.F_OK);
       const data = fs.readFile(settingsPath, 'utf-8');
       settings = JSON.parse(data);
-      console.info('Settings loaded:', JSON.stringify(settings));
     } catch (error) {
       console.warn('Settings file not found, creating a new one.');
       // If the file doesn't exist, create it with the default settings
