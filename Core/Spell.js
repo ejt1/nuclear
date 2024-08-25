@@ -136,7 +136,6 @@ class Spell {
       return false;
     }
 
-
     if (spell.castTime > 0 && me.isMoving()) {
       return false;
     }
@@ -273,6 +272,15 @@ class Spell {
       : wow.SpellBook.getSpellByName(spellNameOrId);
 
     return spell.charges.charges
+  }
+
+  static getSpell(spellNameOrId) {
+    if (typeof spellNameOrId === 'number') {
+      return new wow.Spell(spellNameOrId);
+    } else if (typeof spellNameOrId === 'string') {
+      return wow.SpellBook.getSpellByName(spellNameOrId);
+    }
+    throw new Error("Invalid argument type for getSpell method");
   }
 }
 
