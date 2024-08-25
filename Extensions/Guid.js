@@ -23,14 +23,23 @@ Object.defineProperties(wow.Guid.prototype, {
       // Return undefined if not found or not a CGUnit
       return undefined;
     }
+  },
+  isNull: {
+    /**
+     * Check if the GUID is null (both low and high parts are zero).
+     * @returns {boolean} - True if the GUID is null, otherwise false.
+     */
+    get: function () {
+      return this.low == 0 && this.high == 0;
+    }
   }
 });
 
-wow.Guid.prototype.toString = function() {
+wow.Guid.prototype.toString = function () {
   return `${this.low.toString(16)}:${this.high.toString(16)} (${this.hash.toString(16)})`;
 };
 
-wow.Guid.prototype.toJSON = function() {
+wow.Guid.prototype.toJSON = function () {
   return this.toString();
 };
 
