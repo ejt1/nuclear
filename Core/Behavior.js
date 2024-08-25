@@ -9,6 +9,7 @@ export const BehaviorContext = {
 BehaviorContext.Any = BehaviorContext.Normal | BehaviorContext.Instance | BehaviorContext.BattleGround
 
 export class Behavior {
+  name = "defaultName";
   context = BehaviorContext.None;
   specialization = Specialization.Invalid;
   version = -1;

@@ -13,6 +13,7 @@ const auras = {
 }
 
 export class DemonhunterVengeanceBehavior extends Behavior {
+  name = "Demon Hunter Vengeance"
   context = BehaviorContext.Any;
   specialization = Specialization.DemonHunter.Vengeance;
   version = wow.GameVersion.Retail;
