@@ -188,7 +188,7 @@ class Spell {
     );
   }
 
-  static interrupt(spellNameOrId) {
+  static interrupt(spellNameOrId, interruptPlayersOnly = false) {
     return new bt.Sequence(
       new bt.Action(() => {
         let spell;
@@ -213,6 +213,10 @@ class Spell {
             continue;
           }
 
+          if (interruptPlayersOnly && !target.isPlayer()) {
+            continue;
+          }
+
           if (!spell.inRange(target)) {
             continue;
           }
@@ -232,7 +236,7 @@ class Spell {
           const castPctRemain = (castRemains / castTime) * 100;
 
           if (castPctRemain <= 50) {
-            if (spell.cast(target)) {
+            if (target.isInterruptible && spell.cast(target)) {
               return bt.Status.Success;
             }
           }
