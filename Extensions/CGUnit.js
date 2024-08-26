@@ -1,6 +1,6 @@
-import objMgr, { me } from "../Core/ObjectManager";
+import objMgr, {me} from "../Core/ObjectManager";
 import Common from "../Core/Common";
-import { MovementFlags, TraceLineHitFlags, UnitFlags } from "../Enums/Flags";
+import {MovementFlags, TraceLineHitFlags, UnitFlags} from "../Enums/Flags";
 import Guid from "./Guid";
 
 Object.defineProperties(wow.CGUnit.prototype, {
@@ -22,6 +22,17 @@ Object.defineProperties(wow.CGUnit.prototype, {
 
       // If neither, return undefined
       return undefined;
+    }
+  },
+
+  isPlayer: {
+    /**
+     * Check if the unit is player or active player
+     * @returns {boolean} - Returns true if the unit is a player or active player.
+     */
+    value: function () {
+      // Check if `this.type` is either 6 (player) or 7 (active player)
+      return this.type === wow.ObjectTypeID.Player || this.type === wow.ObjectTypeID.ActivePlayer;
     }
   },
 
@@ -384,8 +395,8 @@ Object.defineProperties(wow.CGUnit.prototype, {
         return false;
       }
       // Adjust positions to account for the display height of both units
-      const from = { ...this.position, z: this.position.z + this.displayHeight };
-      const to = { ...target.position, z: target.position.z + target.displayHeight };
+      const from = {...this.position, z: this.position.z + this.displayHeight};
+      const to = {...target.position, z: target.position.z + target.displayHeight};
 
       // Define the flags for line of sight checking
       const flags = TraceLineHitFlags.SPELL_LINE_OF_SIGHT;
