@@ -25,8 +25,10 @@ export class PriestDiscipline extends Behavior {
       new bt.Selector(
         common.waitForCastOrChannel(),
         this.applyAtonement(),
-        this.applyOffensiveDoTs(),
         this.healRotation(),
+        common.waitForTarget(),
+        common.waitForFacing(),
+        this.applyOffensiveDoTs(),
         this.damageRotation(),
       )
     );
