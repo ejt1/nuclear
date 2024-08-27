@@ -4,6 +4,7 @@ import perfMgr from './Debug/PerfMgr';
 import nuclear from './nuclear';
 import extensions from './Extensions/Extensions';
 import data from './Data/Data';
+import targeting from './Targeting/Targeting';
 
 let pauseCore = false
 nuclear.initialize().then(() => {
