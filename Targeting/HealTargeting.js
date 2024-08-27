@@ -21,16 +21,24 @@ class HealTargeting extends Targeting {
   }
 
   /**
-   * Returns the top priority target in the priority list, or undefined if no targets exist.
+   * Returns the top priority target in the priority list, sorted by the lowest healthPct.
+   * Targets with healthPct > 0 are filtered out. Returns undefined if no valid targets exist.
    * @returns {Object | undefined} - The top priority target or undefined if the list is empty.
    */
   getPriorityTarget() {
     if (this.priorityList.length > 0) {
-      return this.priorityList[0].unit;
+      // Filter out targets with healthPct greater than 0
+      const validTargets = this.priorityList.filter(entry => entry.unit.pctHealth > 0);
+
+      // Sort valid targets by healthPct in ascending order
+      validTargets.sort((a, b) => a.unit.pctHealth - b.unit.pctHealth);
+
+      // Return the unit with the lowest healthPct, or undefined if no valid targets exist
+      return validTargets.length > 0 ? validTargets[0].unit : undefined;
     }
+
     return undefined;
   }
-
 
   update() {
     super.update();

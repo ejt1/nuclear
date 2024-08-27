@@ -56,17 +56,17 @@ export class PriestDiscipline extends Behavior {
       new bt.Decorator(
         ret => HEAL.getPriorityTarget() && HEAL.getPriorityTarget().pctHealth < 35, // TODO IMPLEMENT UH OH  phase
         new bt.Selector(
-          spell.cast("Power Word: Radiance", on => HEAL.getPriorityTarget().pctHealth < 35),
+          spell.cast("Power Word: Radiance", on => HEAL.getPriorityTarget(), ret => HEAL.getPriorityTarget().pctHealth < 35),
         )
       ),
       // Sustained Healing Phase
       new bt.Decorator(
         ret => HEAL.getPriorityTarget() && HEAL.getPriorityTarget().pctHealth >= 0,
         new bt.Selector(
-          spell.cast("Power Word: Radiance", on => HEAL.getPriorityTarget().pctHealth < 35),
-          spell.cast("Flash Heal", on => HEAL.getPriorityTarget(), ret => HEAL.getPriorityTarget().pctHealth < 60),
+          spell.cast("Power Word: Radiance", on => HEAL.getPriorityTarget(), ret => HEAL.getPriorityTarget().pctHealth < 35),
+          spell.cast("Flash Heal", on => HEAL.getPriorityTarget(), ret => HEAL.getPriorityTarget().pctHealth < 80),
           spell.cast("Power Word: Shield", on => HEAL.getPriorityTarget(), ret => HEAL.getPriorityTarget().pctHealth <= 90 && !HEAL.getPriorityTarget()?.hasAura(auras.powerWordShield) && !HEAL.getPriorityTarget().hasAura(auras.atonement)), spell.cast("Flash Heal", on => HEAL.getPriorityTarget(), ret => HEAL.getPriorityTarget().pctHealth < 90),
-          spell.cast("Penance", on => HEAL.getPriorityTarget(), ret => HEAL.getPriorityTarget().pctHealth < 70)
+          spell.cast("Penance", on => HEAL.getPriorityTarget(), ret => HEAL.getPriorityTarget().pctHealth < 90)
         )
       )
     );
