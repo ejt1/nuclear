@@ -1,7 +1,6 @@
 class Targeting {
   constructor() {
     this.targets = [];
-    this.healTargets = [];
   }
 
   // Factory method to create a new instance, following similar behavior to Lua's setmetatable pattern
@@ -27,7 +26,6 @@ class Targeting {
   // Resets the targets and heal targets lists
   reset() {
     this.targets = [];
-    this.healTargets = [];
   }
 
   // Collects targets (to be overridden by subclasses)

@@ -2,7 +2,6 @@ import { Behavior, BehaviorContext } from './Behavior';
 import Specialization from '../Enums/Specialization';
 import * as bt from './BehaviorTree';
 import Settings from "./Settings";
-import {currentBehaviorTypes} from "../nuclear";
 
 const kBehaviorPath = __rootDir + '/behaviors';
 
@@ -38,10 +37,6 @@ export default class BehaviorBuilder {
       // Fallback to default behavior selection based on specialization
       behaviors = this.getComposites(spec, context);
     }
-
-    currentBehaviorTypes.length = 0;  // Clear the array
-    currentBehaviorTypes.push(...behaviors.map(v => v.behaviorType));
-    console.log('Collected behavior types:', currentBehaviorTypes);
 
     console.debug(`Built ${behaviors.length} composites`);
     behaviors.forEach(v => root.addChild(v.build()));

@@ -1,11 +1,9 @@
 import Targeting from './Targeting'; // Assuming Targeting is our base class
-import { currentBehaviorTypes, rootBehavior } from "../nuclear";
 import { me } from "../Core/ObjectManager";
 import { UnitFlags } from "../Enums/Flags";
 import ClassType from "../Enums/Specialization";
-import { BehaviorType } from "../Core/Behavior";
 
-class Heal extends Targeting {
+class HealTargeting extends Targeting {
   constructor() {
     super();
     this.priorityList = []; // Treating this as an array consistently
@@ -28,16 +26,8 @@ class Heal extends Targeting {
    */
   getPriorityTarget() {
     if (this.priorityList.length > 0) {
-      // Iterate through the priority list to log index, unsafeName, and priority
-      this.priorityList.forEach((entry, index) => {
-        console.log(`Index: ${index}, Unsafe Name: ${entry.unit.unsafeName}, Priority: ${entry.priority}`);
-      });
-
-      // Return the top priority target
       return this.priorityList[0].unit;
     }
-
-    // Return undefined if no targets exist
     return undefined;
   }
 
@@ -60,8 +50,6 @@ class Heal extends Targeting {
   }
 
   wantToRun() {
-    // Ensures Heal behavior should run based on conditions
-    if (!rootBehavior || !currentBehaviorTypes.some(type => type === BehaviorType.Heal)) return false;
     if (!me) return false;
     if (me.isMounted) return false;
     if (me.unitFlags & UnitFlags.LOOTING) return false;
@@ -146,7 +134,7 @@ class Heal extends Targeting {
       priority -= ((100 - me.pctPower) * (manaMulti / 100)); // Lower priority based on mana
 
       // Adding valid units to priorityList
-      if (priority > 0) {
+      if (priority > 0 || u.inCombat()) {
         this.priorityList.push({ unit: u, priority: priority }); // Use push to add to the array
       }
 
@@ -200,5 +188,6 @@ class Heal extends Targeting {
   // }
 }
 
-// Export the Heal class for use in other modules
-export default Heal;
+// Export HealTargeting as a singleton instance
+export const defaultHealTargeting = new HealTargeting;
+export default HealTargeting;

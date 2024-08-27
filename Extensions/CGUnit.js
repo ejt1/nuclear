@@ -215,6 +215,16 @@ Object.defineProperties(wow.CGUnit.prototype, {
     }
   },
 
+  inCombat: {
+    /**
+     * Check if the unit is in combat.
+     * @returns {boolean} - Returns true if the unit is in combat.
+     */
+    value: function () {
+      return (this.unitFlags & UnitFlags.IN_COMBAT) !== 0;
+    }
+  },
+
   isSwimming: {
     /**
      * Check if the unit is swimming based on movement flags.

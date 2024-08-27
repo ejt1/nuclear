@@ -1,10 +1,10 @@
-import {Behavior, BehaviorContext, BehaviorType} from "../../../../Core/Behavior";
+import {Behavior, BehaviorContext} from "../../../../Core/Behavior";
 import * as bt from '../../../../Core/BehaviorTree';
 import Specialization from '../../../../Enums/Specialization';
 import common from '../../../../Core/Common';
 import spell from "../../../../Core/Spell";
 import {me} from "../../../../Core/ObjectManager";
-import {HEAL} from "../../../../nuclear";
+import { defaultHealTargeting as HEAL } from "../../../../Targeting/HealTargeting";
 
 const auras = {
   purgeTheWicked: 204213,
@@ -17,14 +17,12 @@ export class PriestDiscipline extends Behavior {
   context = BehaviorContext.Any; // PVP or PVE
   specialization = Specialization.Priest.Discipline;
   version = wow.GameVersion.Retail;
-  behaviorType = BehaviorType.Heal;
 
 
   build() {
     return new bt.Decorator(
       ret => !spell.isGlobalCooldown(),
       new bt.Selector(
-        common.waitForTarget(),
         common.waitForCastOrChannel(),
         this.applyAtonement(),
         this.applyOffensiveDoTs(),
