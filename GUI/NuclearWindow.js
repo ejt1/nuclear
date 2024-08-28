@@ -1,40 +1,32 @@
-import Settings from "../Core/Settings";
+import settings from "../Core/Settings";
+import colors from "@/Enums/Colors";
+import Radar from "@/Extra/Radar";
 
 class NuclearWindow {
   constructor() {
     this.show = new imgui.MutableVariable(false);
-    this.radarOptions = [
-      { type: "checkbox", uid: "ExtraRadar", text: "Enable Radar", default: false },
-      { type: "checkbox", uid: "ExtraRadarTrackHerbs", text: "Track Herbs", default: false },
-      { type: "checkbox", uid: "ExtraRadarTrackOres", text: "Track Ores", default: false },
-      { type: "checkbox", uid: "ExtraRadarTrackTreasures", text: "Track Treasures", default: false },
-      { type: "checkbox", uid: "ExtraRadarTrackQuests", text: "Track Quest Objectives", default: false },
-      { type: "checkbox", uid: "ExtraRadarTrackRares", text: "Track Rares", default: false },
-      { type: "checkbox", uid: "ExtraRadarTrackInteractables", text: "Track All POI", default: false },
-      { type: "checkbox", uid: "ExtraRadarTrackEverything", text: "Track Everything", default: false },
-      { type: "checkbox", uid: "ExtraRadarDrawLines", text: "Draw Lines", default: false },
-      { type: "checkbox", uid: "ExtraRadarDrawLinesClosest", text: "Draw Lines Closest Only", default: false },
-      { type: "checkbox", uid: "ExtraRadarDrawDistance", text: "Draw Distance", default: false },
-      { type: "checkbox", uid: "ExtraRadarDrawDebug", text: "Draw Debug Info", default: false },
-      { type: "slider", uid: "ExtraRadarLoadDistance", text: "Radar Load Distance", default: 200, min: 1, max: 200 }
-    ];
-
-    this.autolooterOptions = [
-      { type: "checkbox", uid: "EnableLooter", text: "Enable looter", default: false }
-    ];
+    this.modules = [Radar]; // Add other modules here as needed
 
     // Initialize state for each option from Settings
     this.state = {};
-    [...this.radarOptions, ...this.autolooterOptions].forEach(option => {
-      this.state[option.uid] = new imgui.MutableVariable(Settings[option.uid] !== undefined ? Settings[option.uid] : option.default);
+    this.modules.forEach(module => {
+      module.options.forEach(option => {
+        this.state[option.uid] = new imgui.MutableVariable(settings[option.uid] !== undefined ? settings[option.uid] : option.default);
+      });
     });
+
+    // Color definitions
+    this.colors = {
+      headerColor: colors.darkred,
+      enabledColor: colors.green,
+      disabledColor: colors.gray
+    };
   }
 
   tick() {
     if (imgui.isKeyPressed(imgui.Key.Insert, false)) {
       this.show.value = !this.show.value;
     }
-
     if (this.show.value) {
       this.render(this.show);
     }
@@ -46,56 +38,52 @@ class NuclearWindow {
     imgui.setNextWindowPos({ x: workPos.x + 20, y: workPos.y + 20 }, imgui.Cond.FirstUseEver);
     imgui.setNextWindowSize({ x: 300, y: 400 }, imgui.Cond.FirstUseEver);
 
+    imgui.pushStyleColor(imgui.Col.Text, [1.0, 1.0, 1.0, 1.0]);
+    imgui.pushStyleColor(imgui.Col.WindowBg, [0.1, 0.1, 0.1, 0.9]);
+
     if (!imgui.begin("Nuclear", open)) {
+      imgui.popStyleColor(2);
       imgui.end();
       return;
     }
 
     if (imgui.beginTabBar("NuclearTabs")) {
-      if (imgui.beginTabItem("Radar")) {
-        this.renderRadarOptions();
-        imgui.endTabItem();
-      }
-
-      if (imgui.beginTabItem("Autolooter")) {
-        this.renderAutolooterOptions();
-        imgui.endTabItem();
-      }
-
+      this.modules.forEach(module => {
+        if (imgui.beginTabItem(module.tabName)) {
+          module.renderOptions(this.renderOptionsGroup.bind(this));
+          imgui.endTabItem();
+        }
+      });
       imgui.endTabBar();
     }
 
+    imgui.popStyleColor(2);
     imgui.end();
   }
 
-  renderRadarOptions() {
-    if (imgui.collapsingHeader("General Radar Settings")) {
-      this.renderOptions(this.radarOptions.slice(0, 1)); // Enable Radar
-    }
-    if (imgui.collapsingHeader("Tracking Options")) {
-      this.renderOptions(this.radarOptions.slice(1, 8)); // Track Herbs to Track Everything
-    }
-    if (imgui.collapsingHeader("Drawing Options")) {
-      this.renderOptions(this.radarOptions.slice(8, 12)); // Draw Lines to Draw Debug Info
-    }
-    if (imgui.collapsingHeader("Distance Settings")) {
-      this.renderOptions(this.radarOptions.slice(12)); // Radar Load Distance
-    }
-  }
-
-  renderAutolooterOptions() {
-    this.renderOptions(this.autolooterOptions);
+  renderOptionsGroup(groups) {
+    groups.forEach(group => {
+      imgui.pushStyleColor(imgui.Col.Header, this.colors.headerColor);
+      if (imgui.collapsingHeader(group.header)) {
+        imgui.popStyleColor();
+        this.renderOptions(group.options);
+      } else {
+        imgui.popStyleColor();
+      }
+    });
   }
 
   renderOptions(options) {
     options.forEach(option => {
       if (option.type === "checkbox") {
+        imgui.pushStyleColor(imgui.Col.Text, this.state[option.uid].value ? this.colors.enabledColor : this.colors.disabledColor);
         if (imgui.checkbox(option.text, this.state[option.uid])) {
-          Settings[option.uid] = this.state[option.uid].value;
+          settings[option.uid] = this.state[option.uid].value;
         }
+        imgui.popStyleColor();
       } else if (option.type === "slider") {
         if (imgui.sliderInt(option.text, this.state[option.uid], option.min, option.max)) {
-          Settings[option.uid] = this.state[option.uid].value;
+          settings[option.uid] = this.state[option.uid].value;
         }
       }
     });
