@@ -1,9 +1,21 @@
-import objMgr, {me} from "../Core/ObjectManager";
+import objMgr, { me } from "../Core/ObjectManager";
 import Common from "../Core/Common";
-import {MovementFlags, TraceLineHitFlags, UnitFlags} from "../Enums/Flags";
+import { MovementFlags, TraceLineHitFlags, UnitFlags } from "../Enums/Flags";
 import Guid from "./Guid";
 
+const originalAurasGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'auras').get;
+
 Object.defineProperties(wow.CGUnit.prototype, {
+  auras: {
+    get: function () {
+      if (this._cacheAuras === undefined || this._cacheAurasRefreshTime < wow.frameTime) {
+        this._cacheAuras = originalAurasGetter.call(this);
+        this._cacheAurasRefreshTime = wow.frameTime + 500;
+      }
+      return this._cacheAuras;
+    }
+  },
+
   targetUnit: {
     /**
      * Get the resolved target as a CGUnit object, converting from Guid if necessary.
@@ -405,8 +417,8 @@ Object.defineProperties(wow.CGUnit.prototype, {
         return false;
       }
       // Adjust positions to account for the display height of both units
-      const from = {...this.position, z: this.position.z + this.displayHeight};
-      const to = {...target.position, z: target.position.z + target.displayHeight};
+      const from = { ...this.position, z: this.position.z + this.displayHeight };
+      const to = { ...target.position, z: target.position.z + target.displayHeight };
 
       // Define the flags for line of sight checking
       const flags = TraceLineHitFlags.SPELL_LINE_OF_SIGHT;
