@@ -1,4 +1,8 @@
 import Settings from '@/Core/Settings';
+import Gatherables from '@/Data/Gatherables';
+import objMgr from '@/Core/ObjectManager'
+import { me } from '@/Core/ObjectManager';
+import colors from '@/Enums/Colors';
 
 class Radar {
   static options = [
@@ -28,9 +32,25 @@ class Radar {
     ]);
   }
 
+  static drawHerbs() {
+    if (!Settings.ExtraRadarTrackHerbs) {
+      return false;
+    }
+
+    objMgr.objects.forEach((obj) => {
+      if (obj instanceof wow.CGObject && Gatherables.herb[obj.entryId]) {
+        const mePos = wow.WorldFrame.getScreenCoordinates(me.position)
+        const objPos = wow.WorldFrame.getScreenCoordinates(obj.position)
+        const canvas = imgui.getBackgroundDrawList()
+        canvas.addLine(mePos, objPos, imgui.getColorU32(colors.green), 1)
+        canvas.addText(obj.name, objPos, imgui.getColorU32(colors.white), null, 20)
+      }
+    });
+  }
+
   static tick() {
     if (Settings.ExtraRadar) {
-      console.log("Radar is running");
+      this.drawHerbs()
     }
   }
 }
