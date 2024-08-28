@@ -15,6 +15,7 @@ const auras = {
 }
 
 export class ShamanElementalBehavior extends Behavior {
+  name = "Shaman Elemental"
   context = BehaviorContext.Any;
   specialization = Specialization.Shaman.Elemental;
   version = wow.GameVersion.Retail;
@@ -23,6 +24,7 @@ export class ShamanElementalBehavior extends Behavior {
     return new bt.Decorator(
       ret => !spell.isGlobalCooldown(),
       new bt.Selector(
+        common.waitForNotMounted(),
         common.waitForTarget(),
         common.waitForCastOrChannel(),
         common.waitForFacing(),

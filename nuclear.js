@@ -1,12 +1,14 @@
-import { BehaviorContext } from "./Core/Behavior";
+import {BehaviorContext} from "./Core/Behavior";
 import BehaviorBuilder from "./Core/BehaviorBuilder";
-import objMgr from "./Core/ObjectManager";
-import { me } from './Core/ObjectManager';
+import objMgr, { me } from "./Core/ObjectManager";
 import { flagsComponents } from "./Core/Util";
+import {defaultHealTargeting} from "./Targeting/HealTargeting";
+
+export let availableBehaviors = [];
 
 class Nuclear extends wow.EventListener {
   async initialize() {
-    this.builder = new BehaviorBuilder;
+    this.builder = new BehaviorBuilder();
     await this.builder.initialize();
     this.rebuild();
   }
@@ -17,6 +19,7 @@ class Nuclear extends wow.EventListener {
     }
 
     try {
+      defaultHealTargeting?.update();
       this.rootBehavior?.tick();
     } catch (e) {
       this.rootBehavior = null;
@@ -29,7 +32,11 @@ class Nuclear extends wow.EventListener {
     objMgr.tick();
     if (me) {
       console.info('Rebuilding behaviors');
+
+      // Rebuild rootBehavior before updating Heal
       this.rootBehavior = this.builder.build(wow.SpecializationInfo.activeSpecializationId, BehaviorContext.Normal);
+      availableBehaviors = this.builder.behaviors;
+      defaultHealTargeting?.reset();
     }
   }
 

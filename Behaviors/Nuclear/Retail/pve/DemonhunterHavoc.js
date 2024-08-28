@@ -6,6 +6,7 @@ import spell from "../../../../Core/Spell";
 import {me} from "../../../../Core/ObjectManager";
 
 export class DemonhunterHavocBehavior extends Behavior {
+  name = "Demon Hunter Havoc"
   context = BehaviorContext.Any; // PVP ?
   specialization = Specialization.DemonHunter.Havoc;
   version = wow.GameVersion.Retail;
@@ -14,6 +15,7 @@ export class DemonhunterHavocBehavior extends Behavior {
     return new bt.Decorator(
       ret => !spell.isGlobalCooldown(),
       new bt.Selector(
+        common.waitForNotMounted(),
         common.waitForTarget(),
         common.waitForCastOrChannel(),
         common.waitForFacing(),

@@ -73,7 +73,7 @@ class Spell {
       }),
 
       new bt.Action(() => {
-        console.info(`Cast ${id}`);
+        console.info(`Cast ${id} on ${this._currentTarget?.unsafeName}`);
         return bt.Status.Success;
       }),
     );
@@ -108,7 +108,7 @@ class Spell {
       }),
 
       new bt.Action(() => {
-        console.info(`Cast ${name}`);
+        console.info(`Cast ${name} on ${this._currentTarget?.unsafeName}`);
         return bt.Status.Success;
       }),
     );
@@ -123,6 +123,10 @@ class Spell {
       return false;
     }
 
+    if (!spell.isKnown) {
+      return false;
+    }
+
     const cooldown = spell.cooldown;
     if (!cooldown.ready || !cooldown.active) {
       return false;
@@ -131,7 +135,6 @@ class Spell {
     if (!spell.isUsable) {
       return false;
     }
-
 
     if (spell.castTime > 0 && me.isMoving()) {
       return false;
@@ -185,6 +188,65 @@ class Spell {
     );
   }
 
+  static interrupt(spellNameOrId, interruptPlayersOnly = false) {
+    return new bt.Sequence(
+      new bt.Action(() => {
+        let spell;
+        if (typeof spellNameOrId === 'number') {
+          spell = new wow.Spell(spellNameOrId);
+        } else if (typeof spellNameOrId === 'string') {
+          spell = wow.SpellBook.getSpellByName(spellNameOrId);
+        } else {
+          console.error("Invalid argument type for interrupt method");
+          return bt.Status.Failure;
+        }
+
+        if (!spell || !spell.isUsable || !spell.cooldown.ready) {
+          return bt.Status.Failure;
+        }
+
+        const spellRange = spell.baseMaxRange;
+        const unitsAround = me.getUnitsAround(spellRange);
+
+        for (const target of unitsAround) {
+          if (!(target instanceof wow.CGUnit)) {
+            continue;
+          }
+
+          if (interruptPlayersOnly && !target.isPlayer()) {
+            continue;
+          }
+
+          if (!spell.inRange(target)) {
+            continue;
+          }
+
+          if (!target.isCasting && !target.isChanneling) {
+            continue;
+          }
+
+          const castInfo = target.spellInfo;
+          if (!castInfo) {
+            continue;
+          }
+
+          const currentTime = wow.frameTime;
+          const castRemains = castInfo.castEnd - currentTime;
+          const castTime = castInfo.castEnd - castInfo.castStart;
+          const castPctRemain = (castRemains / castTime) * 100;
+
+          if (castPctRemain <= 50) {
+            if (target.isInterruptible && spell.cast(target)) {
+              return bt.Status.Success;
+            }
+          }
+        }
+
+        return bt.Status.Failure;
+      })
+    );
+  }
+
   /**
    * Retrieves the cooldown information of a spell.
    * @param {number | string} spellNameOrId - The name or ID of the spell.
@@ -214,6 +276,15 @@ class Spell {
       : wow.SpellBook.getSpellByName(spellNameOrId);
 
     return spell.charges.charges
+  }
+
+  static getSpell(spellNameOrId) {
+    if (typeof spellNameOrId === 'number') {
+      return new wow.Spell(spellNameOrId);
+    } else if (typeof spellNameOrId === 'string') {
+      return wow.SpellBook.getSpellByName(spellNameOrId);
+    }
+    throw new Error("Invalid argument type for getSpell method");
   }
 }
 

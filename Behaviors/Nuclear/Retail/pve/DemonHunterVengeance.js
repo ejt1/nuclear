@@ -13,6 +13,7 @@ const auras = {
 }
 
 export class DemonhunterVengeanceBehavior extends Behavior {
+  name = "Demon Hunter Vengeance"
   context = BehaviorContext.Any;
   specialization = Specialization.DemonHunter.Vengeance;
   version = wow.GameVersion.Retail;
@@ -21,6 +22,7 @@ export class DemonhunterVengeanceBehavior extends Behavior {
     return new bt.Decorator(
       ret => !spell.isGlobalCooldown(),
       new bt.Selector(
+        common.waitForNotMounted(),
         common.waitForTarget(),
         common.waitForCastOrChannel(),
         common.waitForFacing(),
