@@ -43,6 +43,28 @@ Object.defineProperties(wow.Party.prototype, {
     }
   },
 
+  getPartyMemberByGuid: {
+    /**
+     * Get a party member unit by guid
+     * @param {Guid} guid - The GUID of the party member.
+     * @returns {wow.PartyMember | undefined} - A partyMember or undefined if not found.
+     */
+    value: function (guid) {
+      const group = wow.Party.currentParty;
+
+      if (!group || group.numMembers === 0) return undefined;
+
+      // Iterate through the party members and find by GUID
+      for (const m of group.members) {
+        if (m.guid.equals(guid)) {
+          return m;
+        }
+      }
+
+      return undefined;
+    }
+  },
+
   getTankUnits: {
     /**
      * Get an array of tank units within 40 yards in the current group.

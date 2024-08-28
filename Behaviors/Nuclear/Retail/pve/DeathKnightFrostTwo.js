@@ -26,6 +26,7 @@ export class DeathKnightFrostBehavior extends Behavior {
     return new bt.Decorator(
       ret => !spell.isGlobalCooldown(),
       new bt.Selector(
+        common.waitForNotMounted(),
         common.waitForTarget(),
         common.waitForCastOrChannel(),
         common.waitForFacing(),
