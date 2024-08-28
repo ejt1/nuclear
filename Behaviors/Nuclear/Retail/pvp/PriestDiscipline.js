@@ -41,7 +41,7 @@ export class PriestDiscipline extends Behavior {
   applyAtonement() {
     return new bt.Selector(
       // Power Word: Shield or Flash Heal to apply Atonement
-      spell.cast("Power Word: Shield", on => h.getPriorityTarget(), ret => !h.getPriorityTarget()?.hasAura(auras.atonement)),
+      spell.cast("Power Word: Shield", on => h.getPriorityTarget(), ret => !this.hasAtonement()),
     );
   }
 
@@ -69,7 +69,8 @@ export class PriestDiscipline extends Behavior {
           spell.dispel("Purify", true, DispelPriority.Low, false, WoWDispelType.Magic),
           spell.cast("Power Word: Radiance", on => h.getPriorityTarget(), ret => h.getPriorityTarget().pctHealth < 55),
           spell.cast("Flash Heal", on => h.getPriorityTarget(), ret => h.getPriorityTarget().pctHealth < 80),
-          spell.cast("Power Word: Shield", on => h.getPriorityTarget(), ret => h.getPriorityTarget().pctHealth <= 90 && !h.getPriorityTarget()?.hasAura(auras.powerWordShield) && !h.getPriorityTarget().hasAura(auras.atonement)), spell.cast("Flash Heal", on => h.getPriorityTarget(), ret => h.getPriorityTarget().pctHealth < 90),
+          spell.cast("Power Word: Shield", on => h.getPriorityTarget(), ret => h.getPriorityTarget().pctHealth <= 90 && !(h.getPriorityTarget()?.hasAura(auras.powerWordShield)) && !this.hasAtonement()),
+          spell.cast("Flash Heal", on => h.getPriorityTarget(), ret => h.getPriorityTarget().pctHealth < 90),
           spell.cast("Penance", on => h.getPriorityTarget(), ret => h.getPriorityTarget().pctHealth < 90)
         )
       )
@@ -104,6 +105,14 @@ export class PriestDiscipline extends Behavior {
         )
       )
     );
+  }
+
+  hasAtonement() {
+    const target = h.getPriorityTarget();
+    if (!target) {
+      return false;
+    }
+    return target.hasAuraByMe(auras.atonement);
   }
 }
 

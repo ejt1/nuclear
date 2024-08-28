@@ -4,7 +4,7 @@ import {losExclude} from "../Data/Exclusions";
 import {DispelPriority, dispels} from "../Data/Dispels";
 
 class Spell {
-  /** @type {wow.CGUnit | wow.Guid | null} */
+  /** @type {{get: function(): (wow.CGUnit|undefined)}} */
   static _currentTarget;
 
   /**
@@ -32,9 +32,8 @@ class Spell {
     const rest = Array.prototype.slice.call(arguments, 1);
     const sequence = new bt.Sequence();
 
-    // start with setting target to undefined
     sequence.addChild(new bt.Action(() => {
-      Spell._currentTarget = undefined;
+      Spell._currentTarget = me.targetUnit;  // Set fallback target to me.targetUnit
     }));
 
     for (const arg of rest) {
