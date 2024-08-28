@@ -53,6 +53,15 @@ class Common {
 
     return true;
   }
+
+  static waitForNotMounted() {
+    return new bt.Action(() => {
+      if (me.isMounted) {
+        return bt.Status.Success;
+      }
+      return bt.Status.Failure;
+    });
+  }
 }
 
 export default Common;

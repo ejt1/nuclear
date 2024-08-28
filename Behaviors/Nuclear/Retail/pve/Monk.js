@@ -25,8 +25,9 @@ export class MonkMistweaverBehavior extends Behavior {
 
   build() {
     return new bt.Decorator(
-      ret => !spell.isGlobalCooldown() && !me.isMounted,
+      ret => !spell.isGlobalCooldown(),
       new bt.Selector(
+        common.waitForNotMounted(),
         common.waitForCastOrChannel(),
         common.waitForTarget(),
         spell.cast("Spinning Crane Kick", ret => me.getUnitsAroundCount() > 1),

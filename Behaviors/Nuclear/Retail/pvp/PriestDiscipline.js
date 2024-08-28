@@ -4,7 +4,7 @@ import Specialization from '../../../../Enums/Specialization';
 import common from '../../../../Core/Common';
 import spell from "../../../../Core/Spell";
 import {me} from "../../../../Core/ObjectManager";
-import { defaultHealTargeting as HEAL } from "../../../../Targeting/HealTargeting";
+import { defaultHealTargeting as h } from "../../../../Targeting/HealTargeting";
 
 const auras = {
   purgeTheWicked: 204213,
@@ -21,8 +21,9 @@ export class PriestDiscipline extends Behavior {
 
   build() {
     return new bt.Decorator(
-      ret => !spell.isGlobalCooldown() && !me.isMounted,
+      ret => !spell.isGlobalCooldown(),
       new bt.Selector(
+        common.waitForNotMounted(),
         common.waitForCastOrChannel(),
         this.applyAtonement(),
         this.healRotation(),
@@ -38,7 +39,7 @@ export class PriestDiscipline extends Behavior {
   applyAtonement() {
     return new bt.Selector(
       // Power Word: Shield or Flash Heal to apply Atonement
-      spell.cast("Power Word: Shield", on => HEAL.getPriorityTarget(), ret => !HEAL.getPriorityTarget()?.hasAura(auras.atonement)),
+      spell.cast("Power Word: Shield", on => h.getPriorityTarget(), ret => !h.getPriorityTarget()?.hasAura(auras.atonement)),
     );
   }
 
@@ -54,19 +55,19 @@ export class PriestDiscipline extends Behavior {
     return new bt.Selector(
       // Burst Healing Phase
       new bt.Decorator(
-        ret => HEAL.getPriorityTarget() && HEAL.getPriorityTarget().pctHealth < 35, // TODO IMPLEMENT UH OH  phase
+        ret => h.getPriorityTarget() && h.getPriorityTarget().pctHealth < 35, // TODO IMPLEMENT UH OH  phase
         new bt.Selector(
-          spell.cast("Power Word: Life", on => HEAL.getPriorityTarget(), ret => HEAL.getPriorityTarget().pctHealth < 35),
+          spell.cast("Power Word: Life", on => h.getPriorityTarget(), ret => h.getPriorityTarget().pctHealth < 35),
         )
       ),
       // Sustained Healing Phase
       new bt.Decorator(
-        ret => HEAL.getPriorityTarget() && HEAL.getPriorityTarget().pctHealth >= 0,
+        ret => h.getPriorityTarget() && h.getPriorityTarget().pctHealth >= 0,
         new bt.Selector(
-          spell.cast("Power Word: Radiance", on => HEAL.getPriorityTarget(), ret => HEAL.getPriorityTarget().pctHealth < 55),
-          spell.cast("Flash Heal", on => HEAL.getPriorityTarget(), ret => HEAL.getPriorityTarget().pctHealth < 80),
-          spell.cast("Power Word: Shield", on => HEAL.getPriorityTarget(), ret => HEAL.getPriorityTarget().pctHealth <= 90 && !HEAL.getPriorityTarget()?.hasAura(auras.powerWordShield) && !HEAL.getPriorityTarget().hasAura(auras.atonement)), spell.cast("Flash Heal", on => HEAL.getPriorityTarget(), ret => HEAL.getPriorityTarget().pctHealth < 90),
-          spell.cast("Penance", on => HEAL.getPriorityTarget(), ret => HEAL.getPriorityTarget().pctHealth < 90)
+          spell.cast("Power Word: Radiance", on => h.getPriorityTarget(), ret => h.getPriorityTarget().pctHealth < 55),
+          spell.cast("Flash Heal", on => h.getPriorityTarget(), ret => h.getPriorityTarget().pctHealth < 80),
+          spell.cast("Power Word: Shield", on => h.getPriorityTarget(), ret => h.getPriorityTarget().pctHealth <= 90 && !h.getPriorityTarget()?.hasAura(auras.powerWordShield) && !h.getPriorityTarget().hasAura(auras.atonement)), spell.cast("Flash Heal", on => h.getPriorityTarget(), ret => h.getPriorityTarget().pctHealth < 90),
+          spell.cast("Penance", on => h.getPriorityTarget(), ret => h.getPriorityTarget().pctHealth < 90)
         )
       )
     );

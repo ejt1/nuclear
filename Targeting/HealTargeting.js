@@ -23,7 +23,7 @@ class HealTargeting extends Targeting {
   /**
    * Returns the top priority target in the priority list, sorted by the lowest healthPct.
    * Targets with healthPct > 0 are filtered out. Returns undefined if no valid targets exist.
-   * @returns {Object | undefined} - The top priority target or undefined if the list is empty.
+   * @returns {CGUnit | undefined} - The top priority target or undefined if the list is empty.
    */
   getPriorityTarget() {
     if (this.priorityList.length > 0) {
