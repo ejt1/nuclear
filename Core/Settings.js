@@ -44,7 +44,7 @@ const Settings = new Proxy(settings, {
     }
 
     // Get character-specific settings
-    const playerKey = `player${me.guid.low}`;
+    const playerKey = `player${me?.guid?.low}`;
     const charSettings = settings.Character[playerKey];
 
     if (charSettings && key in charSettings) {
