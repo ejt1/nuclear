@@ -5,6 +5,8 @@ import common from '../../../../Core/Common';
 import spell from "../../../../Core/Spell";
 import {me} from "../../../../Core/ObjectManager";
 import { defaultHealTargeting as h } from "../../../../Targeting/HealTargeting";
+import {DispelPriority} from "../../../../Data/Dispels";
+import {WoWDispelType} from "../../../../Enums/Auras";
 
 const auras = {
   purgeTheWicked: 204213,
@@ -64,6 +66,7 @@ export class PriestDiscipline extends Behavior {
       new bt.Decorator(
         ret => h.getPriorityTarget() && h.getPriorityTarget().pctHealth >= 0,
         new bt.Selector(
+          spell.dispel("Purify", true, DispelPriority.Low, false, WoWDispelType.Magic),
           spell.cast("Power Word: Radiance", on => h.getPriorityTarget(), ret => h.getPriorityTarget().pctHealth < 55),
           spell.cast("Flash Heal", on => h.getPriorityTarget(), ret => h.getPriorityTarget().pctHealth < 80),
           spell.cast("Power Word: Shield", on => h.getPriorityTarget(), ret => h.getPriorityTarget().pctHealth <= 90 && !h.getPriorityTarget()?.hasAura(auras.powerWordShield) && !h.getPriorityTarget().hasAura(auras.atonement)), spell.cast("Flash Heal", on => h.getPriorityTarget(), ret => h.getPriorityTarget().pctHealth < 90),

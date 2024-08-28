@@ -102,7 +102,7 @@ class HealTargeting extends Targeting {
 
   weighFilter() {
     const manaMulti = 30;
-    const target = me.target;
+    const target = me.targetUnit;
 
     this.healTargets.forEach(u => {
       let priority = 0;
