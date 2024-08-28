@@ -290,47 +290,47 @@ class Spell {
    * @returns {boolean} - Whether a dispel was cast.
    */
   static dispel(spellNameOrId, friends, priority = DispelPriority.Low, playersOnly = false, ...types) {
-    // Check if the spell is on cooldown
-    if (this.getCooldown(spellNameOrId).timeleft > 0) return false;
+    return new bt.Sequence(
+      new bt.Action(() => {
+        // Check if the spell is on cooldown
+        if (this.getCooldown(spellNameOrId).timeleft > 0) return false;
 
-    // List to target, either friends or enemies
-    const list = friends ? me.getFriends() : me.getEnemies(40);
+        // List to target, either friends or enemies
+        const list = friends ? me.getFriends() : me.getEnemies(40);
 
-    if (!list) {
-      console.error("No list was provided for Dispel");
-      return false;
-    }
-
-    // Loop through each unit in the list
-    for (const unit of list) {
-      const auras = unit.auras;
-
-      for (const aura of auras) {
-        const dispelTypeMatch = types.includes(aura.dispelType);
-        if (dispelTypeMatch) {
-          console.log('found magic')
+        if (!list) {
+          console.error("No list was provided for Dispel");
+          return false;
         }
 
-        // Check for debuff/buff status, dispel priority, and aura duration remaining
-        const dispelPriority = dispels[aura.spellId] || DispelPriority.Low;
-        const isValidDispel = friends
-          ? aura.isDebuff && dispelPriority >= priority
-          : aura.isBuff && dispelPriority >= priority;
+        // Loop through each unit in the list
+        for (const unit of list) {
+          const auras = unit.auras;
 
-        if (isValidDispel && aura.remaining > 2000 && dispelTypeMatch) {
-          console.info('isValidDispel' + isValidDispel)
-          const durationPassed = aura.duration - aura.remaining;
+          for (const aura of auras) {
+            const dispelTypeMatch = types.includes(aura.dispelType);
 
-          // Try to cast the dispel if it's been long enough
-          if (durationPassed > 777 && this.castPrimitive(this.getSpell(spellNameOrId), unit)) {
-            console.info(`Cast dispel on ${unit.unsafeName} to remove ${aura.name} with priority ${dispelPriority}`);
-            return true;
+            // Check for debuff/buff status, dispel priority, and aura duration remaining
+            const dispelPriority = dispels[aura.spellId] || DispelPriority.Low;
+            const isValidDispel = friends
+              ? aura.isDebuff && dispelPriority >= priority
+              : aura.isBuff && dispelPriority >= priority;
+
+            if (isValidDispel && aura.remaining > 2000 && dispelTypeMatch) {
+              const durationPassed = aura.duration - aura.remaining;
+
+              // Try to cast the dispel if it's been long enough
+              if (durationPassed > 777 && this.castPrimitive(this.getSpell(spellNameOrId), unit)) {
+                console.info(`Cast dispel on ${unit.unsafeName} to remove ${aura.name} with priority ${dispelPriority}`);
+                return bt.Status.Success;
+              }
+            }
           }
         }
-      }
-    }
 
-    return false;
+        return bt.Status.Failure;
+      })
+    )
   }
 
   /**
