@@ -10,6 +10,10 @@
     "checkJs": false,
     "moduleResolution": "Classic",
     "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*" : ["*"]
+    }
   },
   "include": [
     "../../sdk",

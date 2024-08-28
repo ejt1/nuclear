@@ -1,9 +1,9 @@
-import { Behavior, BehaviorContext } from "../../../../Core/Behavior";
-import * as bt from '../../../../Core/BehaviorTree';
-import Specialization from '../../../../Enums/Specialization';
-import common from '../../../../Core/Common';
-import spell from "../../../../Core/Spell";
-import { me } from "../../../../Core/ObjectManager";
+import { Behavior, BehaviorContext } from "@/Core/Behavior";
+import * as bt from '@/Core/BehaviorTree';
+import Specialization from '@/Enums/Specialization';
+import common from '@/Core/Common';
+import spell from "@/Core/Spell";
+import { me } from "@/Core/ObjectManager";
 
 const auras = {
   soulFragments: 203981,
