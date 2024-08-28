@@ -11,7 +11,9 @@ class NuclearWindow {
     this.state = {};
     this.modules.forEach(module => {
       module.options.forEach(option => {
-        this.state[option.uid] = new imgui.MutableVariable(settings[option.uid] !== undefined ? settings[option.uid] : option.default);
+        const settingValue = settings[option.uid];
+        const defaultValue = option.default;
+        this.state[option.uid] = new imgui.MutableVariable(settingValue !== undefined ? settingValue : defaultValue);
       });
     });
 
@@ -75,13 +77,19 @@ class NuclearWindow {
 
   renderOptions(options) {
     options.forEach(option => {
+      const settingValue = settings[option.uid];
+
       if (option.type === "checkbox") {
+        this.state[option.uid].value = settingValue !== undefined ? settingValue : option.default;
+
         imgui.pushStyleColor(imgui.Col.Text, this.state[option.uid].value ? this.colors.enabledColor : this.colors.disabledColor);
         if (imgui.checkbox(option.text, this.state[option.uid])) {
           settings[option.uid] = this.state[option.uid].value;
         }
         imgui.popStyleColor();
       } else if (option.type === "slider") {
+        this.state[option.uid].value = settingValue !== undefined ? settingValue : option.default;
+
         if (imgui.sliderInt(option.text, this.state[option.uid], option.min, option.max)) {
           settings[option.uid] = this.state[option.uid].value;
         }

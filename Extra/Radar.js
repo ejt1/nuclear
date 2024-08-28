@@ -1,4 +1,4 @@
-import Settings from '../Core/Settings';
+import Settings from '@/Core/Settings';
 
 class Radar {
   static options = [
