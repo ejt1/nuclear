@@ -73,7 +73,7 @@ class Spell {
       }),
 
       new bt.Action(() => {
-        console.info(`Cast ${id}`);
+        console.info(`Cast ${id} on ${this._currentTarget?.unsafeName}`);
         return bt.Status.Success;
       }),
     );
@@ -108,7 +108,7 @@ class Spell {
       }),
 
       new bt.Action(() => {
-        console.info(`Cast ${name}`);
+        console.info(`Cast ${name} on ${this._currentTarget?.unsafeName}`);
         return bt.Status.Success;
       }),
     );

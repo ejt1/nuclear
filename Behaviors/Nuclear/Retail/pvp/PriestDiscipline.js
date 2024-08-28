@@ -13,7 +13,7 @@ const auras = {
 }
 
 export class PriestDiscipline extends Behavior {
-  name = "Priest (Discipline)";
+  name = "Priest (Discipline) PVP";
   context = BehaviorContext.Any; // PVP or PVE
   specialization = Specialization.Priest.Discipline;
   version = wow.GameVersion.Retail;
@@ -21,7 +21,7 @@ export class PriestDiscipline extends Behavior {
 
   build() {
     return new bt.Decorator(
-      ret => !spell.isGlobalCooldown(),
+      ret => !spell.isGlobalCooldown() && !me.isMounted,
       new bt.Selector(
         common.waitForCastOrChannel(),
         this.applyAtonement(),

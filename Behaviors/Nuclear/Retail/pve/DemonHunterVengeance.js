@@ -20,7 +20,7 @@ export class DemonhunterVengeanceBehavior extends Behavior {
 
   build() {
     return new bt.Decorator(
-      ret => !spell.isGlobalCooldown(),
+      ret => !spell.isGlobalCooldown() && !me.isMounted,
       new bt.Selector(
         common.waitForTarget(),
         common.waitForCastOrChannel(),

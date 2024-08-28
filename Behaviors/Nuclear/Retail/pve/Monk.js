@@ -7,7 +7,7 @@ import { me } from "../../../../Core/ObjectManager";
 import { MovementFlags } from "../../../../Enums/Flags";
 
 export class MonkMistweaverBehavior extends Behavior {
-  name = "monkey pox";
+  name = "MW Monk";
   context = BehaviorContext.Any;
   specialization = Specialization.Monk.Mistweaver;
   version = wow.GameVersion.Retail;
@@ -25,7 +25,7 @@ export class MonkMistweaverBehavior extends Behavior {
 
   build() {
     return new bt.Decorator(
-      ret => !spell.isGlobalCooldown(),
+      ret => !spell.isGlobalCooldown() && !me.isMounted,
       new bt.Selector(
         common.waitForCastOrChannel(),
         common.waitForTarget(),
