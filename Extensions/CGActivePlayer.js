@@ -1,3 +1,5 @@
+
+
 Object.defineProperties(wow.CGActivePlayer.prototype, {
 
   currentParty: {
@@ -19,12 +21,18 @@ Object.defineProperties(wow.CGActivePlayer.prototype, {
     value: function (distance = 40) {
       const nearbyFriends = [];
 
-      const unitsAround = this.getUnitsAround(distance);
+      if (this.currentParty) {
+        const partyMembers = this.currentParty.members;
 
-      for (const friendUnit of unitsAround) {
-        // Ensure the friend is a CGUnit and within the specified distance
-        if (friendUnit instanceof wow.CGUnit && this.distanceTo(friendUnit) <= distance) {
-          nearbyFriends.push(friendUnit);
+        // Loop through the party members
+        for (const member of partyMembers) {
+          // Check if the member's GUID exists in the Object Manager as a CGUnit
+          const friendUnit = member.guid.toUnit();
+
+          // Ensure the friend is a CGUnit and within the specified distance
+          if (friendUnit instanceof wow.CGUnit && this.distanceTo(friendUnit) <= distance) {
+            nearbyFriends.push(friendUnit);
+          }
         }
       }
 
