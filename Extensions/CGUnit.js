@@ -7,6 +7,9 @@ const originalAurasGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype
 const originalVisibleAurasGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'visibleAuras').get;
 const cacheTimeMs = 500;
 
+const ttdHistory = {};
+
+
 Object.defineProperties(wow.CGUnit.prototype, {
   target: {
     get: function() {
@@ -53,6 +56,39 @@ Object.defineProperties(wow.CGUnit.prototype, {
 
       // If neither, return undefined
       return undefined;
+    }
+  },
+
+  /**
+   * Estimate the time to death for this unit based on its current health percentage and the elapsed time.
+   *
+   * @returns {number} The estimated time to death in seconds, or a large number (9999) if the time cannot be determined.
+   */
+  timeToDeath: {
+    value: function () {
+      const uid = this.guid.low;
+      const t = wow.frameTime;
+      const curhp = this.pctHealth;
+
+      if (ttdHistory[uid]) {
+        // uid is in the list, update the TTD
+        const o = ttdHistory[uid];
+        const hpdiff = o.inithp - curhp;
+        const tdiff = t - o.inittime;
+
+        const hps = hpdiff / (tdiff / 1000); // Health per second
+
+        if (hps > 0) {
+          o.ttd = curhp / hps;
+        }
+
+        return o.ttd;
+      } else {
+        // First time seeing this uid, add it to the list
+        ttdHistory[uid] = { inittime: t, inithp: curhp, ttd: 9999 };
+      }
+
+      return 9999;
     }
   },
 
