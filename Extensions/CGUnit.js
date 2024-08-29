@@ -1,9 +1,43 @@
-import objMgr, {me} from "../Core/ObjectManager";
-import Common from "../Core/Common";
-import {MovementFlags, TraceLineHitFlags, UnitFlags} from "../Enums/Flags";
-import Guid from "./Guid";
+import objMgr, { me } from "@/Core/ObjectManager";
+import Common from "@/Core/Common";
+import { MovementFlags, TraceLineHitFlags, UnitFlags } from "@/Enums/Flags";
+
+const originalTargetGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'target').get;
+const originalAurasGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'auras').get;
+const originalVisibleAurasGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'visibleAuras').get;
+const cacheTimeMs = 500;
+
+const ttdHistory = {};
+
 
 Object.defineProperties(wow.CGUnit.prototype, {
+  target: {
+    get: function() {
+      const targetGuid = originalTargetGetter.call(this);
+      return objMgr.findObject(targetGuid);
+    }
+  },
+
+  auras: {
+    get: function () {
+      if (this._cacheAuras === undefined || this._cacheAurasRefreshTime < wow.frameTime) {
+        this._cacheAuras = originalAurasGetter.call(this);
+        this._cacheAurasRefreshTime = wow.frameTime + cacheTimeMs;
+      }
+      return this._cacheAuras;
+    }
+  },
+
+  visibleAuras: {
+    get: function () {
+      if (this._cacheVisibleAuras === undefined || this._cacheVisibleAurasRefreshTime < wow.frameTime) {
+        this._cacheVisibleAuras = originalVisibleAurasGetter.call(this);
+        this._cacheVisibleAurasRefreshTime = wow.frameTime + cacheTimeMs;
+      }
+      return this._cacheVisibleAuras;
+    }
+  },
+
   targetUnit: {
     /**
      * Get the resolved target as a CGUnit object, converting from Guid if necessary.
@@ -22,6 +56,39 @@ Object.defineProperties(wow.CGUnit.prototype, {
 
       // If neither, return undefined
       return undefined;
+    }
+  },
+
+  /**
+   * Estimate the time to death for this unit based on its current health percentage and the elapsed time.
+   *
+   * @returns {number} The estimated time to death in seconds, or a large number (9999) if the time cannot be determined.
+   */
+  timeToDeath: {
+    value: function () {
+      const uid = this.guid.low;
+      const t = wow.frameTime;
+      const curhp = this.pctHealth;
+
+      if (ttdHistory[uid]) {
+        // uid is in the list, update the TTD
+        const o = ttdHistory[uid];
+        const hpdiff = o.inithp - curhp;
+        const tdiff = t - o.inittime;
+
+        const hps = hpdiff / (tdiff / 1000); // Health per second
+
+        if (hps > 0) {
+          o.ttd = curhp / hps;
+        }
+
+        return o.ttd;
+      } else {
+        // First time seeing this uid, add it to the list
+        ttdHistory[uid] = { inittime: t, inithp: curhp, ttd: 9999 };
+      }
+
+      return 9999;
     }
   },
 
@@ -405,8 +472,8 @@ Object.defineProperties(wow.CGUnit.prototype, {
         return false;
       }
       // Adjust positions to account for the display height of both units
-      const from = {...this.position, z: this.position.z + this.displayHeight};
-      const to = {...target.position, z: target.position.z + target.displayHeight};
+      const from = { ...this.position, z: this.position.z + this.displayHeight };
+      const to = { ...target.position, z: target.position.z + target.displayHeight };
 
       // Define the flags for line of sight checking
       const flags = TraceLineHitFlags.SPELL_LINE_OF_SIGHT;

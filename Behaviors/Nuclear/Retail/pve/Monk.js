@@ -1,10 +1,10 @@
-import { Behavior, BehaviorContext } from "../../../../Core/Behavior";
-import * as bt from '../../../../Core/BehaviorTree';
-import Specialization from '../../../../Enums/Specialization';
-import common from '../../../../Core/Common';
-import spell from "../../../../Core/Spell";
-import { me } from "../../../../Core/ObjectManager";
-import { MovementFlags } from "../../../../Enums/Flags";
+import { Behavior, BehaviorContext } from "@/Core/Behavior";
+import * as bt from '@/Core/BehaviorTree';
+import Specialization from '@/Enums/Specialization';
+import common from '@/Core/Common';
+import spell from "@/Core/Spell";
+import { me } from "@/Core/ObjectManager";
+import { MovementFlags } from "@/Enums/Flags";
 
 export class MonkMistweaverBehavior extends Behavior {
   name = "MW Monk";
