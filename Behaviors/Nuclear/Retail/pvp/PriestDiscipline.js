@@ -42,7 +42,7 @@ export class PriestDiscipline extends Behavior {
   // Atonement Application
   applyAtonement() {
     return new bt.Selector(
-      spell.cast("Power Word: Shield", on => h.getPriorityTarget(), ret => !this.hasAtonement())
+      spell.cast("Power Word: Shield", on => h.getPriorityTarget(), ret => !this.hasAtonement(h.getPriorityTarget()))
     );
   }
 
@@ -56,11 +56,12 @@ export class PriestDiscipline extends Behavior {
       spell.cast("Pain Suppression", on => h.getPriorityTarget(), ret => (h.getPriorityTarget()?.pctHealth < 34 || h.getPriorityTarget()?.timeToDeath() < 2) && !this.hasPainSuppression(h.getPriorityTarget())),
       spell.cast("Rapture", on => h.getPriorityTarget(), ret => (h.getPriorityTarget()?.pctHealth < 38 || h.getPriorityTarget()?.timeToDeath() < 2) && !this.hasPainSuppression(h.getPriorityTarget())),
       spell.cast("Void Shift", on => h.getPriorityTarget(), ret => (h.getPriorityTarget()?.pctHealth < 24  || h.getPriorityTarget()?.timeToDeath() < 2) && !this.hasPainSuppression(h.getPriorityTarget())),
-      spell.cast("Power Word: Barrier", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 40),
+      spell.cast("Power Word: Barrier", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 40 & !this.hasPainSuppression(h.getPriorityTarget())),
       spell.cast("Power Word: Shield", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 80 && !this.hasShield(h.getPriorityTarget()) && !this.hasAtonement(h.getPriorityTarget())),
       spell.cast("Power Word: Radiance", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 55 && spell.getCharges("Power Word: Radiance") === 2),
       spell.cast("Flash Heal", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 75 && me.hasAura(auras.surgeOfLight)),
-      spell.dispel("Purify", true, DispelPriority.High, false, WoWDispelType.Magic),
+      spell.dispel("Purify", true, DispelPriority.High, true, WoWDispelType.Magic),
+      spell.dispel("Dispel Magic", false, DispelPriority.High, true, WoWDispelType.Magic),
       // todo dispel magic high prio
       spell.cast("Penance", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 69),
       spell.cast("Power Word: Radiance", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 55 && spell.getCharges("Power Word: Radiance") === 1),
