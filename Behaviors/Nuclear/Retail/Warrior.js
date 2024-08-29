@@ -22,9 +22,9 @@ export class WarriorFuryBehavior extends Behavior {
         spell.cast("Battle Shout", on => me, req => !me.hasAuraByMe("Battle Shout")),
 
         spell.cast("Victory Rush", ret => me.pctHealth < 70),
-        spell.cast("Rampage", ret => !this.isEnraged()),
+        new bt.Action(() => { console.debug(`enraged? ${this.isEnraged()}`); return bt.Status.Failure; }),
         new bt.Decorator(
-          this.isEnraged,
+          ret => this.isEnraged(),
           new bt.Selector(
             spell.cast("Thunder Clap", ret => me.hasAuraByMe("Thunder Blast")),
             spell.cast("Avatar"),
@@ -35,7 +35,7 @@ export class WarriorFuryBehavior extends Behavior {
             spell.cast("Bladestorm"),
           )
         ),
-        spell.cast("Rampage"),
+        spell.cast("Rampage", ret => !this.isEnraged()),
         spell.cast("Crushing Blow"),
         spell.cast("Bloodbath"),
         spell.cast("Raging Blow", ret => this.isEnraged() || me.power < 110),
@@ -48,8 +48,8 @@ export class WarriorFuryBehavior extends Behavior {
     );
   }
 
-  isEnraged(){
-    const enrage = me.getAuraByMe("Enrage");
-    return enrage === undefined || enrage.remaining < 600;
+  isEnraged() {
+    const enrage = me.auras.find(aura => aura.dispelType === 9);
+    return enrage !== undefined && enrage.remaining > 600;
   }
 }
