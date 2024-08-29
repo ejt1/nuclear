@@ -21,7 +21,6 @@ Object.defineProperties(wow.CGActivePlayer.prototype, {
     value: function (distance = 40) {
       const nearbyFriends = [];
 
-      // Check if the player is in a party
       if (this.currentParty) {
         const partyMembers = this.currentParty.members;
 

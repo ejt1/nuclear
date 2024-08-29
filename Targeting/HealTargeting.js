@@ -1,7 +1,8 @@
 import Targeting from './Targeting'; // Assuming Targeting is our base class
-import { me } from "../Core/ObjectManager";
-import { UnitFlags } from "../Enums/Flags";
+import {me} from "../Core/ObjectManager";
+import {UnitFlags} from "../Enums/Flags";
 import ClassType from "../Enums/Specialization";
+import PartyMember from "@/Extensions/PartyMember";
 
 class HealTargeting extends Targeting {
   constructor() {
@@ -66,13 +67,16 @@ class HealTargeting extends Targeting {
   }
 
   collectTargets() {
-    const flags = wow.ObjectType.Unit | wow.ObjectType.Player | wow.ObjectType.ActivePlayer;
     const units = me.getFriends();
 
     // Copying unit list to healTargets
     units.forEach((u, k) => {
       this.healTargets[k] = u;
     });
+
+    if (!units.some(unit => unit.guid.equals(me.guid))) {
+      this.healTargets.push(me);
+    }
   }
 
   exclusionFilter() {
@@ -110,31 +114,38 @@ class HealTargeting extends Targeting {
       let isDPS = false;
       let isHeal = false;
 
-      const member = me.currentParty.getPartyMemberByGuid(u.guid);
+      let member = null;
+      if (me.guid.equals(u.guid)) {
+        member = me;
+      } else {
+        member = me.currentParty?.getPartyMemberByGuid(u.guid);
+      }
 
       // Skipping if the unit is not relevant
       if (!member && me.guid !== u.guid && target !== u) return;
 
-      if (target && target === u) {
-        priority += 20;
-      }
+      if (member instanceof wow.PartyMember) {
+        if (target && target === u) {
+          priority += 20;
+        }
 
-      if (member) {
-        if (member.isTank()) {
-          if (u.class !== ClassType.DeathKnight) {
-            priority += 20;
+        if (member) {
+          if (member.isTank()) {
+            if (u.class !== ClassType.DeathKnight) {
+              priority += 20;
+            }
+            isTank = true;
           }
-          isTank = true;
-        }
 
-        if (member.isHealer()) {
-          priority += 15;
-          isHeal = true;
-        }
+          if (member.isHealer()) {
+            priority += 15;
+            isHeal = true;
+          }
 
-        if (member.isDamage()) {
-          priority += 5;
-          isDPS = true;
+          if (member.isDamage()) {
+            priority += 5;
+            isDPS = true;
+          }
         }
       }
 
@@ -143,7 +154,7 @@ class HealTargeting extends Targeting {
 
       // Adding valid units to priorityList
       if (priority > 0 || u.inCombat()) {
-        this.priorityList.push({ unit: u, priority: priority }); // Use push to add to the array
+        this.priorityList.push({unit: u, priority: priority}); // Use push to add to the array
       }
 
       // Classifying units into tanks, DPS, and healers
