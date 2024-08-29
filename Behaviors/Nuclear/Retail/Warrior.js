@@ -23,15 +23,15 @@ export class WarriorFuryBehavior extends Behavior {
 
         spell.cast("Victory Rush", ret => me.pctHealth < 70),
         new bt.Decorator(
-          ret => this.isEnraged(),
+          ret => this.isEnraged() && this.isTargetInMelee(),
           new bt.Selector(
-            spell.cast("Thunder Clap", ret => me.hasAuraByMe("Thunder Blast")),
-            spell.cast("Avatar"),
-            spell.cast("Recklessness"),
-            spell.cast("Blood Fury"),
-            spell.cast("Thunderous Roar"),
-            spell.cast("Odyn's Fury"),
-            spell.cast("Bladestorm"),
+            spell.cast("Thunder Clap", on => me, ret => me.hasAuraByMe("Thunder Blast")),
+            spell.cast("Avatar", on => me),
+            spell.cast("Recklessness", on => me),
+            spell.cast("Blood Fury", on => me),
+            spell.cast("Thunderous Roar", on => me),
+            spell.cast("Odyn's Fury", on => me),
+            spell.cast("Bladestorm", on => me),
           )
         ),
         spell.cast("Rampage", ret => !this.isEnraged()),
@@ -50,5 +50,10 @@ export class WarriorFuryBehavior extends Behavior {
   isEnraged() {
     const enrage = me.auras.find(aura => aura.dispelType === 9);
     return enrage !== undefined && enrage.remaining > 600;
+  }
+
+  isTargetInMelee(){
+    const target = me.targetUnit;
+    return target && target.distanceTo(me) < 8;
   }
 }
