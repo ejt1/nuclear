@@ -22,7 +22,6 @@ export class WarriorFuryBehavior extends Behavior {
         spell.cast("Battle Shout", on => me, req => !me.hasAuraByMe("Battle Shout")),
 
         spell.cast("Victory Rush", ret => me.pctHealth < 70),
-        new bt.Action(() => { console.debug(`enraged? ${this.isEnraged()}`); return bt.Status.Failure; }),
         new bt.Decorator(
           ret => this.isEnraged(),
           new bt.Selector(
