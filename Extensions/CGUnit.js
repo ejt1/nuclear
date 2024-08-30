@@ -293,14 +293,14 @@ Object.defineProperties(wow.CGUnit.prototype, {
 
   inCombatWith: {
     value: function (unit) {
-      return this.threatEntries.find(entry => unit.equals(entry.guid)) !== undefined;
+      return this.threats.find(guid => guid.equals(unit)) !== undefined;
     }
   },
 
   /** @this {wow.CGUnit} */
   inCombatWithMe: {
     get: function () {
-      return this.inCombatWith(me);
+      return me.inCombatWith(this);
     }
   },
 
@@ -314,7 +314,11 @@ Object.defineProperties(wow.CGUnit.prototype, {
       if (!party) {
         return this.inCombatWithMe;
       }
-      return party.members.find(member => this.inCombatWith(member.guid)) !== undefined;
+      return party.members.find(member => {
+        const partyUnit = objMgr.findObject(member.guid);
+        if (!partyUnit) { return false; }
+        return partyUnit.inCombatWith(this);
+      }) !== undefined;
     }
   },
 

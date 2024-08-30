@@ -1,5 +1,4 @@
 import objMgr, { me } from "../Core/ObjectManager";
-import { UnitFlags } from "../Enums/Flags";
 import Targeting from "./Targeting";
 
 class CombatTargeting extends Targeting {
@@ -32,10 +31,10 @@ class CombatTargeting extends Targeting {
     this.targets = this.targets.filter(obj => {
       /** @type {wow.CGUnit} */
       const unit = obj;
-      if (!unit.inCombatWithParty) { return false; }
       if (!unit.isAttackable) { return false; }
       if (unit.isDeadOrGhost || unit.health <= 1) { return false; }
       if (unit.distanceTo(me) >= 40) { return false; }
+      if (!unit.inCombatWithParty) { return false; }
       return true;
     });
   }
