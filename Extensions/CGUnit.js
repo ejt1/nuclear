@@ -7,9 +7,6 @@ const originalAurasGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype
 const originalVisibleAurasGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'visibleAuras').get;
 const cacheTimeMs = 500;
 
-const ttdHistory = {};
-
-
 Object.defineProperties(wow.CGUnit.prototype, {
   target: {
     get: function() {
@@ -66,13 +63,16 @@ Object.defineProperties(wow.CGUnit.prototype, {
    */
   timeToDeath: {
     value: function () {
+      if (!this._ttdHistory) {
+        this._ttdHistory = {};
+      }
+
       const uid = this.guid.low;
       const t = wow.frameTime;
       const curhp = this.pctHealth;
 
-      if (ttdHistory[uid]) {
-        // uid is in the list, update the TTD
-        const o = ttdHistory[uid];
+      if (this._ttdHistory[uid]) {
+        const o = this._ttdHistory[uid];
         const hpdiff = o.inithp - curhp;
         const tdiff = t - o.inittime;
 
@@ -84,8 +84,7 @@ Object.defineProperties(wow.CGUnit.prototype, {
 
         return o.ttd;
       } else {
-        // First time seeing this uid, add it to the list
-        ttdHistory[uid] = { inittime: t, inithp: curhp, ttd: 9999 };
+        this._ttdHistory[uid] = { inittime: t, inithp: curhp, ttd: 9999 };
       }
 
       return 9999;
