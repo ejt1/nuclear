@@ -39,9 +39,9 @@ Object.defineProperties(wow.CGObject.prototype, {
   /**
    * @returns {boolean}
    */
-  isObjective: {
+  isLootable: {
     get: function () {
-      return (this.dynamicFlags & ObjectFlags.Objective) > 0;
+      return (this.dynamicFlags & ObjectFlags.Lootable) > 0;
     }
   },
 });

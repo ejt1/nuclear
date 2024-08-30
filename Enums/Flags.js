@@ -201,5 +201,5 @@ const PlayerFlagsEx = {
 
 export const ObjectFlags = {
   Interactable: 0x10,
-  Objective: 0x04
+  Lootable: 0x04
 }

@@ -174,7 +174,7 @@ class Radar {
       { filter: obj => obj instanceof wow.CGGameObject && Gatherables.herb[obj.entryId], type: 'herbs', track: "ExtraRadarTrackHerbs", draw: "ExtraRadarDrawLinesHerbs" },
       { filter: obj => obj instanceof wow.CGGameObject && Gatherables.ore[obj.entryId], type: 'ores', track: "ExtraRadarTrackOres", draw: "ExtraRadarDrawLinesOres" },
       { filter: obj => obj instanceof wow.CGGameObject && Gatherables.treasure[obj.entryId], type: 'treasures', track: "ExtraRadarTrackTreasures", draw: "ExtraRadarDrawLinesTreasures" },
-      { filter: obj => obj instanceof wow.CGObject && (obj.isObjective || obj.isRelatedToActiveQuest), type: 'quests', track: "ExtraRadarTrackQuests", draw: "ExtraRadarDrawLinesQuests" },
+      { filter: obj => obj instanceof wow.CGObject && (obj.isLootable || obj.isRelatedToActiveQuest), type: 'quests', track: "ExtraRadarTrackQuests", draw: "ExtraRadarDrawLinesQuests" },
       { filter: obj => obj instanceof wow.CGUnit && obj.classification == Classification.Rare && !obj.deadOrGhost, type: 'rares', track: "ExtraRadarTrackRares", draw: "ExtraRadarDrawLinesRares" },
     ];
 
