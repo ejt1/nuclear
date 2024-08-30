@@ -18,12 +18,14 @@ class Nuclear extends wow.EventListener {
     if (!this.gameReady()) {
       return;
     }
+    if (this.error) { return; }
 
     try {
       defaultHealTargeting?.update();
       defaultCombatTargeting?.update();
       this.rootBehavior?.tick();
     } catch (e) {
+      this.error = true;
       this.rootBehavior = null;
       console.error(`${e.message}`);
       console.error(`${e.stack}`);
