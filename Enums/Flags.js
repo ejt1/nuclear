@@ -198,3 +198,8 @@ const PlayerFlagsEx = {
   MercenaryMode: 2,
   ArtifactForgeCheat: 4,
 };
+
+export const ObjectFlags = {
+  Interactable: 0x10,
+  Objective: 0x04
+}

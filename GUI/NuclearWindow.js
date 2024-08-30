@@ -21,7 +21,7 @@ class NuclearWindow {
     this.colors = {
       headerColor: colors.blue,
       enabledColor: colors.green,
-      disabledColor: colors.gray
+      disabledColor: colors.lightgrey
     };
   }
 

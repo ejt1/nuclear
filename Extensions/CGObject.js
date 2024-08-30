@@ -1,3 +1,5 @@
+import { ObjectFlags } from "@/Enums/Flags";
+
 Object.defineProperties(wow.CGObject.prototype, {
   /**
    * @this {wow.CGObject}
@@ -25,7 +27,23 @@ Object.defineProperties(wow.CGObject.prototype, {
       }
       throw `expected wow.CGObject | Vector3 got ${typeof to}`;
     }
-  }
+  },
+  /**
+   * @returns {boolean}
+   */
+  interactable: {
+    get: function () {
+      return (this.dynamicFlags & ObjectFlags.Interactable) === 0;
+    }
+  },
+  /**
+   * @returns {boolean}
+   */
+  isObjective: {
+    get: function () {
+      return (this.dynamicFlags & ObjectFlags.Objective) > 0;
+    }
+  },
 });
 
 export default true;
