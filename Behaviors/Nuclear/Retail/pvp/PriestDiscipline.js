@@ -150,7 +150,7 @@ export class PriestDiscipline extends Behavior {
     if (!target) {
       return false;
     }
-    return target?.hasAura(auras.purgeTheWicked);
+    return target.hasAura(auras.purgeTheWicked);
   }
 
   shouldCastWithHealthAndNotPainSupp(health) {
