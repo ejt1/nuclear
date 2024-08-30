@@ -1,3 +1,5 @@
+import { ObjectFlags } from "@/Enums/Flags";
+
 Object.defineProperties(wow.CGObject.prototype, {
   /**
    * @this {wow.CGObject}
@@ -18,14 +20,30 @@ Object.defineProperties(wow.CGObject.prototype, {
           bbRadius = to.boundingRadius;
         }
         const dist = from.distanceSq(to.position);
-        return dist > bbRadius ? 0 : dist + bbRadius;
+        return dist < bbRadius ? 0 : dist + bbRadius;
       } else if (to instanceof wow.CGObject) {
         const pos = to.position;
         return from.distanceSq(pos);
       }
       throw `expected wow.CGObject | Vector3 got ${typeof to}`;
     }
-  }
+  },
+  /**
+   * @returns {boolean}
+   */
+  interactable: {
+    get: function () {
+      return (this.dynamicFlags & ObjectFlags.Interactable) === 0;
+    }
+  },
+  /**
+   * @returns {boolean}
+   */
+  isLootable: {
+    get: function () {
+      return (this.dynamicFlags & ObjectFlags.Lootable) > 0;
+    }
+  },
 });
 
 export default true;

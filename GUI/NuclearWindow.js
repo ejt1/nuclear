@@ -1,11 +1,13 @@
 import settings from "../Core/Settings";
 import colors from "@/Enums/Colors";
+import AntiAFK from "@/Extra/AntiAFK";
+import Autolooter from "@/Extra/Autolooter";
 import Radar from "@/Extra/Radar";
 
 class NuclearWindow {
   constructor() {
     this.show = new imgui.MutableVariable(false);
-    this.modules = [Radar]; // Add other modules here as needed
+    this.modules = [Radar, Autolooter, AntiAFK]; // Add other modules here as needed
 
     // Initialize state for each option from Settings
     this.state = {};
@@ -19,9 +21,9 @@ class NuclearWindow {
 
     // Color definitions
     this.colors = {
-      headerColor: colors.darkred,
+      headerColor: colors.blue,
       enabledColor: colors.green,
-      disabledColor: colors.gray
+      disabledColor: colors.lightgrey
     };
   }
 
