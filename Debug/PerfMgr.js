@@ -44,7 +44,7 @@ class PerfMgr {
     const mainViewport = imgui.getMainViewport();
     const workSize = mainViewport.workSize;
     imgui.setNextWindowSize({ x: 0, y: 0 }, imgui.Cond.Always);
-    imgui.setNextWindowPos({ x: 0, y: workSize.y - (30 * this.renderTimes.size) });
+    imgui.setNextWindowPos({ x: 0, y: 0 });
 
     imgui.begin("Perf", undefined, perfWindowFlags);
     this.renderTimes.forEach((obj, name) => {
@@ -58,7 +58,7 @@ class PerfMgr {
       }
       average /= obj.history.length;
 
-      imgui.plotLines(`${name}##perf`, obj.history, `avg ${average}`, undefined, 0, maxValue);
+      imgui.plotLines(`${name}##perf`, obj.history, `avg ${average}`, undefined, 0, maxValue, { x: 100, y: 0 });
     });
     imgui.end();
   }
