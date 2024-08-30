@@ -1,16 +1,9 @@
 export const WoWAuraFlags = {
-  NoCaster: 1,
-  Positive: 2,
-  Duration: 4,
-  Scalable: 8,
-  Negative: 16,
-  Unknown20: 32,
-  Unknown40: 64,
-  Unknown80: 128,
-  Unknown100: 256,
-  Unknown200: 512,
-  Unknown400: 1024,
-  Unknown800: 2048
+  NoCaster: 0x0001,
+  Positive: 0x0002,
+  Duration: 0x0004,
+  Scalable: 0x0008,
+  Negative: 0x0010,
 };
 
 export const WoWDispelType = {

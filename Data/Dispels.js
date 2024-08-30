@@ -133,6 +133,7 @@ export const dispels = {
   209790: DispelPriority.High, // Hunter - Freezing Arrow
   3355: DispelPriority.High, // Hunter - Freezing Trap
   19386: DispelPriority.High, // Hunter - Wyvern Sting
+  342246: DispelPriority.High, // Mage - Alter Time
   31661: DispelPriority.Medium, // Mage - Dragon's Breath
   122: DispelPriority.Medium, // Mage - Frost Nova
   61305: DispelPriority.High, // Mage - Polymorph (Cat)
