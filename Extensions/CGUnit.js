@@ -12,7 +12,7 @@ const ttdHistory = {};
 
 Object.defineProperties(wow.CGUnit.prototype, {
   target: {
-    get: function() {
+    get: function () {
       const targetGuid = originalTargetGetter.call(this);
       return objMgr.findObject(targetGuid);
     }
@@ -289,6 +289,13 @@ Object.defineProperties(wow.CGUnit.prototype, {
      */
     value: function () {
       return (this.unitFlags & UnitFlags.IN_COMBAT) !== 0;
+    }
+  },
+
+  /** @this {wow.CGUnit} */
+  inCombatWithMe: {
+    get: function () {
+      return this.threatEntries.find(entry => me.guid.equals(entry.guid)) !== undefined;
     }
   },
 
