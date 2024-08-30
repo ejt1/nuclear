@@ -20,7 +20,7 @@ Object.defineProperties(wow.CGObject.prototype, {
           bbRadius = to.boundingRadius;
         }
         const dist = from.distanceSq(to.position);
-        return dist > bbRadius ? 0 : dist + bbRadius;
+        return dist < bbRadius ? 0 : dist + bbRadius;
       } else if (to instanceof wow.CGObject) {
         const pos = to.position;
         return from.distanceSq(pos);

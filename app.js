@@ -8,6 +8,7 @@ import nuclearWindow from './GUI/NuclearWindow';
 import Settings from './Core/Settings';
 import Radar from './Extra/Radar';
 import Autolooter from './Extra/Autolooter';
+import AntiAFK from './Extra/AntiAFK';
 
 let pauseCore = false;
 nuclear.initialize().then(() => {
@@ -25,7 +26,8 @@ nuclear.initialize().then(() => {
     objMgr.tick();
     nuclear.tick();
     Radar.tick();
-    Autolooter.tick()
+    Autolooter.tick();
+    AntiAFK.tick();
     dbgWindow.tick();
     nuclearWindow.tick();
     perfMgr.end("total");
