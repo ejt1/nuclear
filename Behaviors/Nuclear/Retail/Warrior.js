@@ -23,7 +23,7 @@ export class WarriorFuryBehavior extends Behavior {
 
         spell.cast("Victory Rush", ret => me.pctHealth < 70),
         new bt.Decorator(
-          ret => this.isEnraged() && this.isTargetInMelee(),
+          ret => this.isEnraged() && me.isWithinMeleeRange(me.target) && me.target && me.target.timeToDeath > 10,
           new bt.Selector(
             spell.cast("Thunder Clap", on => me, ret => me.hasAuraByMe("Thunder Blast")),
             spell.cast("Avatar", on => me),
@@ -41,8 +41,8 @@ export class WarriorFuryBehavior extends Behavior {
         spell.cast("Rampage"),
         spell.cast("Execute", ret => me.hasAuraByMe("Sudden Death")),
         spell.cast("Bloodthirst"),
-        spell.cast("Thunder Clap"),
-        spell.cast("Whirlwind"),
+        spell.cast("Thunder Clap", req => me.isWithinMeleeRange(me.target)),
+        spell.cast("Whirlwind", req => me.isWithinMeleeRange(me.target)),
       )
     );
   }
@@ -50,10 +50,5 @@ export class WarriorFuryBehavior extends Behavior {
   isEnraged() {
     const enrage = me.auras.find(aura => aura.dispelType === 9);
     return enrage !== undefined && enrage.remaining > 600;
-  }
-
-  isTargetInMelee(){
-    const target = me.targetUnit;
-    return target && target.distanceTo(me) < 8;
   }
 }
