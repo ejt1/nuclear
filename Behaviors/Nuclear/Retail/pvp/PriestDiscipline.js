@@ -34,7 +34,6 @@ export class PriestDiscipline extends Behavior {
         this.applyAtonement(),
         common.waitForTarget(),
         common.waitForFacing(),
-        this.applyOffensiveDoTs(),
         this.damageRotation(),
       )
     );
@@ -54,32 +53,28 @@ export class PriestDiscipline extends Behavior {
       spell.cast("Mass Dispel", on => this.findMassDispelTarget(), ret => this.findMassDispelTarget() !== undefined),
       spell.cast("Desperate Prayer", on => me, ret => me.pctHealth < 40),
       spell.cast("Shadow Word: Death", on => this.findDeathThePolyTarget(), ret => this.findDeathThePolyTarget() !== undefined),
-      spell.cast("Pain Suppression", on => h.getPriorityTarget(), ret => (h.getPriorityTarget()?.pctHealth < 34 || h.getPriorityTarget()?.timeToDeath() < 2) && !this.hasPainSuppression(h.getPriorityTarget())),
-      spell.cast("Rapture", on => h.getPriorityTarget(), ret => (h.getPriorityTarget()?.pctHealth < 38 || h.getPriorityTarget()?.timeToDeath() < 2) && !this.hasPainSuppression(h.getPriorityTarget())),
-      spell.cast("Void Shift", on => h.getPriorityTarget(), ret => (h.getPriorityTarget()?.pctHealth < 24 || h.getPriorityTarget()?.timeToDeath() < 2) && !this.hasPainSuppression(h.getPriorityTarget())),
-      spell.cast("Power Word: Barrier", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 40 & !this.hasPainSuppression(h.getPriorityTarget())),
+      spell.cast("Pain Suppression", on => h.getPriorityTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(34)),
+      spell.cast("Rapture", on => h.getPriorityTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(38)),
+      spell.cast("Void Shift", on => h.getPriorityTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(24)),
+      spell.cast("Power Word: Barrier", on => h.getPriorityTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(40)),
       spell.cast("Power Word: Shield", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 80 && !this.hasShield(h.getPriorityTarget()) && !this.hasAtonement(h.getPriorityTarget())),
-      spell.cast("Power Word: Radiance", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 55 && spell.getCharges("Power Word: Radiance") === 2),
+      spell.cast("Power Word: Radiance", on => h.getPriorityTarget(), ret => this.shouldCastRadiance(2)),
       spell.cast("Flash Heal", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 75 && me.hasAura(auras.surgeOfLight)),
       spell.dispel("Purify", true, DispelPriority.High, true, WoWDispelType.Magic),
       spell.dispel("Dispel Magic", false, DispelPriority.High, true, WoWDispelType.Magic),
       spell.cast("Penance", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 69),
-      spell.cast("Power Word: Radiance", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 55 && spell.getCharges("Power Word: Radiance") === 1),
+      spell.cast("Power Word: Radiance", on => h.getPriorityTarget(), ret => this.shouldCastRadiance(1)),
       spell.cast("Flash Heal", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 75),
-      spell.cast("Penance", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 90)
-    );
-  }
-
-  // Offensive DoTs
-  applyOffensiveDoTs() {
-    return new bt.Selector(
-      spell.cast("Shadow Word: Pain", ret => me.targetUnit && !this.hasPurgeTheWicked(me.targetUnit))
+      spell.cast("Penance", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 90),
+      spell.dispel("Purify", true, DispelPriority.Low, true, WoWDispelType.Magic),
     );
   }
 
   // Damage Rotation
   damageRotation() {
     return new bt.Selector(
+      spell.cast("Shadow Word: Death", on => this.findShadowWordDeathTarget(), ret => this.findShadowWordDeathTarget() !== undefined),
+      spell.cast("Shadow Word: Pain", ret => me.targetUnit && !this.hasPurgeTheWicked(me.targetUnit)),
       spell.cast("Mindgames", on => me.targetUnit, ret => me.targetUnit?.pctHealth < 50),
       spell.cast("Penance", on => me.targetUnit, ret => me.hasAura(auras.powerOfTheDarkSide)),
       spell.cast("Mind Blast", on => me.targetUnit, ret => true),
@@ -91,7 +86,7 @@ export class PriestDiscipline extends Behavior {
   }
 
   findMassDispelTarget() {
-    const enemies = me.getEnemies(); // Assuming me.getEnemies() gives a list of enemy targets
+    const enemies = me.getEnemies();
 
     for (const enemy of enemies) {
       if (enemy.hasAura("Ice Block") || enemy.hasAura("Divine Shield")) {
@@ -102,8 +97,20 @@ export class PriestDiscipline extends Behavior {
     return undefined
   }
 
+  findShadowWordDeathTarget() {
+    const enemies = me.getEnemies();
+
+    for (const enemy of enemies) {
+      if (enemy.pctHealth < 20) {
+        return enemy;
+      }
+    }
+
+    return undefined
+  }
+
   findDeathThePolyTarget() {
-    const enemies = me.getEnemies(); // Assuming me.getEnemies() gives a list of enemy targets
+    const enemies = me.getEnemies();
 
     for (const enemy of enemies) {
       if (enemy.isCastingOrChanneling) {
@@ -138,20 +145,28 @@ export class PriestDiscipline extends Behavior {
     return target.hasAuraByMe(auras.powerWordShield);
   }
 
-  // Helper to check if a target has Atonement applied by the player
-  hasPainSuppression(target) {
-    if (!target) {
-      return false;
-    }
-    return target.hasAuraByMe(auras.painSuppression);
-  }
-
 
   hasPurgeTheWicked(target) {
     if (!target) {
       return false;
     }
     return target?.hasAura(auras.purgeTheWicked);
+  }
+
+  shouldCastWithHealthAndNotPainSupp(health) {
+    const healTarget = h.getPriorityTarget()
+    if (!healTarget) {
+      return false;
+    }
+    return (healTarget.pctHealth < health || healTarget.timeToDeath() < 2) && !healTarget.hasAuraByMe(auras.painSuppression);
+  }
+
+  shouldCastRadiance(charges) {
+    const healTarget = h.getPriorityTarget()
+    if (!healTarget) {
+      return false;
+    }
+    return healTarget.pctHealth < 55 && spell.getCharges("Power Word: Radiance") === charges
   }
 }
 
