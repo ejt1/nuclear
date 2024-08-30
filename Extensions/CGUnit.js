@@ -291,10 +291,30 @@ Object.defineProperties(wow.CGUnit.prototype, {
     }
   },
 
+  inCombatWith: {
+    value: function (unit) {
+      return this.threatEntries.find(entry => unit.equals(entry.guid)) !== undefined;
+    }
+  },
+
   /** @this {wow.CGUnit} */
   inCombatWithMe: {
     get: function () {
-      return this.threatEntries.find(entry => me.guid.equals(entry.guid)) !== undefined;
+      return this.inCombatWith(me);
+    }
+  },
+
+  /** @this {wow.CGUnit} */
+  inCombatWithParty: {
+    get: function () {
+      if (!this.inCombat) {
+        return false;
+      }
+      const party = wow.Party.currentParty;
+      if (!party) {
+        return this.inCombatWithMe;
+      }
+      return party.members.find(member => this.inCombatWith(member.guid)) !== undefined;
     }
   },
 

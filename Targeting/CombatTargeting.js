@@ -32,7 +32,7 @@ class CombatTargeting extends Targeting {
     this.targets = this.targets.filter(obj => {
       /** @type {wow.CGUnit} */
       const unit = obj;
-      if (!unit.inCombatWithMe) { return false; }
+      if (!unit.inCombatWithParty) { return false; }
       if (!unit.isAttackable) { return false; }
       if (unit.isDeadOrGhost || unit.health <= 1) { return false; }
       if (unit.distanceTo(me) >= 40) { return false; }
