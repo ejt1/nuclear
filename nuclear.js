@@ -1,8 +1,9 @@
-import {BehaviorContext} from "./Core/Behavior";
+import { BehaviorContext } from "./Core/Behavior";
 import BehaviorBuilder from "./Core/BehaviorBuilder";
 import objMgr, { me } from "./Core/ObjectManager";
 import { flagsComponents } from "./Core/Util";
-import {defaultHealTargeting} from "./Targeting/HealTargeting";
+import { defaultHealTargeting } from "./Targeting/HealTargeting";
+import { defaultCombatTargeting } from "./Targeting/CombatTargeting";
 
 export let availableBehaviors = [];
 
@@ -20,6 +21,7 @@ class Nuclear extends wow.EventListener {
 
     try {
       defaultHealTargeting?.update();
+      defaultCombatTargeting?.update();
       this.rootBehavior?.tick();
     } catch (e) {
       this.rootBehavior = null;

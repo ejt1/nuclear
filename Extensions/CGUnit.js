@@ -9,7 +9,7 @@ const cacheTimeMs = 500;
 
 Object.defineProperties(wow.CGUnit.prototype, {
   target: {
-    get: function() {
+    get: function () {
       const targetGuid = originalTargetGetter.call(this);
       return objMgr.findObject(targetGuid);
     }
@@ -288,6 +288,37 @@ Object.defineProperties(wow.CGUnit.prototype, {
      */
     value: function () {
       return (this.unitFlags & UnitFlags.IN_COMBAT) !== 0;
+    }
+  },
+
+  inCombatWith: {
+    value: function (unit) {
+      return this.threats.find(guid => guid.equals(unit)) !== undefined;
+    }
+  },
+
+  /** @this {wow.CGUnit} */
+  inCombatWithMe: {
+    get: function () {
+      return me.inCombatWith(this);
+    }
+  },
+
+  /** @this {wow.CGUnit} */
+  inCombatWithParty: {
+    get: function () {
+      if (!this.inCombat) {
+        return false;
+      }
+      const party = wow.Party.currentParty;
+      if (!party) {
+        return this.inCombatWithMe;
+      }
+      return party.members.find(member => {
+        const partyUnit = objMgr.findObject(member.guid);
+        if (!partyUnit) { return false; }
+        return partyUnit.inCombatWith(this);
+      }) !== undefined;
     }
   },
 
