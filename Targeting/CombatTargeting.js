@@ -1,5 +1,6 @@
 import objMgr, { me } from "../Core/ObjectManager";
 import Targeting from "./Targeting";
+import PerfMgr from "../Debug/PerfMgr";
 
 class CombatTargeting extends Targeting {
   constructor() {
@@ -7,7 +8,9 @@ class CombatTargeting extends Targeting {
   }
 
   update() {
-    super.update()
+    PerfMgr.begin("Combat Targeting");
+    super.update();
+    PerfMgr.end("Combat Targeting");
   }
 
   reset() {
@@ -34,7 +37,7 @@ class CombatTargeting extends Targeting {
       if (!unit.isAttackable) { return false; }
       if (unit.isDeadOrGhost || unit.health <= 1) { return false; }
       if (unit.distanceTo(me) >= 40) { return false; }
-      if (!unit.inCombatWithParty) { return false; }
+      if (!unit.inCombatWithMe) { return false; }
       return true;
     });
   }
@@ -48,6 +51,7 @@ class CombatTargeting extends Targeting {
       const toSC = wow.WorldFrame.getScreenCoordinates(unit.position);
       if (toSC.x > 0 && toSC.y > 0) {
         drawList.addLine(fromSC, toSC, imgui.getColorU32({ r: 255, g: 0, b: 0, a: 255 }));
+        //drawList.addText(`TTD: ${unit.timeToDeath().toFixed(2)}`, { x: toSC.x - 10, y: toSC.y }, imgui.getColorU32({ r: 255, g: 255, b: 0, a: 255 }));
       }
     });
   }
