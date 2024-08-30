@@ -19,7 +19,6 @@ class AntiAFK {
 
     const timePassed = wow.frameTime - this.lastAction;
     if (timePassed > 60000) {
-      console.info("Last Action")
       this.lastAction = wow.frameTime;
       wow.GameUI.eventTime = wow.frameTime;
     }
