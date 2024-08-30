@@ -138,7 +138,7 @@ class Spell {
       return false;
     }
 
-    if ((target instanceof wow.CGUnit && !losExclude[target.entryId]) && !spell.inRange(target)) {
+    if ((target instanceof wow.CGUnit && !losExclude[target.entryId]) && !this.inRange(spell,target)) {
       return false;
     }
 
@@ -286,7 +286,7 @@ class Spell {
    * @param {number} priority - The priority level for dispel. Defaults to DispelPriority.Low if not provided.
    * @param {boolean} playersOnly - dispel only players - used for purge.
    * @param {...number} types - The types of dispel we can use, e.g., Magic, Curse, Disease, Poison.
-   * @returns {boolean} - Whether a dispel was cast.
+   * @returns {bt.Status} - Whether a dispel was cast.
    */
   static dispel(spellNameOrId, friends, priority = DispelPriority.Low, playersOnly = false, ...types) {
     return new bt.Sequence(
@@ -312,9 +312,8 @@ class Spell {
             // Check for debuff/buff status, dispel priority, and aura duration remaining
             const dispelPriority = dispels[aura.spellId] || DispelPriority.Low;
             const isValidDispel = friends
-              ? aura.isDebuff && dispelPriority >= priority
-              : aura.isBuff && dispelPriority >= priority;
-
+              ? aura.isDebuff() && dispelPriority >= priority
+              : aura.isBuff() && dispelPriority >= priority;
             if (isValidDispel && aura.remaining > 2000 && dispelTypeMatch) {
               const durationPassed = aura.duration - aura.remaining;
 
@@ -358,6 +357,24 @@ class Spell {
     return spell.charges.charges
   }
 
+  /**
+   * Determines if the specified spell is in range of the target.
+   *
+   * This function checks whether the spell's `baseMaxRange` is 0, which implies the spell has no range limit
+   * and can be cast regardless of distance. If `baseMaxRange` is greater than 0, it performs a range check
+   * using the `spell.inRange()` method.
+   *
+   * @param {wow.Spell} spell - The spell to check.
+   * @param {wow.CGUnit | wow.Guid} target - The target to check the range against.
+   * @returns {boolean} - Returns `true` if the spell can be cast (either because it has no range limit or it is within range of the target), `false` otherwise.
+   */
+  static inRange(spell, target) {
+    if (spell.baseMaxRange === 0) {
+      return true;
+    } else {
+      return spell.inRange(target);
+    }
+  }
 }
 
 export default Spell;
