@@ -19,7 +19,7 @@ class NuclearWindow {
 
     // Color definitions
     this.colors = {
-      headerColor: colors.darkred,
+      headerColor: colors.blue,
       enabledColor: colors.green,
       disabledColor: colors.gray
     };
