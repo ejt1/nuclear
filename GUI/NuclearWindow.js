@@ -1,4 +1,4 @@
-import settings from "../Core/Settings";
+import settings from "@/Core/Settings";
 import colors from "@/Enums/Colors";
 import AntiAFK from "@/Extra/AntiAFK";
 import Autolooter from "@/Extra/Autolooter";
@@ -8,6 +8,7 @@ class NuclearWindow {
   constructor() {
     this.show = new imgui.MutableVariable(false);
     this.modules = [Radar, Autolooter, AntiAFK]; // Add other modules here as needed
+    this.initialized = false;
 
     // Initialize state for each option from Settings
     this.state = {};
@@ -29,10 +30,31 @@ class NuclearWindow {
 
   tick() {
     if (imgui.isKeyPressed(imgui.Key.Insert, false)) {
+      if (!this.initialized) {
+        this.initializeSettings();
+        this.initialized = true;
+      }
       this.show.value = !this.show.value;
     }
     if (this.show.value) {
       this.render(this.show);
+    }
+  }
+
+  initializeSettings() {
+    let settingsChanged = false;
+
+    this.modules.forEach(module => {
+      module.options.forEach(option => {
+        if (settings[option.uid] === undefined) {
+          settings[option.uid] = option.default;
+          settingsChanged = true;
+        }
+      });
+    });
+
+    if (settingsChanged) {
+      settings.saveSettings();
     }
   }
 
