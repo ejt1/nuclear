@@ -181,6 +181,7 @@ const treasures = {
   214945: "treasure", // Onyx Egg
   213180: "treasure", // Guo-Lai runestone
   218772: "treasure", // Golden Treasure
+  376587: "treasure", // Expedition Scout's Pack
 };
 
 export default { herb: herbs, ore: ores, treasure: treasures };
