@@ -42,18 +42,14 @@ class NuclearWindow {
   }
 
   initializeSettings() {
-    let settingsChanged = false;
+    const unsetOptions = this.modules
+      .flatMap(module => module.options)
+      .filter(option => !option.header && settings[option.uid] === undefined);
 
-    this.modules.forEach(module => {
-      module.options.forEach(option => {
-        if (settings[option.uid] === undefined) {
-          settings[option.uid] = option.default;
-          settingsChanged = true;
-        }
+    if (unsetOptions.length > 0) {
+      unsetOptions.forEach(option => {
+        settings[option.uid] = option.default;
       });
-    });
-
-    if (settingsChanged) {
       settings.saveSettings();
     }
   }
