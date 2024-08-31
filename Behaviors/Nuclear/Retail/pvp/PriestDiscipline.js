@@ -42,7 +42,7 @@ export class PriestDiscipline extends Behavior {
   // Atonement Application
   applyAtonement() {
     return new bt.Selector(
-      spell.cast("Power Word: Shield", on => h.getPriorityTarget(), ret => !this.hasAtonement(h.getPriorityTarget()))
+      spell.cast("Power Word: Shield", on => this.findFriendWithoutAtonement(), ret => this.findFriendWithoutAtonement() !== undefined)
     );
   }
 
@@ -78,11 +78,21 @@ export class PriestDiscipline extends Behavior {
       spell.cast("Mindgames", on => me.targetUnit, ret => me.targetUnit?.pctHealth < 50),
       spell.cast("Penance", on => me.targetUnit, ret => me.hasAura(auras.powerOfTheDarkSide)),
       spell.cast("Mind Blast", on => me.targetUnit, ret => true),
-      spell.cast("Smite", on => me.targetUnit, ret => true),
-      spell.cast("Shadow Word: Pain", ret => me.targetUnit && !this.hasPurgeTheWicked(me.targetUnit)),
       spell.cast("Penance", ret => true),
       spell.cast("Smite", ret => true)
     );
+  }
+
+  findFriendWithoutAtonement() {
+    const friends = me.getFriends();
+
+    for (const friend of friends) {
+      if (!this.hasAtonement(friend)) {
+        return friend;
+      }
+    }
+
+    return undefined;
   }
 
   findMassDispelTarget() {
