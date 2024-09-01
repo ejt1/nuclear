@@ -292,14 +292,14 @@ class Spell {
     return new bt.Sequence(
       new bt.Action(() => {
         // Check if the spell is on cooldown
-        if (this.getCooldown(spellNameOrId).timeleft > 0) return false;
+        if (this.getCooldown(spellNameOrId).timeleft > 0) return bt.Status.Failure;
 
         // List to target, either friends or enemies
         const list = friends ? me.getFriends() : me.getEnemies(40);
 
         if (!list) {
           console.error("No list was provided for Dispel");
-          return false;
+          return bt.Status.Failure;
         }
 
         // Loop through each unit in the list
