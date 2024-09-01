@@ -67,7 +67,7 @@ class Autolooter {
     if (wow.gameVersion === 0) {
       this.autolootClassic();
     } else if (wow.gameVersion === 1) {
-      this.autolootClassic();
+      this.autolootRetail();
     }
   }
 
@@ -85,7 +85,7 @@ class Autolooter {
     });
   }
 
-  static autolootClassic() {
+  static autolootRetail() {
     const lootUnit = this.getLootableUnit();
     if (lootUnit && wow.frameTime > this.lastLoot) {
       lootUnit.interact();
