@@ -11,14 +11,12 @@ const settingsPath = `${__dataDir}/settings.json`;
 // Function to load settings from the file
 function loadSettings() {
   try {
-    // Check if the settings.json file exists
     try {
       fs.access(settingsPath, fs.constants.F_OK);
       const data = fs.readFile(settingsPath, 'utf-8');
       settings = JSON.parse(data);
     } catch (error) {
       console.warn('Settings file not found, creating a new one.');
-      // If the file doesn't exist, create it with the default settings
       fs.writeFile(settingsPath, JSON.stringify(settings, null, 2));
     }
   } catch (error) {
@@ -39,6 +37,10 @@ function saveSettings() {
 // Create a Proxy for the settings object
 const Settings = new Proxy(settings, {
   get(target, key) {
+    if (key === 'saveSettings') {
+      return saveSettings;
+    }
+
     if (key in target) {
       return target[key];
     }
