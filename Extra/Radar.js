@@ -213,7 +213,6 @@ class Radar {
       }
     }
   }
-
 }
 
 export default Radar;

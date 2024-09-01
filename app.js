@@ -11,6 +11,9 @@ import Autolooter from './Extra/Autolooter';
 import AntiAFK from './Extra/AntiAFK';
 
 let pauseCore = false;
+
+const extraModules = [Radar, Autolooter, AntiAFK];
+
 nuclear.initialize().then(() => {
   // our "main loop", called every tick
   setInterval(_ => {
@@ -25,9 +28,7 @@ nuclear.initialize().then(() => {
     perfMgr.begin("total");
     objMgr.tick();
     nuclear.tick();
-    Radar.tick();
-    Autolooter.tick();
-    AntiAFK.tick();
+    extraModules.forEach(module => module.tick());
     dbgWindow.tick();
     nuclearWindow.tick();
     perfMgr.end("total");
