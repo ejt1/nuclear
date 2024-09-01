@@ -37,6 +37,16 @@ class Common {
     });
   }
 
+  static waitForNotSitting() {
+    return new bt.Action(() => {
+      if (me.isSitting()) {
+        console.info('imsitting')
+        return bt.Status.Success;
+      }
+      return bt.Status.Failure;
+    });
+  }
+
   static waitForFacing() {
     return new bt.Action(() => {
       if (!me.targetUnit || !me.isFacing(me.targetUnit)) {
@@ -45,6 +55,7 @@ class Common {
       return bt.Status.Failure;
     });
   }
+
 
   static validTarget(u) {
     if (!u|| u.deadOrGhost || !me.canAttack(u)) {

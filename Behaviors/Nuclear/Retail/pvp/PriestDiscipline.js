@@ -28,6 +28,7 @@ export class PriestDiscipline extends Behavior {
     return new bt.Decorator(
       ret => !spell.isGlobalCooldown(),
       new bt.Selector(
+        common.waitForNotSitting(),
         common.waitForNotMounted(),
         common.waitForCastOrChannel(),
         this.healRotation(),
@@ -182,7 +183,6 @@ export class PriestDiscipline extends Behavior {
   // todo - probably move this somewhere useful rather than here?
   isNotDeadAndInLineOfSight(friend) {
     return friend && !friend.deadOrGhost && me.withinLineOfSight(friend);
-
   }
 
 }

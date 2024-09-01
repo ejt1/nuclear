@@ -1,6 +1,6 @@
 import objMgr, { me } from "@/Core/ObjectManager";
 import Common from "@/Core/Common";
-import { MovementFlags, TraceLineHitFlags, UnitFlags } from "@/Enums/Flags";
+import {MovementFlags, TraceLineHitFlags, UnitFlags, UnitStandStateType} from "@/Enums/Flags";
 
 const originalTargetGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'target').get;
 const originalAurasGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'auras').get;
@@ -319,6 +319,16 @@ Object.defineProperties(wow.CGUnit.prototype, {
         if (!partyUnit) { return false; }
         return partyUnit.inCombatWith(this);
       }) !== undefined;
+    }
+  },
+
+  isSitting: {
+    /**
+     * Check if the unit is sitting based on animTier.
+     * @returns {boolean} - Returns true if the unit is sitting.
+     */
+    value: function () {
+      return (this.animTier === UnitStandStateType.UNIT_STAND_STATE_SIT);
     }
   },
 

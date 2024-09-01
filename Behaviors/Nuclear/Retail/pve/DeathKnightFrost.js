@@ -14,6 +14,7 @@ const auras = {
   deathAndDecay: 188290,
   icyTalons: 194879,
   unleashedFrenzy: 376907,
+  razorice: 51714
 }
 
 export class DeathKnightFrostBehavior extends Behavior {
@@ -26,6 +27,7 @@ export class DeathKnightFrostBehavior extends Behavior {
     return new bt.Decorator(
       ret => !spell.isGlobalCooldown(),
       new bt.Selector(
+        common.waitForNotSitting(),
         common.waitForNotMounted(),
         common.waitForTarget(),
         common.waitForCastOrChannel(),
@@ -40,6 +42,7 @@ export class DeathKnightFrostBehavior extends Behavior {
         spell.cast("Remorseless Winter", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
         this.multiTargetRotation(),
         spell.cast("Rune Strike", ret => me.hasAura(auras.killingMachine)),
+        spell.cast("Frost Strike", ret => me.targetUnit?.getAura(auras.razorice)?.stacks === 5),
         spell.cast("Howling Blast", ret => me.hasAura(auras.rime)),
         spell.cast("Chains of Ice", on => me.targetUnit, ret => {
           const coldHeart = me.getAura(auras.coldHeart);
