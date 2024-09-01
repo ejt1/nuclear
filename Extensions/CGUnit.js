@@ -507,13 +507,17 @@ Object.defineProperties(wow.CGUnit.prototype, {
      * @returns {boolean} - Returns true if the target is within line of sight, false otherwise.
      */
     value: function (target) {
+      if (target === me) {
+        return true
+      }
+
       target = target instanceof wow.CGUnit ? target : target.toUnit();
       if (!target || !target.position || !this.position) {
         return false;
       }
       // Adjust positions to account for the display height of both units
       const from = { ...this.position, z: this.position.z + this.displayHeight };
-      const to = { ...target.position, z: target.position.z };
+      const to = { ...target.position, z: target.position.z + target.displayHeight };
 
       // Define the flags for line of sight checking
       const flags = TraceLineHitFlags.SPELL_LINE_OF_SIGHT;
