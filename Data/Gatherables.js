@@ -69,6 +69,9 @@ const herbs = {
   381958: "herb",   // Lush Writhebark
   384293: "herb",   // Self-Grown Writhebark
   384298: "herb",   // Self-Grown Decayed Writhebark
+  // The war within
+  414316: "herb",   // Luredrop
+  454066: "herb",   // Irradiated Mycobloom
 };
 
 const ores = {
