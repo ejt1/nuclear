@@ -30,6 +30,14 @@ nuclear.initialize().then(() => {
     objMgr.tick();
     nuclear.tick();
     extraModules.forEach(module => module.tick());
+    if(me.target) {
+      const canvas = imgui.getBackgroundDrawList();
+      if (me.withinLineOfSight(me.target)){
+        canvas.addLine(wow.WorldFrame.getScreenCoordinates(me.position), wow.WorldFrame.getScreenCoordinates(me.target.position), imgui.getColorU32(colors.green), 2)
+      } else {
+        canvas.addLine(wow.WorldFrame.getScreenCoordinates(me.position), wow.WorldFrame.getScreenCoordinates(me.target.position), imgui.getColorU32(colors.red), 2)
+      }
+    }
     dbgWindow.tick();
     nuclearWindow.tick();
     perfMgr.end("total");
