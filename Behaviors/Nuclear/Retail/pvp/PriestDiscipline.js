@@ -87,7 +87,7 @@ export class PriestDiscipline extends Behavior {
     const friends = me.getFriends();
 
     for (const friend of friends) {
-      if (!this.hasAtonement(friend)) {
+      if (this.isNotDeadAndInLineOfSight(friend) && !this.hasAtonement(friend)) {
         return friend;
       }
     }
@@ -178,6 +178,13 @@ export class PriestDiscipline extends Behavior {
     }
     return healTarget.pctHealth < 55 && spell.getCharges("Power Word: Radiance") === charges
   }
+
+  // todo - probably move this somewhere useful rather than here?
+  isNotDeadAndInLineOfSight(friend) {
+    return friend && !friend.deadOrGhost && me.withinLineOfSight(friend);
+
+  }
+
 }
 
 export default PriestDiscipline;
