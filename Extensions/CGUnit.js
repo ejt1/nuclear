@@ -502,8 +502,8 @@ Object.defineProperties(wow.CGUnit.prototype, {
         return false;
       }
       // Adjust positions to account for the display height of both units
-      const from = { ...this.position, z: this.position.z + this.displayHeight };
-      const to = { ...target.position, z: target.position.z };
+      const from = { ...this.position, z: this.position.z + 1.845 };
+      const to = { ...target.position, z: target.position.z + 1.845 };
 
       // Define the flags for line of sight checking
       const flags = TraceLineHitFlags.SPELL_LINE_OF_SIGHT;
