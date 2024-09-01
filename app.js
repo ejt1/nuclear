@@ -31,10 +31,6 @@ nuclear.initialize().then(() => {
     extraModules.forEach(module => module.tick());
     dbgWindow.tick();
     nuclearWindow.tick();
-
-    if (me.target) {
-      console.info(me.withinLineOfSight(me.target))
-    }
     perfMgr.end("total");
     perfMgr.render();
   }, 1);
