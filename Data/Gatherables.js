@@ -170,21 +170,25 @@ const ores = {
   381517: "vein",   // Titan-Touched Serevite Deposit
   381518: "vein",   // Primal Serevite Deposit
   // The War Within
-  413047: "vein",   // Aqirite
-  413892: "vein",   // Weeping Aqirite
-  413875: "vein",   // Rich Aqirite
-  413890: "vein",   // Crystallized Aqirite
-  430351: "vein",   // Webbed Ore Deposit (Aqirite)
   413046: "vein",   // Bismuth
   413874: "vein",   // Rich Bismuth
+  413884: "vein",   // Weeping Bismuth
   413886: "vein",   // EZ-Mine Bismuth
   413883: "vein",   // Crystallized Bismuth
   430335: "vein",   // Webbed Ore Deposit (Bismuth)
-  413884: "vein",   // Weeping Bismuth
+
   413049: "vein",   // Ironclaw
   413877: "vein",   // Rich Ironclaw
-  413900: "vein",   // Crystallized Ironclaw
   413905: "vein",   // EZ-Mine Ironclaw
+  413900: "vein",   // Crystallized Ironclaw
+  430352: "vein",   // Webbed Ore Deposit (Ironclaw)
+
+  413047: "vein",   // Aqirite
+  413875: "vein",   // Rich Aqirite
+  413892: "vein",   // Weeping Aqirite
+  413895: "vein",   // EZ-Mine Aqirite
+  413890: "vein",   // Crystallized Aqirite
+  430351: "vein",   // Webbed Ore Deposit (Aqirite)
 };
 
 const treasures = {

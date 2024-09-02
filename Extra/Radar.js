@@ -37,7 +37,7 @@ class Radar {
 
     { header: "Debug Options" },
     { type: "checkbox", uid: "ExtraRadarDrawDebug", text: "Draw Debug Info", default: false },
-    { type: "slider", uid: "ExtraRadarLoadDistance", text: "Radar Load Distance", default: 200, min: 1, max: 200 }
+    { type: "slider", uid: "ExtraRadarLoadDistance", text: "Radar Load Distance", default: 200, min: 1, max: 500 }
   ];
 
   static tabName = "Radar";
