@@ -16,7 +16,7 @@ const ProfileSettings = {
       ]
     }
   ],
-  renderOptions: function(renderOptionsGroup) {
+  renderOptions: function (renderOptionsGroup) {
     const specializationId = wow.SpecializationInfo.activeSpecializationId;
     const profileKey = `profile${specializationId}`;
 
@@ -32,7 +32,7 @@ const ProfileSettings = {
 
     renderOptionsGroup(this.options);
   },
-  findAvailableProfilesForSpecialization: function(specializationId) {
+  findAvailableProfilesForSpecialization: function (specializationId) {
     const matchingBehaviors = availableBehaviors.filter(behavior => behavior.specialization === specializationId);
     return matchingBehaviors.map(behavior => behavior.name || behavior.constructor.name);
   }
