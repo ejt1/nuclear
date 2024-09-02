@@ -26,19 +26,40 @@ export class DruidGuardianBehavior extends Behavior {
           common.waitForTarget(),
           common.waitForCastOrChannel(),
           common.waitForFacing(),
-          spell.cast("Ironfur", on => me, req => this.shouldCastIronfur()),
-          spell.cast("Frenzied Regeneration", on => me, req => this.shouldCastFrenziedRegeneration()),
-          spell.interrupt("Skull Bash"),
-          spell.cast("Heart of the Wild"),
-          spell.applyAura("Moonfire", me.target, false),
-          spell.cast("Thrash", on => me.target),
-          spell.cast("Mangle", on => me.target, req => me.powerByType(PowerType.Rage) < 90),
-          //spell.cast("Berserk"),
-          //spell.cast("Lunar Beam", on => me.target),
+
+          // Ensure Bear Form is active
+          spell.cast("Bear Form", on => me, req => !me.hasVisibleAura("Bear Form")),
+
+          // Cooldowns: Use unless holding is necessary
           spell.cast("Rage of the Sleeper"),
-          spell.cast("Raze", on => me.target),
+          spell.cast("Lunar Beam"),
+          spell.cast("Heart of the Wild"),
+          spell.cast("Berserk"),
+
+          // Spend rage on Ironfur
+          spell.cast("Ironfur", on => me, req => this.shouldCastIronfur()),
+
+          // Keep Moonfire up on the target
+          spell.cast("Moonfire", on => me.target, req => !me.target.hasAuraByMe("Moonfire")),
+
+          // Keep Thrash on cooldown
+          spell.cast("Thrash", on => me.target),
+
+          // Keep Mangle on cooldown
+          spell.cast("Mangle", on => me.target, req => me.powerByType(PowerType.Rage) < 90),
+
+          // Consume Tooth and Claw with Maul or Raze
+          spell.cast("Raze", on => me.target, req => combat.targets.filter(unit => unit.distanceTo(me) <= 8).length > 1),
+          spell.cast("Maul", on => me.target, req => combat.targets.filter(unit => unit.distanceTo(me) <= 8).length <= 1),
+
+          // Backup Moonfire application for Galactic Guardian proc
           spell.cast("Moonfire", this.findMoonfireTarget),
           spell.cast("Moonfire", on => me.target, req => me.getAura(auras.galacticguardian)?.remaining < 2000),
+
+          // Interrupts
+          spell.interrupt("Skull Bash"),
+
+          // Alternative spells or abilities
           spell.cast("Swipe", on => me, req => combat.targets.filter(unit => unit.distanceTo(me) <= 8).length > 1),
         )
       )
