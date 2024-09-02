@@ -30,23 +30,10 @@ class General {
         // Logic to use Healthstone
       }
     }
-
-    // Implement interrupt logic based on InterruptMode and InterruptPercentage
-    if (Settings.InterruptMode !== "None") {
-      // Logic for interrupts
-      // You'll need to implement the actual interrupt logic here
-    }
-
-    // Implement dispel logic based on DispelMode
-    if (Settings.DispelMode !== "None") {
-      // Logic for dispels
-      // You'll need to implement the actual dispel logic here
-    }
   }
 
   static tick() {
     this.general();
-    // Implement other tick logic if needed
   }
 }
 
