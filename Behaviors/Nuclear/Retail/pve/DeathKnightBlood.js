@@ -25,6 +25,7 @@ export class DeathKnightBloodBehavior extends Behavior {
           common.waitForTarget(),
           common.waitForCastOrChannel(),
           common.waitForFacing(),
+          common.startAttack(),
           spell.cast("Death's Caress", on => me.target, req => !me.isWithinMeleeRange(me.target) && me.getAuraStacks(auras.boneshield) < 5),
           spell.cast("Marrowrend", on => me.target, req => me.getAuraStacks(auras.boneshield) <= 5),
         )

@@ -1,6 +1,7 @@
 import * as bt from './BehaviorTree'
 import objMgr, { me } from './ObjectManager'
 import CGUnit from "../Extensions/CGUnit";
+import Spell from './Spell';
 
 class Common {
   static waitForCastOrChannel() {
@@ -57,7 +58,7 @@ class Common {
 
 
   static validTarget(u) {
-    if (!u|| u.deadOrGhost || !me.canAttack(u)) {
+    if (!u || u.deadOrGhost || !me.canAttack(u)) {
       return false;
     }
 
@@ -69,6 +70,19 @@ class Common {
       if (me.isMounted) {
         return bt.Status.Success;
       }
+      return bt.Status.Failure;
+    });
+  }
+
+  static startAttack() {
+    return new bt.Action(() => {
+      const autoAttack = Spell.getSpell("Auto Attack")
+
+      if (!autoAttack.isActive) {
+        me.toggleAttack();
+        return bt.Status.Success;
+      }
+
       return bt.Status.Failure;
     });
   }
