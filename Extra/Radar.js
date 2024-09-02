@@ -162,7 +162,7 @@ class Radar {
   }
 
   static withinDistance(obj) {
-    return me.distanceTo(obj.position) <= Settings.ExtraRadarLoadDistance;
+    return me.distanceTo2D(obj.position) <= Settings.ExtraRadarLoadDistance;
   }
 
   static tick() {
