@@ -21,7 +21,7 @@ export class WarriorFuryBehavior extends Behavior {
         this.multiTargetRotation()
       ),
       new bt.Decorator(
-        () => Boolean(me.getUnitsAroundCount(8) < 2),
+        () => Boolean(me.getUnitsAroundCount(8) < 2 && me.isWithinMeleeRange(me.target)),
         this.singleTargetRotation()
       )
     );
