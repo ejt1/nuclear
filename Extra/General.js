@@ -1,4 +1,5 @@
-import { me } from '@/Core/ObjectManager';
+import Common from '@/Core/Common';
+import ObjectManager, { me } from '@/Core/ObjectManager';
 import Settings from '@/Core/Settings';
 
 class General {
@@ -27,7 +28,7 @@ class General {
   static general() {
     if (Settings.HealthstonePercentage > 0) {
       if (me.pctHealth <= Settings.HealthstonePercentage) {
-        // Logic to use Healthstone
+        Common.useItemByName("Healthstone")
       }
     }
   }

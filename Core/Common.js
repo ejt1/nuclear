@@ -56,7 +56,6 @@ class Common {
     });
   }
 
-
   static validTarget(u) {
     if (!u || u.deadOrGhost || !me.canAttack(u)) {
       return false;
@@ -85,6 +84,31 @@ class Common {
 
       return bt.Status.Failure;
     });
+  }
+
+  /**
+   * Finds and returns an item by its name.
+   *
+   * @param {string} name - The name of the item to find.
+   * @returns {wow.CGItem|null} The item if found, otherwise null.
+   */
+  static getItemByName(name) {
+    let foundItem = null;
+
+    // Iterate over all objects in ObjectManager
+    objMgr.objects.forEach((obj) => {
+      if (obj instanceof wow.CGItem && obj.name === name) {
+        foundItem = obj; // Set the found item
+      }
+    });
+
+    // Return the found item or null if not found
+    return foundItem;
+  }
+
+  static useItemByName(name) {
+    const theItem = this.getItemByName(name)
+    // use item with checks
   }
 }
 
