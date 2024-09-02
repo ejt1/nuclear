@@ -71,6 +71,13 @@ const herbs = {
   384298: "herb",   // Self-Grown Decayed Writhebark
   // The war within
   414316: "herb",   // Luredrop
+  414318: "herb",   // Blessing Blossom
+  414325: "herb",   // Crystallized Mycobloom
+  414335: "herb",   // Irradiated Mycobloom
+  414338: "herb",   // Irradiated Blessing Blossom
+  414339: "herb",   // Irradiated Arathor's Spear
+  454062: "herb",   // Lush Mycobloom
+  454063: "herb",   // Mycobloom
   454066: "herb",   // Irradiated Mycobloom
 };
 
@@ -145,6 +152,21 @@ const ores = {
   381519: "vein",   // Infurious Serevite Deposit
   381517: "vein",   // Titan-Touched Serevite Deposit
   381518: "vein",   // Primal Serevite Deposit
+  // The War Within
+  413046: "vein",   // Bismuth
+  413874: "vein",   // Rich Bismuth
+  413886: "vein",   // EZ-Mine Bismuth
+  413883: "vein",   // Crystallized Bismuth
+  413049: "vein",   // Ironclaw
+  413877: "vein",   // Rich Ironclaw
+  413900: "vein",   // Crystallized Ironclaw
+  413905: "vein",   // EZ-Mine Ironclaw
+  430335: "vein",   // Webbed Ore Deposit (Ironclaw)
+  430351: "vein",   // Webbed Ore Deposit (Aqirite)
+  413047: "vein",   // Aqirite
+  413892: "vein",   // Weeping Aqirite
+  413884: "vein",   // Weeping Bismuth
+  413875: "vein",   // Rich Aqirite
 };
 
 const treasures = {
@@ -185,6 +207,13 @@ const treasures = {
   213180: "treasure", // Guo-Lai runestone
   218772: "treasure", // Golden Treasure
   376587: "treasure", // Expedition Scout's Pack
+  // The War Within
+  // Delve treasures
+  454093: "treasure", // Sturdy Chest
+  455495: "treasure", // Sturdy Chest
+  455496: "treasure", // Sturdy Chest
+  455583: "treasure", // Sturdy Chest
+  478443: "treasure", // Mislaid Curiosity
 };
 
 export default { herb: herbs, ore: ores, treasure: treasures };
