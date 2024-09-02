@@ -72,13 +72,30 @@ const herbs = {
   // The war within
   414316: "herb",   // Luredrop
   414318: "herb",   // Blessing Blossom
+  414319: "herb",   // Arathor's Spear
+  414324: "herb",   // Lush Arathor's Spear
   414325: "herb",   // Crystallized Mycobloom
   414335: "herb",   // Irradiated Mycobloom
   414338: "herb",   // Irradiated Blessing Blossom
   414339: "herb",   // Irradiated Arathor's Spear
+  440162: "herb",   // Luredrop
+  440163: "herb",   // Luredrop
+  440164: "herb",   // Luredrop
+  440167: "herb",   // Luredrop
+  440189: "herb",   // Luredrop
+  452971: "herb",   // Luredrop
+  452972: "herb",   // Luredrop
+  452976: "herb",   // Luredrop
+  452977: "herb",   // Luredrop
+  452978: "herb",   // Luredrop
+  454010: "herb",   // Luredrop
   454062: "herb",   // Lush Mycobloom
   454063: "herb",   // Mycobloom
   454066: "herb",   // Irradiated Mycobloom
+  454069: "herb",   // Irradiated Mycobloom
+  454071: "herb",   // Mycobloom
+  454086: "herb",   // Blessing Blossom
+  454545: "herb",   // Luredrop
 };
 
 const ores = {
@@ -167,6 +184,8 @@ const ores = {
   413892: "vein",   // Weeping Aqirite
   413884: "vein",   // Weeping Bismuth
   413875: "vein",   // Rich Aqirite
+  413890: "vein",   // Crystallized Aqirite
+  413895: "vein",   // EZ-Mine Aqirite
 };
 
 const treasures = {
@@ -214,6 +233,10 @@ const treasures = {
   455496: "treasure", // Sturdy Chest
   455583: "treasure", // Sturdy Chest
   478443: "treasure", // Mislaid Curiosity
+  // Disturbed Earth
+  422531: "treasure", // Disturbed Earth
+
+
 };
 
 export default { herb: herbs, ore: ores, treasure: treasures };
