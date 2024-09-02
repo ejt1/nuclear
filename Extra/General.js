@@ -12,7 +12,7 @@ class General {
     { type: "combobox", uid: "DispelMode", text: "Dispel Mode", options: ["None", "Everything", "List"], default: "None" },
 
     { header: "Healthstone Settings" },
-    { type: "slider", uid: "HealthstonePercentage", text: "Healthstone Usage Percentage", default: 30, min: 0, max: 100 },
+    { type: "slider", uid: "HealthstonePercentage", text: "Healthstone Usage Percentage", default: 0, min: 0, max: 100 },
   ];
 
   static tabName = "General";
