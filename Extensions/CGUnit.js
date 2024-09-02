@@ -532,7 +532,7 @@ Object.defineProperties(wow.CGUnit.prototype, {
      * Check if the unit is the current tank for the player.
      * @returns {boolean} - Returns true if the unit is the current tank, false otherwise.
      */
-    value: function () {
+    get: function () {
       // Check if the unit's GUID matches the player's target GUID
       return this.tankingGUID.low === me.guid.low;
     }
