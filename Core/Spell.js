@@ -4,6 +4,7 @@ import { losExclude } from "../Data/Exclusions";
 import { DispelPriority, dispels } from "../Data/Dispels";
 import { interrupts } from '@/Data/Interrupts';
 import Settings from './Settings';
+import { defaultHealTargeting as Heal } from '@/Targeting/HealTargeting';
 
 class Spell {
   /** @type {{get: function(): (wow.CGUnit|undefined)}} */
@@ -294,23 +295,29 @@ class Spell {
   }
 
   /**
-   * Dispel a debuff or buff from units, depending on if we are dispelling friends or enemies.
-   * @param {number | string} spellNameOrId - The spell ID or name.
-   * @param {boolean} friends - If true, dispel friendly units. If false, dispel enemies (for purge/soothe).
-   * @param {number} priority - The priority level for dispel. Defaults to DispelPriority.Low if not provided.
-   * @param {boolean} playersOnly - dispel only players - used for purge.
-   * @param {...number} types - The types of dispel we can use, e.g., Magic, Curse, Disease, Poison.
-   * @returns {bt.Status} - Whether a dispel was cast.
-   */
+    * Dispel a debuff or buff from units, depending on if we are dispelling friends or enemies.
+    * @param {number | string} spellNameOrId - The spell ID or name.
+    * @param {boolean} friends - If true, dispel friendly units. If false, dispel enemies (for purge/soothe).
+    * @param {number} priority - The priority level for dispel. Defaults to DispelPriority.Low if not provided.
+    * @param {boolean} playersOnly - dispel only players - used for purge.
+    * @param {...number} types - The types of dispel we can use, e.g., Magic, Curse, Disease, Poison.
+    * @returns {bt.Status} - Whether a dispel was cast.
+    */
   static dispel(spellNameOrId, friends, priority = DispelPriority.Low, playersOnly = false, ...types) {
     return new bt.Sequence(
       new bt.Action(() => {
-        // Check if the spell is on cooldown
-        if (this.getCooldown(spellNameOrId).timeleft > 0) return bt.Status.Failure;
+        // Early return if dispel mode is set to "None"
+        if (Settings.DispelMode === "None") {
+          return bt.Status.Failure;
+        }
+
+        const spell = Spell.getSpell(spellNameOrId);
+        if (!spell || !spell.isUsable || !spell.cooldown.ready) {
+          return bt.Status.Failure;
+        }
 
         // List to target, either friends or enemies
-        const list = friends ? me.getFriends() : me.getEnemies(40);
-
+        const list = friends ? Heal.getPriorityList() : me.getEnemies(40);
         if (!list) {
           console.error("No list was provided for Dispel");
           return bt.Status.Failure;
@@ -318,31 +325,42 @@ class Spell {
 
         // Loop through each unit in the list
         for (const unit of list) {
-          const auras = unit.auras;
+          if (playersOnly && !unit.isPlayer()) {
+            continue;
+          }
 
+          const auras = unit.auras;
           for (const aura of auras) {
             const dispelTypeMatch = types.includes(aura.dispelType);
-
             // Check for debuff/buff status, dispel priority, and aura duration remaining
             const dispelPriority = dispels[aura.spellId] || DispelPriority.Low;
             const isValidDispel = friends
               ? aura.isDebuff() && dispelPriority >= priority
               : aura.isBuff() && dispelPriority >= priority;
+
             if (isValidDispel && aura.remaining > 2000 && dispelTypeMatch) {
               const durationPassed = aura.duration - aura.remaining;
 
-              // Try to cast the dispel if it's been long enough
-              if (durationPassed > 777 && this.castPrimitive(this.getSpell(spellNameOrId), unit)) {
+              // Check if we should dispel based on the settings
+              let shouldDispel = false;
+
+              if (Settings.DispelMode === "Everything") {
+                shouldDispel = true;
+              } else if (Settings.DispelMode === "List") {
+                shouldDispel = dispels[aura.spellId] !== undefined
+              }
+
+              // Try to cast the dispel if it's been long enough and meets the dispel criteria
+              if (shouldDispel && durationPassed > 777 && spell.cast(unit)) {
                 console.info(`Cast dispel on ${unit.unsafeName} to remove ${aura.name} with priority ${dispelPriority}`);
                 return bt.Status.Success;
               }
             }
           }
         }
-
         return bt.Status.Failure;
       })
-    )
+    );
   }
 
   /**
