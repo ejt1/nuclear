@@ -1,7 +1,7 @@
 import * as bt from './BehaviorTree';
-import objMgr, {me} from './ObjectManager';
-import {losExclude} from "../Data/Exclusions";
-import {DispelPriority, dispels} from "../Data/Dispels";
+import objMgr, { me } from './ObjectManager';
+import { losExclude } from "../Data/Exclusions";
+import { DispelPriority, dispels } from "../Data/Dispels";
 
 class Spell {
   /** @type {{get: function(): (wow.CGUnit|undefined)}} */
@@ -40,7 +40,7 @@ class Spell {
       if (typeof arg === 'function') {
         sequence.addChild(new bt.Action(() => {
           const r = arg();
-          if (r === false) {
+          if (r === false || r === undefined || r === null) {
             // function returned a boolean predicate
             return bt.Status.Failure;
           } else if (r instanceof wow.CGUnit || r instanceof wow.Guid) {
@@ -49,8 +49,14 @@ class Spell {
           }
           return bt.Status.Success;
         }));
+      } else {
+        try {
+          throw new Error(`Invalid argument passed to Spell.cast: expected function got ${typeof arg}`);
+        } catch (e) {
+          console.warn(e.message);
+          console.warn(e.stack.split('\n')[1]);
+        }
       }
-      // XXX: output error to indicate invalid argument?
     }
 
     sequence.addChild(Spell.castEx(spell));
@@ -138,7 +144,7 @@ class Spell {
       return false;
     }
 
-    if ((target instanceof wow.CGUnit && !losExclude[target.entryId]) && !this.inRange(spell,target)) {
+    if ((target instanceof wow.CGUnit && !losExclude[target.entryId]) && !this.inRange(spell, target)) {
       return false;
     }
 
