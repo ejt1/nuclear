@@ -137,7 +137,6 @@ Object.defineProperties(wow.CGUnit.prototype, {
     }
   },
 
-
   hasVisibleAura: {
     /**
      * Check if the unit has a visible aura by name or spell ID.
@@ -212,7 +211,6 @@ Object.defineProperties(wow.CGUnit.prototype, {
       return aura || undefined;
     }
   },
-
 
   getAuraStacks: {
     /**
@@ -536,8 +534,29 @@ Object.defineProperties(wow.CGUnit.prototype, {
       // Check if the unit's GUID matches the player's target GUID
       return this.tankingGUID.low === me.guid.low;
     }
-  }
+  },
 
+  currentCastOrChannel: {
+    /**
+     * Get the current cast or channel information for the unit.
+     * @returns {any} - Returns the current cast info if available, otherwise the current channel info, or undefined if neither is available.
+     */
+    get: function () {
+      return this.currentCast !== undefined
+        ? this.currentCast
+        : this.currentChannel;
+    }
+  },
+
+  isInterruptible: {
+    /**
+     * Check if the unit's current cast or channel is interruptible.
+     * @returns {boolean} - Returns true if the current cast or channel is interruptible, false otherwise.
+     */
+    get: function () {
+      return (this.spellInfo.interruptFlags & 0x8) !== 0;
+    }
+  },
 });
 
 export default true;
