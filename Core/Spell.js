@@ -1,7 +1,9 @@
 import * as bt from './BehaviorTree';
-import objMgr, {me} from './ObjectManager';
-import {losExclude} from "../Data/Exclusions";
-import {DispelPriority, dispels} from "../Data/Dispels";
+import objMgr, { me } from './ObjectManager';
+import { losExclude } from "../Data/Exclusions";
+import { DispelPriority, dispels } from "../Data/Dispels";
+import { interrupts } from '@/Data/Interrupts';
+import Settings from './Settings';
 
 class Spell {
   /** @type {{get: function(): (wow.CGUnit|undefined)}} */
@@ -138,7 +140,7 @@ class Spell {
       return false;
     }
 
-    if ((target instanceof wow.CGUnit && !losExclude[target.entryId]) && !this.inRange(spell,target)) {
+    if ((target instanceof wow.CGUnit && !losExclude[target.entryId]) && !this.inRange(spell, target)) {
       return false;
     }
 
@@ -222,7 +224,7 @@ class Spell {
    * Attempts to interrupt a casting or channeling spell on nearby enemies or players.
    *
    * This method checks for units around the player within the interrupt spell's range.
-   * It attempts to interrupt spells that are more than 50% completed.
+   * It attempts to interrupt spells based on the configured interrupt mode and percentage.
    *
    * @param {number | string} spellNameOrId - The ID or name of the interrupt spell to cast.
    * @param {boolean} [interruptPlayersOnly=false] - If set to true, only player units will be interrupted.
@@ -231,8 +233,12 @@ class Spell {
   static interrupt(spellNameOrId, interruptPlayersOnly = false) {
     return new bt.Sequence(
       new bt.Action(() => {
-        const spell = Spell.getSpell(spellNameOrId);
+        // Early return if interrupt mode is set to "None"
+        if (Settings.InterruptMode === "None") {
+          return bt.Status.Failure;
+        }
 
+        const spell = Spell.getSpell(spellNameOrId);
         if (!spell || !spell.isUsable || !spell.cooldown.ready) {
           return bt.Status.Failure;
         }
@@ -267,10 +273,18 @@ class Spell {
           const castTime = castInfo.castEnd - castInfo.castStart;
           const castPctRemain = (castRemains / castTime) * 100;
 
-          if (castPctRemain <= 50) {
-            if (target.isInterruptible && spell.cast(target)) {
-              return bt.Status.Success;
-            }
+          // Check if we should interrupt based on the settings
+          let shouldInterrupt = false;
+
+          if (Settings.InterruptMode === "Everything") {
+            shouldInterrupt = castPctRemain <= Settings.InterruptPercentage;
+          } else if (Settings.InterruptMode === "List") {
+            shouldInterrupt = interrupts[castInfo.spellId] &&
+              castPctRemain <= Settings.InterruptPercentage;
+          }
+
+          if (shouldInterrupt && target.isInterruptible && spell.cast(target)) {
+            return bt.Status.Success;
           }
         }
 
