@@ -56,6 +56,20 @@ Object.defineProperties(wow.CGUnit.prototype, {
     }
   },
 
+  predictedHealthPercent: {
+    /** @this {wow.CGUnit} */
+    get: function () {
+      if (this.health <= 1) {
+        return this.health;
+      }
+      let predictedHealth = this.health;
+      this.healPredictions.forEach(prediction => {
+        predictedHealth += prediction.amount;
+      });
+      return (predictedHealth * 100.0) / this.maxHealth;
+    }
+  },
+
   /**
    * Estimate the time to death for this unit based on its current health percentage and the elapsed time.
    *

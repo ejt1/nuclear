@@ -32,10 +32,10 @@ class HealTargeting extends Targeting {
   getPriorityTarget() {
     if (this.priorityList.length > 0) {
       // Filter out targets with healthPct greater than 0
-      const validTargets = this.priorityList.filter(entry => entry.unit.pctHealth > 0);
+      const validTargets = this.priorityList.filter(entry => entry.unit.predictedHealthPercent > 0);
 
       // Sort valid targets by healthPct in ascending order
-      validTargets.sort((a, b) => a.unit.pctHealth - b.unit.pctHealth);
+      validTargets.sort((a, b) => a.unit.predictedHealthPercent - b.unit.predictedHealthPercent);
 
       // Return the unit with the lowest healthPct, or undefined if no valid targets exist
       return validTargets.length > 0 ? validTargets[0] : undefined;
@@ -161,7 +161,7 @@ class HealTargeting extends Targeting {
         }
       }
 
-      priority += (100 - u.pctHealth); // Higher priority for lower health
+      priority += (100 - u.predictedHealthPercent); // Higher priority for lower health
       priority -= ((100 - me.pctPower) * (manaMulti / 100)); // Lower priority based on mana
 
       if (priority > 0 || u.inCombat()) {
