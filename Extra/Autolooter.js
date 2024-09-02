@@ -50,7 +50,7 @@ class Autolooter {
       !me.isMoving() &&
       !me.isCastingOrChanneling &&
       !me.isMounted &&
-      (Settings.ExtraIgnoreEnemies || !me.inCombat || combat.targets.length === 0);
+      (Settings.ExtraIgnoreEnemies || !me.inCombat || combat.targets.find(unit => unit.distanceTo(me) <= 8 || me.isWithinMeleeRange(unit)) === undefined );
   }
 
   static autoloot() {
