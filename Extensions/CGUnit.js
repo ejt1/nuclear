@@ -1,6 +1,6 @@
 import objMgr, { me } from "@/Core/ObjectManager";
 import Common from "@/Core/Common";
-import {MovementFlags, TraceLineHitFlags, UnitFlags, UnitStandStateType} from "@/Enums/Flags";
+import { MovementFlags, TraceLineHitFlags, UnitFlags, UnitStandStateType } from "@/Enums/Flags";
 
 const originalTargetGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'target').get;
 const originalAurasGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'auras').get;
@@ -413,7 +413,6 @@ Object.defineProperties(wow.CGUnit.prototype, {
     }
   },
 
-
   angleToPos: {
     /**
      * Calculate the angle between two positions, considering the unit's facing direction.
@@ -525,6 +524,17 @@ Object.defineProperties(wow.CGUnit.prototype, {
       // Perform the trace line check
       const traceResult = wow.World.traceLine(from, to, flags);
       return !traceResult.hit; // If traceResult.hit is false, we have line of sight
+    }
+  },
+
+  isTanking: {
+    /**
+     * Check if the unit is the current tank for the player.
+     * @returns {boolean} - Returns true if the unit is the current tank, false otherwise.
+     */
+    value: function () {
+      // Check if the unit's GUID matches the player's target GUID
+      return this.tankingGUID.low === me.guid.low;
     }
   }
 
