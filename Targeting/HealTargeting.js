@@ -24,10 +24,6 @@ class HealTargeting extends Targeting {
     this.afflicted = new Array();
   }
 
-  getPriorityList() {
-    return this.priorityList;
-  }
-
   /**
    * Returns the top priority target in the priority list, sorted by the lowest healthPct.
    * Targets with healthPct > 0 are filtered out. Returns undefined if no valid targets exist.

@@ -14,7 +14,6 @@ export class PriestHolyBehavior extends Behavior {
   specialization = Specialization.Priest.Holy;
   version = wow.GameVersion.Retail;
 
-
   build() {
     return new bt.Decorator(
       ret => !spell.isGlobalCooldown(),

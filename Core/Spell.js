@@ -317,7 +317,7 @@ class Spell {
         }
 
         // List to target, either friends or enemies
-        const list = friends ? Heal.getPriorityList() : me.getEnemies(40);
+        const list = friends ? Heal.priorityList : me.getEnemies(40);
         if (!list) {
           console.error("No list was provided for Dispel");
           return bt.Status.Failure;
