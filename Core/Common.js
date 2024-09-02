@@ -74,7 +74,7 @@ class Common {
     });
   }
 
-  static startAttack() {
+  static ensureAutoAttack() {
     return new bt.Action(() => {
       const autoAttack = Spell.getSpell("Auto Attack")
 
