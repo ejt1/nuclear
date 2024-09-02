@@ -1,6 +1,7 @@
 import Targeting from './Targeting'; // Assuming Targeting is our base class
-import {me} from "../Core/ObjectManager";
-import {UnitFlags} from "../Enums/Flags";
+import { me } from "../Core/ObjectManager";
+import PerfMgr from "../Debug/PerfMgr";
+import { UnitFlags } from "../Enums/Flags";
 import ClassType from "../Enums/Specialization";
 import PartyMember from "@/Extensions/PartyMember";
 
@@ -23,10 +24,6 @@ class HealTargeting extends Targeting {
     this.afflicted = new Array();
   }
 
-  getPriorityList() {
-    return this.priorityList;
-  }
-
   /**
    * Returns the top priority target in the priority list, sorted by the lowest healthPct.
    * Targets with healthPct > 0 are filtered out. Returns undefined if no valid targets exist.
@@ -41,17 +38,20 @@ class HealTargeting extends Targeting {
       validTargets.sort((a, b) => a.unit.predictedHealthPercent - b.unit.predictedHealthPercent);
 
       // Return the unit with the lowest healthPct, or undefined if no valid targets exist
-      return validTargets.length > 0 ? validTargets[0].unit : undefined;
+      return validTargets.length > 0 ? validTargets[0] : undefined;
     }
 
     return undefined;
   }
 
   update() {
+    PerfMgr.begin("Heal Targeting");
     super.update();
+    PerfMgr.end("Heal Targeting");
   }
 
   reset() {
+    super.reset()
     // Resetting priority list and friends
     this.priorityList = new Array();
     this.friends = {
@@ -115,6 +115,9 @@ class HealTargeting extends Targeting {
     const manaMulti = 30;
     const target = me.targetUnit;
 
+    // Temporary array to store units along with their calculated priority
+    const weightedUnits = [];
+
     this.healTargets.forEach(u => {
       let priority = 0;
       let isTank = false;
@@ -123,48 +126,49 @@ class HealTargeting extends Targeting {
 
       let member = null;
       if (me.guid.equals(u.guid)) {
+        priority += 5
         member = me;
       } else {
         member = me.currentParty?.getPartyMemberByGuid(u.guid);
       }
 
-      // Skipping if the unit is not relevant
-      if (!member && me.guid !== u.guid && target !== u) return;
+      if (!member && !me.guid.equals(u.guid) && target !== u) return;
+
+      if (me.guid.equals(u.guid)) {
+        priority += 5;
+      }
+
+      if (target && target === u) {
+        priority += 20;
+      }
 
       if (member instanceof wow.PartyMember) {
-        if (target && target === u) {
-          priority += 20;
+        if (member.isTank()) {
+          if (u.class !== ClassType.DeathKnight) {
+            priority += 20;
+          }
+          isTank = true;
         }
 
-        if (member) {
-          if (member.isTank()) {
-            if (u.class !== ClassType.DeathKnight) {
-              priority += 20;
-            }
-            isTank = true;
-          }
+        if (member.isHealer()) {
+          priority += 15;
+          isHeal = true;
+        }
 
-          if (member.isHealer()) {
-            priority += 15;
-            isHeal = true;
-          }
-
-          if (member.isDamage()) {
-            priority += 5;
-            isDPS = true;
-          }
+        if (member.isDamage()) {
+          priority += 5;
+          isDPS = true;
         }
       }
 
       priority += (100 - u.predictedHealthPercent); // Higher priority for lower health
       priority -= ((100 - me.pctPower) * (manaMulti / 100)); // Lower priority based on mana
 
-      // Adding valid units to priorityList
       if (priority > 0 || u.inCombat()) {
-        this.priorityList.push({unit: u, priority: priority}); // Use push to add to the array
+        // Add the unit to weightedUnits with its calculated priority
+        weightedUnits.push({ unit: u, priority: priority });
       }
 
-      // Classifying units into tanks, DPS, and healers
       if (isTank) {
         this.friends.Tanks.push(u);
       } else if (isDPS) {
@@ -176,42 +180,12 @@ class HealTargeting extends Targeting {
       this.friends.All.push(u);
     });
 
-    // Sorting priorityList by priority in descending order
-    this.priorityList.sort((a, b) => b.priority - a.priority);
-  }
+    // Sort the weightedUnits array by priority in descending order
+    weightedUnits.sort((a, b) => b.priority - a.priority);
 
-  // Commented-out methods for future use
-  // getLowestMember() {
-  //   return this.priorityList[0] && this.priorityList[0].unit;
-  // }
-  //
-  // getMembersBelow(pct) {
-  //   let count = 0;
-  //   const members = [];
-  //
-  //   for (const { unit } of Object.values(this.priorityList)) {
-  //     if (unit.healthPct < pct) {
-  //       members.push(unit);
-  //       count++;
-  //     }
-  //   }
-  //
-  //   return { members, count };
-  // }
-  //
-  // getMembersAround(friend, dist, threshold = 100) {
-  //   let count = 0;
-  //   const members = [];
-  //
-  //   for (const { unit } of Object.values(this.priorityList)) {
-  //     if (friend !== unit && friend.getDistance(unit) <= dist && unit.healthPct < threshold) {
-  //       members.push(unit);
-  //       count++;
-  //     }
-  //   }
-  //
-  //   return { members, count };
-  // }
+    // Map the sorted weightedUnits to extract just the units
+    this.priorityList = weightedUnits.map(wu => wu.unit);
+  }
 }
 
 // Export HealTargeting as a singleton instance

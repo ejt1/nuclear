@@ -1,6 +1,6 @@
 import objMgr, { me } from "@/Core/ObjectManager";
 import Common from "@/Core/Common";
-import {MovementFlags, TraceLineHitFlags, UnitFlags, UnitStandStateType} from "@/Enums/Flags";
+import { MovementFlags, TraceLineHitFlags, UnitFlags, UnitStandStateType } from "@/Enums/Flags";
 
 const originalTargetGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'target').get;
 const originalAurasGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'auras').get;
@@ -151,7 +151,6 @@ Object.defineProperties(wow.CGUnit.prototype, {
     }
   },
 
-
   hasVisibleAura: {
     /**
      * Check if the unit has a visible aura by name or spell ID.
@@ -226,7 +225,6 @@ Object.defineProperties(wow.CGUnit.prototype, {
       return aura || undefined;
     }
   },
-
 
   getAuraStacks: {
     /**
@@ -427,7 +425,6 @@ Object.defineProperties(wow.CGUnit.prototype, {
     }
   },
 
-
   angleToPos: {
     /**
      * Calculate the angle between two positions, considering the unit's facing direction.
@@ -540,8 +537,40 @@ Object.defineProperties(wow.CGUnit.prototype, {
       const traceResult = wow.World.traceLine(from, to, flags);
       return !traceResult.hit; // If traceResult.hit is false, we have line of sight
     }
-  }
+  },
 
+  isTanking: {
+    /**
+     * Check if the player is the current tank for the unit.
+     * @returns {boolean} - Returns true if the player is the current tank, false otherwise.
+     */
+    get: function () {
+      // Check if the unit's GUID matches the player's GUID
+      return this.tankingGUID.low === me.guid.low;
+    }
+  },
+
+  currentCastOrChannel: {
+    /**
+     * Get the current cast or channel information for the unit.
+     * @returns {any} - Returns the current cast info if available, otherwise the current channel info, or undefined if neither is available.
+     */
+    get: function () {
+      return this.currentCast !== undefined
+        ? this.currentCast
+        : this.currentChannel;
+    }
+  },
+
+  isInterruptible: {
+    /**
+     * Check if the unit's current cast or channel is interruptible.
+     * @returns {boolean} - Returns true if the current cast or channel is interruptible, false otherwise.
+     */
+    get: function () {
+      return (this.spellInfo.interruptFlags & 0x8) !== 0;
+    }
+  },
 });
 
 export default true;
