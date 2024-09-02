@@ -77,11 +77,6 @@ const herbs = {
   414325: "herb",   // Crystallized Mycobloom
   414335: "herb",   // Irradiated Mycobloom
   414316: "herb",   // Luredrop
-  414318: "herb",   // Blessing Blossom
-  414319: "herb",   // Arathor's Spear
-  414324: "herb",   // Lush Arathor's Spear
-  414325: "herb",   // Crystallized Mycobloom
-  414335: "herb",   // Irradiated Mycobloom
   414338: "herb",   // Irradiated Blessing Blossom
   414339: "herb",   // Irradiated Arathor's Spear
   440162: "herb",   // Luredrop
@@ -99,22 +94,7 @@ const herbs = {
   454063: "herb",   // Mycobloom
   454066: "herb",   // Irradiated Mycobloom
   454069: "herb",   // Irradiated Mycobloom
-  414338: "herb",   // Irradiated Blessing Blossom
-  414339: "herb",   // Irradiated Arathor's Spear
-  454062: "herb",   // Lush Mycobloom
-  440162: "herb",   // Luredrop
-  440163: "herb",   // Luredrop
-  440164: "herb",   // Luredrop
-  440167: "herb",   // Luredrop
-  440189: "herb",   // Luredrop
-  452971: "herb",   // Luredrop
-  452972: "herb",   // Luredrop
-  452976: "herb",   // Luredrop
-  452977: "herb",   // Luredrop
-  452978: "herb",   // Luredrop
-  454010: "herb",   // Luredrop
   454545: "herb",   // Luredrop
-  454063: "herb",   // Mycobloom
   454071: "herb",   // Mycobloom
 };
 
