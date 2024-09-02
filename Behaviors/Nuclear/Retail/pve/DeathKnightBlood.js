@@ -28,6 +28,7 @@ export class DeathKnightBloodBehavior extends Behavior {
           common.waitForCastOrChannel(),
           common.waitForFacing(),
           common.ensureAutoAttack(),
+          spell.interrupt("Mind Freeze", false),
           spell.cast("Dark Command",
             on => combat.targets.find(unit => unit.inCombat() && unit.distanceTo(me) <= 30 && !unit.isTanking),
             req => combat.targets.find(unit => unit.inCombat() && unit.distanceTo(me) <= 30 && !unit.isTanking) !== undefined),
