@@ -17,6 +17,7 @@ export class DeathKnightBloodBehavior extends Behavior {
   context = BehaviorContext.Any;
   specialization = Specialization.DeathKnight.Blood;
   version = wow.GameVersion.Retail;
+  name = "Blood Deekay"
 
   build() {
     return new bt.Selector(

@@ -36,6 +36,7 @@ class Radar {
     { type: "checkbox", uid: "ExtraRadarDrawLinesEverything", text: "Draw Lines to Everything (When Tracked)", default: false },
 
     { header: "Debug Options" },
+    { type: "checkbox", uid: "ExtraRadarDrawDistance", text: "Draw Distance", default: false },
     { type: "checkbox", uid: "ExtraRadarDrawDebug", text: "Draw Debug Info", default: false },
     { type: "slider", uid: "ExtraRadarLoadDistance", text: "Radar Load Distance", default: 200, min: 1, max: 500 }
   ];
@@ -152,7 +153,7 @@ class Radar {
   static drawObjectText(obj, objPos) {
     let text = obj.name;
     if (Settings.ExtraRadarDrawDistance) {
-      const distance = Math.round(me.distanceTo(obj.position));
+      const distance = Math.round(me.distanceTo2D(obj.position));
       text += ` (${distance}y)`;
     }
     if (Settings.ExtraRadarDrawDebug) {

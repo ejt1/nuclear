@@ -4,11 +4,13 @@ import AntiAFK from "@/Extra/AntiAFK";
 import Autolooter from "@/Extra/Autolooter";
 import Radar from "@/Extra/Radar";
 import General from "@/Extra/General";
+import ProfileSettings from "@/Extra/ProfileSettings";
+import nuclear from "@/nuclear";
 
 class NuclearWindow {
   constructor() {
     this.show = new imgui.MutableVariable(false);
-    this.modules = [General, Radar, Autolooter, AntiAFK]; // Add other modules here as needed
+    this.modules = [General, Radar, Autolooter, AntiAFK, ProfileSettings]; // Add other modules here as needed
     this.initialized = false;
     // Initialize state for each option from Settings
     this.state = {};
@@ -94,9 +96,12 @@ class NuclearWindow {
     });
   }
 
-renderOptions(options) {
+  renderOptions(options) {
     options.forEach(option => {
       const settingValue = settings[option.uid];
+      if (!this.state[option.uid]) {
+        this.state[option.uid] = new imgui.MutableVariable(settingValue !== undefined ? settingValue : option.default);
+      }
       if (option.type === "checkbox") {
         this.state[option.uid].value = settingValue !== undefined ? settingValue : option.default;
         imgui.pushStyleColor(imgui.Col.Text, this.state[option.uid].value ? this.colors.enabledColor : this.colors.disabledColor);
@@ -115,8 +120,15 @@ renderOptions(options) {
           option.options.forEach(item => {
             const isSelected = (item === this.state[option.uid].value);
             if (imgui.selectable(item, isSelected)) {
+              const oldValue = this.state[option.uid].value;
               this.state[option.uid].value = item;
               settings[option.uid] = item;
+              if (option.uid === "profileSelector" && oldValue !== item) {
+                const specializationId = wow.SpecializationInfo.activeSpecializationId;
+                const profileKey = `profile${specializationId}`;
+                settings[profileKey] = item;
+                nuclear.rebuild();  // Call rebuild after changing the profile
+              }
             }
             if (isSelected) {
               imgui.setItemDefaultFocus();
