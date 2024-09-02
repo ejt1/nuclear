@@ -262,7 +262,7 @@ class Spell {
             continue;
           }
 
-          if (!spell.inRange(target) || me.isWithinMeleeRange(target)) {
+          if (!spell.inRange(target) && !me.isWithinMeleeRange(target)) {
             continue;
           }
 
