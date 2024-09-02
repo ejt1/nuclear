@@ -1,5 +1,6 @@
 import Targeting from './Targeting'; // Assuming Targeting is our base class
 import { me } from "../Core/ObjectManager";
+import PerfMgr from "../Debug/PerfMgr";
 import { UnitFlags } from "../Enums/Flags";
 import ClassType from "../Enums/Specialization";
 import PartyMember from "@/Extensions/PartyMember";
@@ -58,10 +59,13 @@ class HealTargeting extends Targeting {
   }
 
   update() {
+    PerfMgr.begin("Heal Targeting");
     super.update();
+    PerfMgr.end("Heal Targeting");
   }
 
   reset() {
+    super.reset()
     // Resetting priority list and friends
     this.priorityList = [];
     this.friends = {
@@ -70,7 +74,6 @@ class HealTargeting extends Targeting {
       Healers: [],
       All: []
     };
-    this.healTargets = [];
     this.afflicted = [];
   }
 
@@ -196,40 +199,6 @@ class HealTargeting extends Targeting {
     // Map the sorted weightedUnits to extract just the units
     this.priorityList = weightedUnits.map(wu => wu.unit);
   }
-
-
-  // Commented-out methods for future use
-  // getLowestMember() {
-  //   return this.priorityList[0] && this.priorityList[0].unit;
-  // }
-  //
-  // getMembersBelow(pct) {
-  //   let count = 0;
-  //   const members = [];
-  //
-  //   for (const { unit } of Object.values(this.priorityList)) {
-  //     if (unit.healthPct < pct) {
-  //       members.push(unit);
-  //       count++;
-  //     }
-  //   }
-  //
-  //   return { members, count };
-  // }
-  //
-  // getMembersAround(friend, dist, threshold = 100) {
-  //   let count = 0;
-  //   const members = [];
-  //
-  //   for (const { unit } of Object.values(this.priorityList)) {
-  //     if (friend !== unit && friend.getDistance(unit) <= dist && unit.healthPct < threshold) {
-  //       members.push(unit);
-  //       count++;
-  //     }
-  //   }
-  //
-  //   return { members, count };
-  // }
 }
 
 // Export HealTargeting as a singleton instance
