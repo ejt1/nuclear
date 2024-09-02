@@ -76,6 +76,27 @@ const herbs = {
   414324: "herb",   // Lush Arathor's Spear
   414325: "herb",   // Crystallized Mycobloom
   414335: "herb",   // Irradiated Mycobloom
+  414316: "herb",   // Luredrop
+  414318: "herb",   // Blessing Blossom
+  414319: "herb",   // Arathor's Spear
+  414324: "herb",   // Lush Arathor's Spear
+  414325: "herb",   // Crystallized Mycobloom
+  414335: "herb",   // Irradiated Mycobloom
+  414338: "herb",   // Irradiated Blessing Blossom
+  414339: "herb",   // Irradiated Arathor's Spear
+  440162: "herb",   // Luredrop
+  440163: "herb",   // Luredrop
+  440164: "herb",   // Luredrop
+  440167: "herb",   // Luredrop
+  440189: "herb",   // Luredrop
+  452971: "herb",   // Luredrop
+  452972: "herb",   // Luredrop
+  452976: "herb",   // Luredrop
+  452977: "herb",   // Luredrop
+  452978: "herb",   // Luredrop
+  454010: "herb",   // Luredrop
+  454062: "herb",   // Lush Mycobloom
+  454063: "herb",   // Mycobloom
   454066: "herb",   // Irradiated Mycobloom
   454069: "herb",   // Irradiated Mycobloom
   414338: "herb",   // Irradiated Blessing Blossom
@@ -224,6 +245,17 @@ const treasures = {
   213180: "treasure", // Guo-Lai runestone
   218772: "treasure", // Golden Treasure
   376587: "treasure", // Expedition Scout's Pack
+  // The War Within
+  // Delve treasures
+  454093: "treasure", // Sturdy Chest
+  455495: "treasure", // Sturdy Chest
+  455496: "treasure", // Sturdy Chest
+  455583: "treasure", // Sturdy Chest
+  478443: "treasure", // Mislaid Curiosity
+  // Disturbed Earth
+  422531: "treasure", // Disturbed Earth
+
+
 };
 
 export default { herb: herbs, ore: ores, treasure: treasures };
