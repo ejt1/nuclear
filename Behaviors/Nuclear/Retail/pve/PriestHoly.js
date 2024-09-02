@@ -21,8 +21,8 @@ export class PriestHolyBehavior extends Behavior {
       new bt.Selector(
         common.waitForNotMounted(),
         common.waitForCastOrChannel(),
+        spell.dispel("Purify", true, DispelPriority.Low, false, WoWDispelType.Magic),
         common.waitForTarget(),
-        spell.dispel("Purify", true, DispelPriority.Low, false, WoWDispelType.Magic)
       )
     );
   }

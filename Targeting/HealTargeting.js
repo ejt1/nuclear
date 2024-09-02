@@ -8,34 +8,24 @@ import PartyMember from "@/Extensions/PartyMember";
 class HealTargeting extends Targeting {
   constructor() {
     super();
-    this.priorityList = []; // Treating this as an array consistently
+    /** @type {Array<{ u: wow.CGUnit, priority: number}>} */
+    this.priorityList = new Array(); // Treating this as an array consistently
     this.friends = {
-      Tanks: [],
-      DPS: [],
-      Healers: [],
-      All: []
+      /** @type {Array<wow.CGUnit>} */
+      Tanks: new Array(),
+      /** @type {Array<wow.CGUnit>} */
+      DPS: new Array(),
+      /** @type {Array<wow.CGUnit>} */
+      Healers: new Array(),
+      /** @type {Array<wow.CGUnit>} */
+      All: new Array()
     };
-    this.afflicted = [];
+    /** @type {Array<wow.CGUnit>} */
+    this.afflicted = new Array();
   }
 
   getPriorityList() {
     return this.priorityList;
-  }
-
-  getAllFriends() {
-    return this.friends.All
-  }
-
-  getTankFriends() {
-    return this.friends.Tanks
-  }
-
-  getHealerFriends() {
-    return this.friends.Healers
-  }
-
-  getDPSFriends() {
-    return this.friends.DPS
   }
 
   /**
@@ -67,14 +57,15 @@ class HealTargeting extends Targeting {
   reset() {
     super.reset()
     // Resetting priority list and friends
-    this.priorityList = [];
+    this.priorityList = new Array();
     this.friends = {
-      Tanks: [],
-      DPS: [],
-      Healers: [],
-      All: []
+      Tanks: new Array(),
+      DPS: new Array(),
+      Healers: new Array(),
+      All: new Array()
     };
-    this.afflicted = [];
+    this.healTargets = new Array();
+    this.afflicted = new Array();
   }
 
   wantToRun() {
