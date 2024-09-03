@@ -47,7 +47,7 @@ class Radar {
   static renderOptions(renderFunction) {
     renderFunction([
       { header: "General Radar Settings", options: this.options.slice(0, 2) },
-      { header: "Tracking Options", collapsible: true, options: this.options.slice(2, 8) },
+      { header: "Tracking Options", collapsible: true, options: this.options.slice(3, 9) },
       { header: "Line Drawing Options", collapsible: true, options: this.options.slice(9, 16) },
       { header: "Debug Options", collapsible: true, options: this.options.slice(17) }
     ]);
