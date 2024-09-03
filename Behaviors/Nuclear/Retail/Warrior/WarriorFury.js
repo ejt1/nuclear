@@ -9,19 +9,26 @@ export class WarriorFuryBehavior extends Behavior {
   context = BehaviorContext.Any;
   specialization = Specialization.Warrior.Fury;
   version = wow.GameVersion.Retail;
+  name = "Fury Warrior";
 
   build() {
     return new bt.Selector(
       common.waitForNotMounted(),
       common.waitForTarget(),
       common.waitForCastOrChannel(),
+      common.waitForFacing(),
+      spell.cast("Victory Rush", () => me.pctHealth < 70),
+      spell.cast("Bloodthirst", () => me.pctHealth < 70 && me.hasVisibleAura("Enraged Regeneration")),
       this.useCooldowns(),
       new bt.Decorator(
         () => Boolean(me.getUnitsAroundCount(8) >= 2),
-        this.multiTargetRotation()
+        new bt.Selector(
+          this.multiTargetRotation(),
+          new bt.Action(() => bt.Status.Success)
+        )
       ),
       new bt.Decorator(
-        () => Boolean(me.getUnitsAroundCount(8) < 2 && me.isWithinMeleeRange(me.target)),
+        () => Boolean(me.isWithinMeleeRange(me.target)),
         this.singleTargetRotation()
       )
     );
@@ -101,9 +108,9 @@ export class WarriorFuryBehavior extends Behavior {
       spell.cast("Champions Spear", () => Boolean(
         me.hasAura("Enrage") &&
         ((me.hasAura("Furious Bloodthirst") && me.hasAura(this.talentSpellIds.titansTorment)) ||
-        !me.hasAura(this.talentSpellIds.titansTorment) ||
-        me.targetUnit.timeToDie < 20 ||
-        this.getEnemiesInRange(8) > 1)
+          !me.hasAura(this.talentSpellIds.titansTorment) ||
+          me.targetUnit.timeToDie < 20 ||
+          this.getEnemiesInRange(8) > 1)
       )),
       spell.cast("Whirlwind", () => Boolean(
         (this.getEnemiesInRange(8) > 1 && me.hasAura(this.talentSpellIds.improvedWhirlwind) && !me.hasAura("Meat Cleaver")) ||
@@ -128,9 +135,9 @@ export class WarriorFuryBehavior extends Behavior {
       )),
       spell.cast("Bloodthirst", () => Boolean(
         (!me.hasAura(this.talentSpellIds.recklessAbandon) &&
-        me.hasAura("Furious Bloodthirst") &&
-        me.hasAura("Enrage") &&
-        (!me.targetUnit.hasAuraByMe("Gushing Wound") || me.hasAura("Champions Might")))
+          me.hasAura("Furious Bloodthirst") &&
+          me.hasAura("Enrage") &&
+          (!me.targetUnit.hasAuraByMe("Gushing Wound") || me.hasAura("Champions Might")))
       )),
       spell.cast("Bloodbath", () => Boolean(me.hasAura("Furious Bloodthirst"))),
       spell.cast("Thunderous Roar", () => Boolean(
