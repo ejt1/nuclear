@@ -39,6 +39,7 @@ class Radar {
     { header: "Debug Options" },
     { type: "checkbox", uid: "ExtraRadarDrawDistance", text: "Draw Distance", default: false },
     { type: "checkbox", uid: "ExtraRadarDrawDebug", text: "Draw Debug Info", default: false },
+    { type: "checkbox", uid: "ExtraRadarInteractTracked", text: "Interact Tracked", default: false },
     { type: "slider", uid: "ExtraRadarLoadDistance", text: "Radar Load Distance", default: 200, min: 1, max: 500 }
   ];
 
@@ -217,6 +218,16 @@ class Radar {
       const closestPos = wow.WorldFrame.getScreenCoordinates(closestObject.position);
       if (closestPos.x !== -1) {
         canvas.addLine(mePos, closestPos, imgui.getColorU32(objectColors.default), 2);
+      }
+    }
+
+    // New: Interact with tracked objects within melee range
+    if (Settings.ExtraRadarInteractTracked && !me.currentCastOrChannel) {
+      for (const obj of trackedObjects) {
+        if (me.distanceTo(obj) < 6) {
+          obj.interact();
+          break;
+        }
       }
     }
   }
