@@ -1,22 +1,22 @@
 const herbs = {
   // Herbs
-  1617:   "herb",   // Silverleaf
-  1618:   "herb",   // Peacebloom
-  1619:   "herb",   // Earthroot
-  3726:   "herb",   // Earthroot
-  1620:   "herb",   // Mageroyal
-  1621:   "herb",   // Briarthorn
-  1622:   "herb",   // Bruiseweed
-  1623:   "herb",   // Wild Steelbloom
-  1624:   "herb",   // Kingsblood
-  1628:   "herb",   // Grave Moss
-  2041:   "herb",   // Liferoot
-  2042:   "herb",   // Fadeleaf
-  2043:   "herb",   // Khadgar's Whisker
-  2044:   "herb",   // Wintersbite
-  2045:   "herb",   // Stranglekelp
-  2046:   "herb",   // Goldthorn
-  2866:   "herb",   // Firebloom
+  1617: "herb",   // Silverleaf
+  1618: "herb",   // Peacebloom
+  1619: "herb",   // Earthroot
+  3726: "herb",   // Earthroot
+  1620: "herb",   // Mageroyal
+  1621: "herb",   // Briarthorn
+  1622: "herb",   // Bruiseweed
+  1623: "herb",   // Wild Steelbloom
+  1624: "herb",   // Kingsblood
+  1628: "herb",   // Grave Moss
+  2041: "herb",   // Liferoot
+  2042: "herb",   // Fadeleaf
+  2043: "herb",   // Khadgar's Whisker
+  2044: "herb",   // Wintersbite
+  2045: "herb",   // Stranglekelp
+  2046: "herb",   // Goldthorn
+  2866: "herb",   // Firebloom
   142140: "herb",   // Purple Lotus
   142141: "herb",   // Arthas' Tears
   142142: "herb",   // Sungrass
@@ -70,69 +70,126 @@ const herbs = {
   384293: "herb",   // Self-Grown Writhebark
   384298: "herb",   // Self-Grown Decayed Writhebark
   // The war within
+  414315: "herb",   // Mycobloom
+  414316: "herb",   // Luredrop
+  414317: "herb",   // Orbinid
   414318: "herb",   // Blessing Blossom
-  454086: "herb",   // Blessing Blossom
   414319: "herb",   // Arathor's Spear
+  414320: "herb",   // Lush Mycobloom
+  414321: "herb",   // Lush Luredrop
+  414322: "herb",   // Lush Orbinid
+  414323: "herb",   // Lush Blessing Blossom
   414324: "herb",   // Lush Arathor's Spear
   414325: "herb",   // Crystallized Mycobloom
+  414326: "herb",   // Crystallized Luredrop
+  414327: "herb",   // Crystallized Orbinid
+  414329: "herb",   // Crystallized Arathor's Spear
+  414330: "herb",   // Altered Mycobloom
+  414331: "herb",   // Altered Luredrop
+  414332: "herb",   // Altered Orbinid
   414335: "herb",   // Irradiated Mycobloom
-  414316: "herb",   // Luredrop
+  414336: "herb",   // Irradiated Luredrop
+  414337: "herb",   // Irradiated Orbinid
   414338: "herb",   // Irradiated Blessing Blossom
   414339: "herb",   // Irradiated Arathor's Spear
+  414340: "herb",   // Camouflaged Mycobloom
+  414342: "herb",   // Camouflaged Orbinid
+  423363: "herb",   // Sporefused Arathor's Spear
+  423366: "herb",   // Sporefused Luredrop
+  423367: "herb",   // Sporefused Mycobloom
+  423368: "herb",   // Sporefused Orbinid
+  429639: "herb",   // Sporelusive Arathor's Spear
+  429641: "herb",   // Sporelusive Luredrop
+  429642: "herb",   // Sporelusive Mycobloom
+  429643: "herb",   // Sporelusive Orbinid
+  429644: "herb",   // Sporelusive Arathor's Spear
+  429646: "herb",   // Sporelusive Luredrop
+  429647: "herb",   // Sporelusive Mycobloom
+  429648: "herb",   // Sporelusive Orbinid
   440162: "herb",   // Luredrop
   440163: "herb",   // Luredrop
   440164: "herb",   // Luredrop
   440167: "herb",   // Luredrop
   440189: "herb",   // Luredrop
+  440200: "herb",   // Mycobloom
+  440201: "herb",   // Mycobloom
+  440204: "herb",   // Mycobloom
+  452948: "herb",   // Orbinid
+  452958: "herb",   // Orbinid
+  452959: "herb",   // Orbinid
+  452964: "herb",   // Orbinid
+  452969: "herb",   // Orbinid
   452971: "herb",   // Luredrop
   452972: "herb",   // Luredrop
+  452973: "herb",   // Luredrop
+  452975: "herb",   // Luredrop
   452976: "herb",   // Luredrop
   452977: "herb",   // Luredrop
   452978: "herb",   // Luredrop
+  454006: "herb",   // Sporefused Luredrop
+  454009: "herb",   // Lush Luredrop
   454010: "herb",   // Luredrop
+  454050: "herb",   // Sporefused Luredrop
+  454054: "herb",   // Lush Luredrop
+  454055: "herb",   // Luredrop
   454062: "herb",   // Lush Mycobloom
   454063: "herb",   // Mycobloom
+  454064: "herb",   // Sporefused Mycobloom
   454066: "herb",   // Irradiated Mycobloom
+  454067: "herb",   // Sporefused Mycobloom
   454069: "herb",   // Irradiated Mycobloom
-  454545: "herb",   // Luredrop
+  454070: "herb",   // Lush Mycobloom
   454071: "herb",   // Mycobloom
+  454072: "herb",   // Sporefused Mycobloom
+  454074: "herb",   // Irradiated Mycobloom
+  454075: "herb",   // Lush Mycobloom
+  454076: "herb",   // Mycobloom
+  454077: "herb",   // Sporefused Blessing Blossom
+  454079: "herb",   // Irradiated Blessing Blossom
+  454080: "herb",   // Lush Blessing Blossom
+  454081: "herb",   // Blessing Blossom
+  454082: "herb",   // Sporefused Blessing Blossom
+  454084: "herb",   // Irradiated Blessing Blossom
+  454085: "herb",   // Lush Blessing Blossom
+  454086: "herb",   // Blessing Blossom
+  454545: "herb",   // Luredrop
 };
 
 const ores = {
   // Ores
-  2055:   "vein",   // Copper Vein
+  2055: "vein",   // Copper Vein
   181248: "vein",   // Copper Vein
-  1731:   "vein",   // Copper Vein
+  1731: "vein",   // Copper Vein
   103713: "vein",   // Copper Vein
-  3763:   "vein",   // Copper Vein
-  1610:   "vein",   // Incendicite Mineral Vein
-  1667:   "vein",   // Incendicite Mineral Vein
+  3763: "vein",   // Copper Vein
+  1610: "vein",   // Incendicite Mineral Vein
+  1667: "vein",   // Incendicite Mineral Vein
   103711: "vein",   // Tin Vein
-  3764:   "vein",   // Tin Vein
-  2054:   "vein",   // Tin Vein
+  3764: "vein",   // Tin Vein
+  2054: "vein",   // Tin Vein
   181249: "vein",   // Tin Vein
-  1732:   "vein",   // Tin Vein
-  2653:   "vein",   // Lesser Bloodstone Deposit
-  73940:  "vein",   // Ooze Covered Silver Vein
+  1732: "vein",   // Tin Vein
+  2653: "vein",   // Lesser Bloodstone Deposit
+  73940: "vein",   // Ooze Covered Silver Vein
   105569: "vein",   // Silver Vein
-  1733:   "vein",   // Silver Vein
-  1735:   "vein",   // Iron Deposit
-  19903:  "vein",   // Indurium Mineral Vein
+  1733: "vein",   // Silver Vein
+  1735: "vein",   // Iron Deposit
+  19903: "vein",   // Indurium Mineral Vein
   181109: "vein",   // Gold Vein
   150080: "vein",   // Gold Vein
-  1734:   "vein",   // Gold Vein
-  73941:  "vein",   // Ooze Covered Gold Vein
-  2040:   "vein",   // Mithril Deposit
+  1734: "vein",   // Gold Vein
+  73941: "vein",   // Ooze Covered Gold Vein
+  2040: "vein",   // Mithril Deposit
   176645: "vein",   // Mithril Deposit
   150079: "vein",   // Mithril Deposit
   123310: "vein",   // Ooze Covered Mithril Deposit
   165658: "vein",   // Dark Iron Deposit
   123309: "vein",   // Ooze Covered Truesilver Deposit
-  2047:   "vein",   // Truesilver Deposit
+  2047: "vein",   // Truesilver Deposit
   150081: "vein",   // Truesilver Deposit
   123848: "vein",   // Ooze Covered Thorium Vein
   176643: "vein",   // Small Thorium Vein
-  324:    "vein",   // Small Thorium Vein
+  324: "vein",   // Small Thorium Vein
   150082: "vein",   // Small Thorium Vein
   180215: "vein",   // Hakkari Thorium Vein
   177388: "vein",   // Ooze Covered Rich Thorium Vein
@@ -171,24 +228,41 @@ const ores = {
   381518: "vein",   // Primal Serevite Deposit
   // The War Within
   413046: "vein",   // Bismuth
+  413047: "vein",   // Aqirite
+  413049: "vein",   // Ironclaw
   413874: "vein",   // Rich Bismuth
+  413875: "vein",   // Rich Aqirite
+  413877: "vein",   // Rich Ironclaw
+  413880: "vein",   // Bismuth Seam
+  413881: "vein",   // Aqirite Seam
+  413882: "vein",   // Ironclaw Seam
+  413883: "vein",   // Crystallized Bismuth
   413884: "vein",   // Weeping Bismuth
   413886: "vein",   // EZ-Mine Bismuth
-  413883: "vein",   // Crystallized Bismuth
-  430335: "vein",   // Webbed Ore Deposit (Bismuth)
-
-  413049: "vein",   // Ironclaw
-  413877: "vein",   // Rich Ironclaw
-  413905: "vein",   // EZ-Mine Ironclaw
-  413900: "vein",   // Crystallized Ironclaw
-  430352: "vein",   // Webbed Ore Deposit (Ironclaw)
-
-  413047: "vein",   // Aqirite
-  413875: "vein",   // Rich Aqirite
+  413889: "vein",   // Camouflaged Bismuth
+  413890: "vein",   // Crystallized Aqirite
   413892: "vein",   // Weeping Aqirite
   413895: "vein",   // EZ-Mine Aqirite
-  413890: "vein",   // Crystallized Aqirite
+  413897: "vein",   // Camouflaged Aqirite
+  413900: "vein",   // Crystallized Ironclaw
+  413902: "vein",   // Weeping Ironclaw
+  413905: "vein",   // EZ-Mine Ironclaw
+  413907: "vein",   // Camouflaged Ironclaw
+  430335: "vein",   // Webbed Ore Deposit (Bismuth)
   430351: "vein",   // Webbed Ore Deposit (Aqirite)
+  430352: "vein",   // Webbed Ore Deposit (Ironclaw)
+  434556: "vein",   // Aqirite Chunk
+  434557: "vein",   // Ironclaw Chunk
+  434558: "vein",   // Bismuth Chunk
+  440211: "vein",   // Bismuth
+  440219: "vein",   // Ironclaw
+  452063: "vein",   // Ironclaw
+  452066: "vein",   // Ironclaw
+  452075: "vein",   // Ironclaw
+  452076: "vein",   // Bismuth
+  452079: "vein",   // Bismuth
+  452081: "vein",   // Bismuth
+  452083: "vein",   // Ironclaw
 };
 
 const treasures = {
@@ -242,4 +316,4 @@ const treasures = {
 
 };
 
-export default { herb: herbs, ore: ores, treasure: treasures };
+export default {herb: herbs, ore: ores, treasure: treasures};
