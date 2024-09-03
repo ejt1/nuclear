@@ -17,6 +17,7 @@ const objectColors = {
 class Radar {
   static options = [
     { type: "checkbox", uid: "ExtraRadar", text: "Enable Radar", default: false },
+    { type: "checkbox", uid: "ExtraRadarDrawOffScreenObjects", text: "Draw Off-Screen Objects", default: false },
 
     { header: "Tracking Options" },
     { type: "checkbox", uid: "ExtraRadarTrackHerbs", text: "Track Herbs", default: false },
@@ -45,7 +46,7 @@ class Radar {
 
   static renderOptions(renderFunction) {
     renderFunction([
-      { header: "General Radar Settings", options: this.options.slice(0, 1) },
+      { header: "General Radar Settings", options: this.options.slice(0, 2) },
       { header: "Tracking Options", collapsible: true, options: this.options.slice(2, 8) },
       { header: "Line Drawing Options", collapsible: true, options: this.options.slice(9, 16) },
       { header: "Debug Options", collapsible: true, options: this.options.slice(17) }
@@ -234,7 +235,9 @@ class Radar {
 
     onScreenObjects.sort((a, b) => me.distanceTo(a.position) - me.distanceTo(b.position));
 
-    this.drawOffScreenObjects(allObjectsArray);
+    if (Settings.ExtraRadarDrawOffScreenObjects) {
+      this.drawOffScreenObjects(allObjectsArray);
+    }
 
     if (Settings.ExtraRadarDrawLinesClosest && onScreenObjects.length > 0) {
       const closestObject = onScreenObjects[0];

@@ -43,6 +43,7 @@ export class DeathKnightFrostBehavior extends Behavior {
             spell.cast("Abomination Limb", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
           )
         ),
+        spell.cast("Soul Reaper", on => me.target, ret => me.target.pctHealth < 40),
         spell.cast("Remorseless Winter", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
         this.multiTargetRotation(),
         spell.cast("Rune Strike", ret => me.hasAura(auras.killingMachine)),
