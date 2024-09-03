@@ -151,7 +151,28 @@ class Radar {
   }
 
   static drawObjectText(obj, objPos) {
-    let text = obj.name;
+    let prefix = '';
+    let prefixColor = colors.white;
+    if (obj instanceof wow.CGGameObject) {
+      if (Gatherables.herb[obj.entryId]) {
+        prefix = '[H] ';
+        prefixColor = colors.green;
+      } else if (Gatherables.ore[obj.entryId]) {
+        prefix = '[V] ';
+        prefixColor = colors.orange;
+      } else if (Gatherables.treasure[obj.entryId]) {
+        prefix = '[T] ';
+        prefixColor = colors.silver;
+      }
+    } else if (obj instanceof wow.CGObject && (obj.isLootable || obj.isRelatedToActiveQuest)) {
+      prefix = '[Q] ';
+      prefixColor = colors.yellow;
+    } else if (obj instanceof wow.CGUnit && obj.classification == Classification.Rare && !obj.deadOrGhost) {
+      prefix = '[R] ';
+      prefixColor = colors.purple;
+    }
+
+    let text = `${obj.name}`;
     if (Settings.ExtraRadarDrawDistance) {
       const distance = Math.round(me.distanceTo2D(obj.position));
       text += ` (${distance}y)`;
@@ -159,7 +180,16 @@ class Radar {
     if (Settings.ExtraRadarDrawDebug) {
       text += ` [ID: ${obj.entryId}]`;
     }
-    imgui.getBackgroundDrawList().addText(text, objPos, imgui.getColorU32(colors.white));
+
+    const canvas = imgui.getBackgroundDrawList();
+    const adjustedObjPos = new Vector3(obj.position.x, obj.position.y, obj.position.z + obj.displayHeight + 0.1);
+    const screenPos = wow.WorldFrame.getScreenCoordinates(adjustedObjPos);
+
+    if (prefix) {
+      canvas.addText(prefix, screenPos, imgui.getColorU32(prefixColor));
+      screenPos.x += imgui.calcTextSize(prefix).x;
+    }
+    canvas.addText(text, screenPos, imgui.getColorU32(colors.white));
   }
 
   static withinDistance(obj) {
@@ -201,6 +231,8 @@ class Radar {
       const objPos = wow.WorldFrame.getScreenCoordinates(obj.position);
       return objPos.x !== -1;  // Keep only on-screen objects
     });
+
+    onScreenObjects.sort((a, b) => me.distanceTo(a.position) - me.distanceTo(b.position));
 
     this.drawOffScreenObjects(allObjectsArray);
 
