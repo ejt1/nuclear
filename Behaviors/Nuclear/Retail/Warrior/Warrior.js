@@ -9,6 +9,7 @@ export class WarriorFuryBehavior extends Behavior {
   context = BehaviorContext.Any;
   specialization = Specialization.Warrior.Fury;
   version = wow.GameVersion.Retail;
+  name = "Ejt's Fury Warrior";
 
   build() {
     return new bt.Decorator(
