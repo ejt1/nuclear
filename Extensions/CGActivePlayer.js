@@ -64,8 +64,27 @@ Object.defineProperties(wow.CGActivePlayer.prototype, {
 
       return nearbyEnemies;
     }
-  }
+  },
 
+  getReadyRunes: {
+    /**
+     * Get the number of runes that are currently ready (i.e., start === 0).
+     * @returns {number} - The count of runes that are ready.
+     */
+    value: function () {
+      let readyRuneCount = 0;
+
+      // Iterate through each rune's info
+      this.runeInfo.forEach(rune => {
+        // Check if the rune's start is 0, meaning it's ready
+        if (rune.start === 0) {
+          readyRuneCount++;
+        }
+      });
+
+      return readyRuneCount;
+    }
+  }
 });
 
 export default true;

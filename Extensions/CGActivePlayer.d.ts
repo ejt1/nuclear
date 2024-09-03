@@ -1,7 +1,8 @@
 declare namespace wow {
   interface CGActivePlayer {
     currentParty: Party | undefined;
-    getFriends(): Array<CGUnit>;
-    getEnemies(distance: number): Array<CGUnit>; 
+    getFriends(distance?: number): Array<CGUnit>;
+    getEnemies(distance: number): Array<CGUnit>;
+    getReadyRunes(): number;
   }
 }
