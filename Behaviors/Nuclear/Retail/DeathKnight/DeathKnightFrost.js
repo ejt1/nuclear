@@ -54,7 +54,7 @@ export class DeathKnightFrostBehavior extends Behavior {
         }),
         spell.cast("Frost Strike", ret => me.power > 45),
         spell.cast("Rune Strike"),
-        spell.cast("Horn of Winter", ret => me.targetUnit && me.power < 70),
+        spell.cast("Horn of Winter", ret => me.targetUnit && me.power < 70 && me.getReadyRunes() <= 4),
       )
     );
   }
