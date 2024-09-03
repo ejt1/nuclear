@@ -291,6 +291,7 @@ class Spell {
           }
 
           if (shouldInterrupt && target.isInterruptible && spell.cast(target)) {
+            console.info(`Interrupted ${castInfo.spellCastId} being cast by: ${target.unsafeName}`)
             return bt.Status.Success;
           }
         }
