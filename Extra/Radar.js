@@ -232,6 +232,8 @@ class Radar {
       return objPos.x !== -1;  // Keep only on-screen objects
     });
 
+    onScreenObjects.sort((a, b) => me.distanceTo(a.position) - me.distanceTo(b.position));
+
     this.drawOffScreenObjects(allObjectsArray);
 
     if (Settings.ExtraRadarDrawLinesClosest && onScreenObjects.length > 0) {
