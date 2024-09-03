@@ -568,7 +568,7 @@ Object.defineProperties(wow.CGUnit.prototype, {
      * @returns {boolean} - Returns true if the current cast or channel is interruptible, false otherwise.
      */
     get: function () {
-      return (this.spellInfo.interruptFlags & 0x8) !== 0;
+      return (this.spellInfo.interruptFlags & 0x08) !== 0;
     }
   },
 });

@@ -32,6 +32,7 @@ export class DeathKnightFrostBehavior extends Behavior {
         common.waitForTarget(),
         common.waitForCastOrChannel(),
         common.waitForFacing(),
+        common.ensureAutoAttack(),
         spell.interrupt("Mind Freeze"),
         spell.cast("Death Strike", ret => me.pctHealth < 95 && me.hasAura(auras.darkSuccor)),
         spell.cast("Death Strike", ret => me.pctHealth < 65 && me.power > 35),
@@ -43,6 +44,7 @@ export class DeathKnightFrostBehavior extends Behavior {
             spell.cast("Abomination Limb", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
           )
         ),
+        spell.cast("Soul Reaper", on => me.target, ret => me.target.pctHealth < 40),
         spell.cast("Remorseless Winter", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
         this.multiTargetRotation(),
         spell.cast("Rune Strike", ret => me.hasAura(auras.killingMachine)),
