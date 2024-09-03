@@ -32,6 +32,7 @@ export class DeathKnightFrostBehavior extends Behavior {
         common.waitForTarget(),
         common.waitForCastOrChannel(),
         common.waitForFacing(),
+        common.ensureAutoAttack(),
         spell.interrupt("Mind Freeze"),
         spell.cast("Death Strike", ret => me.pctHealth < 95 && me.hasAura(auras.darkSuccor)),
         spell.cast("Death Strike", ret => me.pctHealth < 65 && me.power > 35),

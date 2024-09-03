@@ -69,7 +69,7 @@ class Radar {
 
     objects.forEach(obj => {
       const objPos = wow.WorldFrame.getScreenCoordinates(obj.position);
-      if (objPos.x !== -1) {
+      if (objPos && objPos.x !== -1) {
         // On-screen object
         if (Settings[drawLinesSetting]) {
           canvas.addLine(mePos, objPos, imgui.getColorU32(color), 1);
