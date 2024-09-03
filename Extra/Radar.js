@@ -164,8 +164,11 @@ class Radar {
       } else if (Gatherables.treasure[obj.entryId]) {
         prefix = '[T] ';
         prefixColor = colors.silver;
+      } else if (obj.isLootable) {
+        prefix = '[Q] ';
+        prefixColor = colors.yellow;
       }
-    } else if (obj instanceof wow.CGObject && (obj.isLootable || obj.isRelatedToActiveQuest)) {
+    } else if (obj instanceof wow.CGObject && obj.isRelatedToActiveQuest) {
       prefix = '[Q] ';
       prefixColor = colors.yellow;
     } else if (obj instanceof wow.CGUnit && obj.classification == Classification.Rare && !obj.deadOrGhost) {
