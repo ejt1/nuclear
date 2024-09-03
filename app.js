@@ -29,7 +29,7 @@ nuclear.initialize().then(() => {
     perfMgr.begin("total");
     objMgr.tick();
     nuclear.tick();
-    extraModules.forEach(module => module.tick());
+    me && extraModules.forEach(module => module.tick());
     dbgWindow.tick();
     nuclearWindow.tick();
     perfMgr.end("total");
