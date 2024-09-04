@@ -296,6 +296,7 @@ const treasures = {
   386090: "treasure", // Ritual Offering
   386091: "treasure", // Ritual Offering
   187367: "treasure", // Winterfin Clam
+  207486: "treasure", // Sturdy Treasure Chest
   // Emerald Dream
   411465: "treasure", // Unwaking Echo
   // MoP Remix

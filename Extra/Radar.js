@@ -39,6 +39,7 @@ class Radar {
     { header: "Debug Options" },
     { type: "checkbox", uid: "ExtraRadarDrawDistance", text: "Draw Distance", default: false },
     { type: "checkbox", uid: "ExtraRadarDrawDebug", text: "Draw Debug Info", default: false },
+    { type: "checkbox", uid: "ExtraRadarInteractTracked", text: "Interact Tracked", default: false },
     { type: "slider", uid: "ExtraRadarLoadDistance", text: "Radar Load Distance", default: 200, min: 1, max: 500 }
   ];
 
@@ -47,7 +48,7 @@ class Radar {
   static renderOptions(renderFunction) {
     renderFunction([
       { header: "General Radar Settings", options: this.options.slice(0, 2) },
-      { header: "Tracking Options", collapsible: true, options: this.options.slice(2, 8) },
+      { header: "Tracking Options", collapsible: true, options: this.options.slice(3, 9) },
       { header: "Line Drawing Options", collapsible: true, options: this.options.slice(9, 16) },
       { header: "Debug Options", collapsible: true, options: this.options.slice(17) }
     ]);
@@ -81,11 +82,8 @@ class Radar {
 
   static drawOffScreenObjects(objects) {
     const canvas = imgui.getBackgroundDrawList();
-    const lineHeight = 0.3;
     const maxLines = 5;
     const headerText = "OFF SCREEN";
-    const separatorHeight = 0.1;
-    const separatorLength = 80;
 
     const headerColor = imgui.getColorU32(colors.white);
     const separatorColor = imgui.getColorU32(colors.white);
@@ -96,31 +94,6 @@ class Radar {
       const headerWorldPos = new Vector3(me.position.x, me.position.y, me.position.z + me.displayHeight + 1);
       const headerScreenPos = wow.WorldFrame.getScreenCoordinates(headerWorldPos);
 
-      function estimateTextWidth(text) {
-        return text.length * 7;
-      }
-
-      const separatorWorldPosStart = new Vector3(me.position.x, me.position.y, me.position.z + me.displayHeight + 1 + separatorHeight);
-      const separatorScreenPosStart = wow.WorldFrame.getScreenCoordinates(separatorWorldPosStart);
-      const separatorScreenPosEnd = new Vector2(separatorScreenPosStart.x + separatorLength, separatorScreenPosStart.y);
-
-      const separatorCenterX = (separatorScreenPosStart.x + separatorScreenPosEnd.x) / 2;
-
-      const headerTextWidth = estimateTextWidth(headerText);
-      const headerTextCenterOffset = headerTextWidth / 2;
-      const centeredHeaderPos = new Vector2(separatorCenterX - headerTextCenterOffset, headerScreenPos.y);
-
-      canvas.addText(headerText, centeredHeaderPos, headerColor);
-      canvas.addLine(separatorScreenPosStart, separatorScreenPosEnd, separatorColor);
-
-      offScreenObjects.sort((a, b) => me.distanceTo(a.position) - me.distanceTo(b.position));
-
-      function getDistanceColor(distance) {
-        if (distance < 50) return imgui.getColorU32(colors.green);
-        if (distance < 100) return imgui.getColorU32(colors.orange);
-        return imgui.getColorU32(colors.red);
-      }
-
       const uniqueObjects = new Map();
       offScreenObjects.forEach(obj => {
         const key = `${obj.name}-${obj.entryId}`;
@@ -129,25 +102,21 @@ class Radar {
         }
       });
 
-      Array.from(uniqueObjects.values()).slice(0, maxLines).forEach((obj, index) => {
+      const sortedObjects = Array.from(uniqueObjects.values())
+        .sort((a, b) => me.distanceTo(a.position) - me.distanceTo(b.position))
+        .slice(0, maxLines);
+
+      let text = `${headerText}\n${'_'.repeat(20)}\n`;
+      sortedObjects.forEach(obj => {
         const distance = Math.round(me.distanceTo(obj.position));
-        const text = `${obj.name} (${distance}y)`;
-        const textWidth = estimateTextWidth(text);
-        const textCenterOffset = textWidth / 2;
-        const worldPos = new Vector3(me.position.x, me.position.y, me.position.z + me.displayHeight + 1.5 + separatorHeight + index * lineHeight);
-        const screenPos = wow.WorldFrame.getScreenCoordinates(worldPos);
-        const color = getDistanceColor(distance);
-        canvas.addText(text, new Vector2(separatorCenterX - textCenterOffset, screenPos.y), color);
+        text += `${obj.name} (${distance}y)\n`;
       });
 
       if (uniqueObjects.size > maxLines) {
-        const moreText = `... and ${uniqueObjects.size - maxLines} more`;
-        const moreTextWidth = estimateTextWidth(moreText);
-        const moreTextCenterOffset = moreTextWidth / 2;
-        const worldPos = new Vector3(me.position.x, me.position.y, me.position.z + me.displayHeight + 2 + separatorHeight + maxLines * lineHeight);
-        const screenPos = wow.WorldFrame.getScreenCoordinates(worldPos);
-        canvas.addText(moreText, new Vector2(separatorCenterX - moreTextCenterOffset, screenPos.y), imgui.getColorU32(colors.white));
+        text += `... and ${uniqueObjects.size - maxLines} more`;
       }
+
+      canvas.addText(text, headerScreenPos, headerColor);
     }
   }
 
@@ -249,6 +218,16 @@ class Radar {
       const closestPos = wow.WorldFrame.getScreenCoordinates(closestObject.position);
       if (closestPos.x !== -1) {
         canvas.addLine(mePos, closestPos, imgui.getColorU32(objectColors.default), 2);
+      }
+    }
+
+    // New: Interact with tracked objects within melee range
+    if (Settings.ExtraRadarInteractTracked && !me.currentCastOrChannel) {
+      for (const obj of trackedObjects) {
+        if (me.distanceTo(obj) < 6) {
+          obj.interact();
+          break;
+        }
       }
     }
   }
