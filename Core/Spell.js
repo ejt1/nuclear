@@ -228,15 +228,18 @@ class Spell {
   }
 
   /**
-   * Attempts to interrupt a casting or channeling spell on nearby enemies or players.
-   *
-   * This method checks for units around the player within the interrupt spell's range.
-   * It attempts to interrupt spells based on the configured interrupt mode and percentage.
-   *
-   * @param {number | string} spellNameOrId - The ID or name of the interrupt spell to cast.
-   * @param {boolean} [interruptPlayersOnly=false] - If set to true, only player units will be interrupted.
-   * @returns {bt.Sequence} - A behavior tree sequence that handles the interrupt logic.
-   */
+  * Attempts to interrupt a casting or channeling spell on nearby enemies or players.
+  *
+  * This method checks for units around the player within the interrupt spell's range.
+  * It attempts to interrupt spells based on the configured interrupt mode and percentage.
+  * For cast spells, it uses the configured interrupt percentage.
+  * For channeled spells, it checks if the channel time is greater than a randomized value
+  * between 300 and 1100 milliseconds (700 ± 400).
+  *
+  * @param {number | string} spellNameOrId - The ID or name of the interrupt spell to cast.
+  * @param {boolean} [interruptPlayersOnly=false] - If set to true, only player units will be interrupted.
+  * @returns {bt.Sequence} - A behavior tree sequence that handles the interrupt logic.
+  */
   static interrupt(spellNameOrId, interruptPlayersOnly = false) {
     return new bt.Sequence(
       new bt.Action(() => {
@@ -244,58 +247,60 @@ class Spell {
         if (Settings.InterruptMode === "None") {
           return bt.Status.Failure;
         }
-
         const spell = Spell.getSpell(spellNameOrId);
         if (!spell || !spell.isUsable || !spell.cooldown.ready) {
           return bt.Status.Failure;
         }
-
         const spellRange = spell.baseMaxRange;
         const unitsAround = me.getUnitsAround(spellRange);
-
         for (const target of unitsAround) {
           if (!(target instanceof wow.CGUnit)) {
             continue;
           }
-
           if (interruptPlayersOnly && !target.isPlayer()) {
             continue;
           }
-
           if (!spell.inRange(target) && !me.isWithinMeleeRange(target)) {
             continue;
           }
-
           if (!target.isCasting && !target.isChanneling) {
             continue;
           }
-
           const castInfo = target.spellInfo;
           if (!castInfo) {
             continue;
           }
-
           const currentTime = wow.frameTime;
           const castRemains = castInfo.castEnd - currentTime;
           const castTime = castInfo.castEnd - castInfo.castStart;
           const castPctRemain = (castRemains / castTime) * 100;
+          const channelTime = currentTime - castInfo.channelStart;
+          // Generate a random interrupt time between 300 and 1100 ms (700 ± 400)
+          const randomInterruptTime = 700 + (Math.random() * 800 - 400);
 
           // Check if we should interrupt based on the settings
           let shouldInterrupt = false;
-
           if (Settings.InterruptMode === "Everything") {
-            shouldInterrupt = castPctRemain <= Settings.InterruptPercentage;
+            if (target.isChanneling) {
+              shouldInterrupt = channelTime > randomInterruptTime;
+            } else {
+              shouldInterrupt = castPctRemain <= Settings.InterruptPercentage;
+            }
           } else if (Settings.InterruptMode === "List") {
-            shouldInterrupt = interrupts[castInfo.spellId] &&
-              castPctRemain <= Settings.InterruptPercentage;
+            if (target.isChanneling) {
+              shouldInterrupt = interrupts[castInfo.spellId] && channelTime > randomInterruptTime;
+            } else {
+              shouldInterrupt = interrupts[castInfo.spellId] && castPctRemain <= Settings.InterruptPercentage;
+            }
           }
 
           if (shouldInterrupt && target.isInterruptible && spell.cast(target)) {
-            console.info(`Interrupted ${castInfo.spellCastId} being cast by: ${target.unsafeName}`)
+            const spellId = target.isChanneling ? target.currentChannel : target.currentCast;
+            const interruptTime = target.isChanneling ? `${channelTime.toFixed(2)}ms` : `${castPctRemain.toFixed(2)}%`;
+            console.info(`Interrupted ${spellId} being ${target.isChanneling ? 'channeled' : 'cast'} by: ${target.unsafeName} after ${interruptTime}`);
             return bt.Status.Success;
           }
         }
-
         return bt.Status.Failure;
       })
     );

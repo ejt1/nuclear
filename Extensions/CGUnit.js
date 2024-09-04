@@ -553,12 +553,15 @@ Object.defineProperties(wow.CGUnit.prototype, {
   currentCastOrChannel: {
     /**
      * Get the current cast or channel information for the unit.
-     * @returns {any} - Returns the current cast info if available, otherwise the current channel info, or undefined if neither is available.
+     * @returns {any} - Returns the spell info if the unit is casting or channeling, otherwise undefined.
      */
     get: function () {
-      return this.currentCast !== undefined
-        ? this.currentCast
-        : this.currentChannel;
+      if (this.spellInfo) {
+        if (this.spellInfo.cast !== 0 || this.spellInfo.spellChannelId !== 0) {
+          return this.spellInfo;
+        }
+      }
+      return undefined;
     }
   },
 
@@ -568,9 +571,19 @@ Object.defineProperties(wow.CGUnit.prototype, {
      * @returns {boolean} - Returns true if the current cast or channel is interruptible, false otherwise.
      */
     get: function () {
-      return (this.spellInfo.interruptFlags & 0x08) !== 0;
+      return (this.spellInfo.interruptFlags & 0x8) === 0;
     }
   },
+
+  isCastingOrChanneling: {
+    /**
+     * Check if the unit is currently casting or channeling
+     * @returns {boolean} - Returns true if the current cast or channel is interruptible, false otherwise.
+     */
+    get: function () {
+      return this.currentCastOrChannel !== undefined
+    }
+  }
 });
 
 export default true;
