@@ -83,6 +83,7 @@ const herbs = {
   414325: "herb",   // Crystallized Mycobloom
   414326: "herb",   // Crystallized Luredrop
   414327: "herb",   // Crystallized Orbinid
+  414328: "herb",   // Crystallized Blessing Blossom
   414329: "herb",   // Crystallized Arathor's Spear
   414330: "herb",   // Altered Mycobloom
   414331: "herb",   // Altered Luredrop

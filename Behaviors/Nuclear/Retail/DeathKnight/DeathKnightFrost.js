@@ -54,7 +54,7 @@ export class DeathKnightFrostBehavior extends Behavior {
           const coldHeart = me.getAura(auras.coldHeart);
           return !!(coldHeart && coldHeart.stacks === 20);
         }),
-        spell.cast("Frost Strike", ret => me.power > 45),
+        spell.cast("Frost Strike", ret => me.power > 45 || me.getReadyRunes() < 2),
         spell.cast("Rune Strike"),
         spell.cast("Horn of Winter", ret => me.targetUnit && me.power < 70 && me.getReadyRunes() <= 4),
       )
