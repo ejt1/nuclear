@@ -315,6 +315,8 @@ const treasures = {
   // Disturbed Earth
   422531: "treasure", // Disturbed Earth
   419696: "treasure", // Waxy Lump
+  446495: "treasure", // Pile of Refuse
+  452706: "treasure", // Deep lost Satchel
 };
 
 export default { herb: herbs, ore: ores, treasure: treasures };
