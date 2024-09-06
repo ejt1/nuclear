@@ -234,4 +234,24 @@ export class WarriorFuryNewBehavior extends Behavior {
     return me.getUnitsAroundCount(range);
   }
 
-  get
+  getAuraRemainingTime(auraName) {
+    const aura = me.getAura(auraName);
+    return aura ? aura.remaining : 0;
+  }
+
+  getDebuffRemainingTime(debuffName) {
+    const target = this.getCurrentTarget();
+    const debuff = target.getAura(debuffName);
+    return debuff ? debuff.remaining : 0;
+  }
+
+  getAuraStacks(auraName) {
+    const aura = me.getAura(auraName);
+    return aura ? aura.stacks : 0;
+  }
+
+  hasTalent(talentName) {
+    // This is a placeholder. You'll need to implement a proper talent checking mechanism
+    return true; // or false, depending on the actual talent system
+  }
+}
