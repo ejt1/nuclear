@@ -83,6 +83,7 @@ const herbs = {
   414325: "herb",   // Crystallized Mycobloom
   414326: "herb",   // Crystallized Luredrop
   414327: "herb",   // Crystallized Orbinid
+  414328: "herb",   // Crystallized Blessing Blossom
   414329: "herb",   // Crystallized Arathor's Spear
   414330: "herb",   // Altered Mycobloom
   414331: "herb",   // Altered Luredrop
@@ -314,6 +315,8 @@ const treasures = {
   // Disturbed Earth
   422531: "treasure", // Disturbed Earth
   419696: "treasure", // Waxy Lump
+  446495: "treasure", // Pile of Refuse
+  452706: "treasure", // Deep lost Satchel
 };
 
 export default { herb: herbs, ore: ores, treasure: treasures };

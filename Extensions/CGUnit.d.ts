@@ -29,6 +29,7 @@ declare namespace wow {
     isFacing(target: CGUnit, angle: number): boolean;
     radToDeg(radians: number): number;
     inMyGroup(): boolean;
+    isTanking(): boolean;
     withinLineOfSight(target: CGUnit): boolean;
   }
 }
