@@ -251,7 +251,6 @@ export class WarriorFuryNewBehavior extends Behavior {
   }
 
   hasTalent(talentName) {
-    // This is a placeholder. You'll need to implement a proper talent checking mechanism
-    return true; // or false, depending on the actual talent system
+    return me.hasAura(talentName);
   }
 }
