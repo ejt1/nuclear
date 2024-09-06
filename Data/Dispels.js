@@ -106,6 +106,46 @@ export const dispels = {
   252687: DispelPriority.Low, // Venomfang Strike
   257483: DispelPriority.Low, // Pile Of Bones
 
+  // TWW
+  325224: DispelPriority.Low,  // Anima Injection
+  431494: DispelPriority.Low,  // Black Edge
+  324859: DispelPriority.Low,  // Bramblethorn Entanglement
+  426735: DispelPriority.Low,  // Burning Shadows
+  429545: DispelPriority.Low,  // Censoring Gear
+  328664: DispelPriority.Low,  // Chilled
+  464876: DispelPriority.Low,  // Concussive Smash
+  461487: DispelPriority.Low,  // Cultivated Poisons
+  450095: DispelPriority.Low,  // Curse of Entropy
+  257168: DispelPriority.Low,  // Cursed Slash
+  326092: DispelPriority.Low,  // Debilitating Poison
+  321821: DispelPriority.Low,  // Disgusting Guts
+  322968: DispelPriority.Low,  // Dying Breath
+  431309: DispelPriority.Low,  // Ensnaring Shadows
+  451224: DispelPriority.Low,  // Enveloping Shadowflame
+  320788: DispelPriority.Low,  // Frozen Binds
+  338353: DispelPriority.Low,  // Goresplatter
+  425974: DispelPriority.Low,  // Ground Pound
+  320596: DispelPriority.Low,  // Heaving Retch
+  449455: DispelPriority.Low,  // Howling Fear
+  440238: DispelPriority.Low,  // Ice Sickles
+  340283: DispelPriority.Low,  // Poisonous Discharge
+  275014: DispelPriority.Low,  // Putrid Waters
+  448248: DispelPriority.Low,  // Revolting Volley
+  272588: DispelPriority.Low,  // Rotting Wounds
+  424889: DispelPriority.Low,  // Seismic Reverberation
+  448561: DispelPriority.Low,  // Shadows of Doubt
+  443437: DispelPriority.Low,  // Shadows of Doubt
+  322557: DispelPriority.Low,  // Soul Split
+  275836: DispelPriority.Low,  // Stinging Venom
+  454440: DispelPriority.Low,  // Stinky Vomit
+  432448: DispelPriority.Low,  // Stygian Seed
+  340288: DispelPriority.Low,  // Triple Bite
+  443401: DispelPriority.Low,  // Venom Strike
+  433841: DispelPriority.Low,  // Venom Volley
+  438618: DispelPriority.Low,  // Venomous Spit
+  461630: DispelPriority.Low,  // Venomous Spray
+  426308: DispelPriority.Low,  // Void Infection
+
   // Halls of Reflection
   72333: DispelPriority.Low, // Envenom
   72426: DispelPriority.Low, // Lethargy

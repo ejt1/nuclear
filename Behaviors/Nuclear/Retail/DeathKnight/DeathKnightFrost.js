@@ -32,6 +32,7 @@ export class DeathKnightFrostBehavior extends Behavior {
         common.waitForTarget(),
         common.waitForCastOrChannel(),
         common.waitForFacing(),
+        common.ensureAutoAttack(),
         spell.interrupt("Mind Freeze"),
         spell.cast("Death Strike", ret => me.pctHealth < 95 && me.hasAura(auras.darkSuccor)),
         spell.cast("Death Strike", ret => me.pctHealth < 65 && me.power > 35),
@@ -43,18 +44,19 @@ export class DeathKnightFrostBehavior extends Behavior {
             spell.cast("Abomination Limb", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
           )
         ),
+        spell.cast("Soul Reaper", on => me.target, ret => me.target.pctHealth < 40),
         spell.cast("Remorseless Winter", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
         this.multiTargetRotation(),
         spell.cast("Rune Strike", ret => me.hasAura(auras.killingMachine)),
-        spell.cast("Frost Strike", ret => me.targetUnit?.getAura(auras.razorice)?.stacks === 5),
+        spell.cast("Frost Strike", ret => me.targetUnit?.getAura(auras.razorice)?.stacks === 5 || me.getReadyRunes() < 2),
         spell.cast("Howling Blast", ret => me.hasAura(auras.rime)),
+        spell.cast("Frost Strike", ret => me.power > 45),
         spell.cast("Chains of Ice", on => me.targetUnit, ret => {
           const coldHeart = me.getAura(auras.coldHeart);
           return !!(coldHeart && coldHeart.stacks === 20);
         }),
-        spell.cast("Frost Strike", ret => me.power > 45),
         spell.cast("Rune Strike"),
-        spell.cast("Horn of Winter", ret => me.targetUnit && me.power < 70),
+        spell.cast("Horn of Winter", ret => me.targetUnit && me.power < 70 && me.getReadyRunes() <= 4),
       )
     );
   }

@@ -8,7 +8,7 @@ Object.defineProperties(wow.CGObject.prototype, {
    */
   distanceTo: {
     value: function (to) {
-      const from = this.position
+      const from = this.position;
       if (to instanceof Vector3) {
         return from.distanceSq(to);
       } else if (to instanceof wow.CGUnit) {
@@ -28,6 +28,34 @@ Object.defineProperties(wow.CGObject.prototype, {
       throw `expected wow.CGObject | Vector3 got ${typeof to}`;
     }
   },
+
+  /**
+   * @this {wow.CGObject}
+   * @param {wow.CGObject | Vector3} to
+   * @returns {number} distance
+   */
+  distanceTo2D: {
+    value: function (to) {
+      const from = this.position;
+      if (to instanceof Vector3) {
+        return from.distanceSq2D(to);
+      } else if (to instanceof wow.CGUnit) {
+        let bbRadius = 0;
+        if (this instanceof wow.CGUnit) {
+          bbRadius = this.boundingRadius + to.boundingRadius;
+        } else {
+          bbRadius = to.boundingRadius;
+        }
+        const dist = from.distanceSq2D(to.position);
+        return dist < bbRadius ? 0 : dist + bbRadius;
+      } else if (to instanceof wow.CGObject) {
+        const pos = to.position;
+        return from.distanceSq2D(pos);
+      }
+      throw `expected wow.CGObject | Vector3 got ${typeof to}`;
+    }
+  },
+
   /**
    * @returns {boolean}
    */
@@ -36,6 +64,7 @@ Object.defineProperties(wow.CGObject.prototype, {
       return (this.dynamicFlags & ObjectFlags.Interactable) === 0;
     }
   },
+
   /**
    * @returns {boolean}
    */

@@ -1,7 +1,10 @@
 import * as bt from './BehaviorTree';
-import objMgr, {me} from './ObjectManager';
-import {losExclude} from "../Data/Exclusions";
-import {DispelPriority, dispels} from "../Data/Dispels";
+import objMgr, { me } from './ObjectManager';
+import { losExclude } from "../Data/Exclusions";
+import { DispelPriority, dispels } from "../Data/Dispels";
+import { interrupts } from '@/Data/Interrupts';
+import Settings from './Settings';
+import { defaultHealTargeting as Heal } from '@/Targeting/HealTargeting';
 
 class Spell {
   /** @type {{get: function(): (wow.CGUnit|undefined)}} */
@@ -40,7 +43,7 @@ class Spell {
       if (typeof arg === 'function') {
         sequence.addChild(new bt.Action(() => {
           const r = arg();
-          if (r === false) {
+          if (r === false || r === undefined || r === null) {
             // function returned a boolean predicate
             return bt.Status.Failure;
           } else if (r instanceof wow.CGUnit || r instanceof wow.Guid) {
@@ -49,8 +52,14 @@ class Spell {
           }
           return bt.Status.Success;
         }));
+      } else {
+        try {
+          throw new Error(`Invalid argument passed to Spell.cast: expected function got ${typeof arg}`);
+        } catch (e) {
+          console.warn(e.message);
+          console.warn(e.stack.split('\n')[1]);
+        }
       }
-      // XXX: output error to indicate invalid argument?
     }
 
     sequence.addChild(Spell.castEx(spell));
@@ -138,7 +147,7 @@ class Spell {
       return false;
     }
 
-    if ((target instanceof wow.CGUnit && !losExclude[target.entryId]) && !this.inRange(spell,target)) {
+    if ((target instanceof wow.CGUnit && !losExclude[target.entryId]) && !this.inRange(spell, target)) {
       return false;
     }
 
@@ -219,84 +228,108 @@ class Spell {
   }
 
   /**
-   * Attempts to interrupt a casting or channeling spell on nearby enemies or players.
-   *
-   * This method checks for units around the player within the interrupt spell's range.
-   * It attempts to interrupt spells that are more than 50% completed.
-   *
-   * @param {number | string} spellNameOrId - The ID or name of the interrupt spell to cast.
-   * @param {boolean} [interruptPlayersOnly=false] - If set to true, only player units will be interrupted.
-   * @returns {bt.Sequence} - A behavior tree sequence that handles the interrupt logic.
-   */
+  * Attempts to interrupt a casting or channeling spell on nearby enemies or players.
+  *
+  * This method checks for units around the player within the interrupt spell's range.
+  * It attempts to interrupt spells based on the configured interrupt mode and percentage.
+  * For cast spells, it uses the configured interrupt percentage.
+  * For channeled spells, it checks if the channel time is greater than a randomized value
+  * between 300 and 1100 milliseconds (700 ± 400).
+  *
+  * @param {number | string} spellNameOrId - The ID or name of the interrupt spell to cast.
+  * @param {boolean} [interruptPlayersOnly=false] - If set to true, only player units will be interrupted.
+  * @returns {bt.Sequence} - A behavior tree sequence that handles the interrupt logic.
+  */
   static interrupt(spellNameOrId, interruptPlayersOnly = false) {
     return new bt.Sequence(
       new bt.Action(() => {
+        // Early return if interrupt mode is set to "None"
+        if (Settings.InterruptMode === "None") {
+          return bt.Status.Failure;
+        }
         const spell = Spell.getSpell(spellNameOrId);
-
         if (!spell || !spell.isUsable || !spell.cooldown.ready) {
           return bt.Status.Failure;
         }
-
         const spellRange = spell.baseMaxRange;
         const unitsAround = me.getUnitsAround(spellRange);
-
         for (const target of unitsAround) {
           if (!(target instanceof wow.CGUnit)) {
             continue;
           }
-
           if (interruptPlayersOnly && !target.isPlayer()) {
             continue;
           }
-
-          if (!spell.inRange(target)) {
+          if (!spell.inRange(target) && !me.isWithinMeleeRange(target)) {
             continue;
           }
-
           if (!target.isCasting && !target.isChanneling) {
             continue;
           }
-
           const castInfo = target.spellInfo;
           if (!castInfo) {
             continue;
           }
-
           const currentTime = wow.frameTime;
           const castRemains = castInfo.castEnd - currentTime;
           const castTime = castInfo.castEnd - castInfo.castStart;
           const castPctRemain = (castRemains / castTime) * 100;
+          const channelTime = currentTime - castInfo.channelStart;
+          // Generate a random interrupt time between 300 and 1100 ms (700 ± 400)
+          const randomInterruptTime = 700 + (Math.random() * 800 - 400);
 
-          if (castPctRemain <= 50) {
-            if (target.isInterruptible && spell.cast(target)) {
-              return bt.Status.Success;
+          // Check if we should interrupt based on the settings
+          let shouldInterrupt = false;
+          if (Settings.InterruptMode === "Everything") {
+            if (target.isChanneling) {
+              shouldInterrupt = channelTime > randomInterruptTime;
+            } else {
+              shouldInterrupt = castPctRemain <= Settings.InterruptPercentage;
+            }
+          } else if (Settings.InterruptMode === "List") {
+            if (target.isChanneling) {
+              shouldInterrupt = interrupts[castInfo.spellId] && channelTime > randomInterruptTime;
+            } else {
+              shouldInterrupt = interrupts[castInfo.spellId] && castPctRemain <= Settings.InterruptPercentage;
             }
           }
-        }
 
+          if (shouldInterrupt && target.isInterruptible && spell.cast(target)) {
+            const spellId = target.isChanneling ? target.currentChannel : target.currentCast;
+            const interruptTime = target.isChanneling ? `${channelTime.toFixed(2)}ms` : `${castPctRemain.toFixed(2)}%`;
+            console.info(`Interrupted ${spellId} being ${target.isChanneling ? 'channeled' : 'cast'} by: ${target.unsafeName} after ${interruptTime}`);
+            return bt.Status.Success;
+          }
+        }
         return bt.Status.Failure;
       })
     );
   }
 
   /**
-   * Dispel a debuff or buff from units, depending on if we are dispelling friends or enemies.
-   * @param {number | string} spellNameOrId - The spell ID or name.
-   * @param {boolean} friends - If true, dispel friendly units. If false, dispel enemies (for purge/soothe).
-   * @param {number} priority - The priority level for dispel. Defaults to DispelPriority.Low if not provided.
-   * @param {boolean} playersOnly - dispel only players - used for purge.
-   * @param {...number} types - The types of dispel we can use, e.g., Magic, Curse, Disease, Poison.
-   * @returns {bt.Status} - Whether a dispel was cast.
-   */
+    * Dispel a debuff or buff from units, depending on if we are dispelling friends or enemies.
+    * @param {number | string} spellNameOrId - The spell ID or name.
+    * @param {boolean} friends - If true, dispel friendly units. If false, dispel enemies (for purge/soothe).
+    * @param {number} priority - The priority level for dispel. Defaults to DispelPriority.Low if not provided.
+    * @param {boolean} playersOnly - dispel only players - used for purge.
+    * @param {...number} types - The types of dispel we can use, e.g., Magic, Curse, Disease, Poison.
+    * @returns {bt.Status} - Whether a dispel was cast.
+    */
   static dispel(spellNameOrId, friends, priority = DispelPriority.Low, playersOnly = false, ...types) {
     return new bt.Sequence(
       new bt.Action(() => {
-        // Check if the spell is on cooldown
-        if (this.getCooldown(spellNameOrId).timeleft > 0) return bt.Status.Failure;
+        // Early return if dispel mode is set to "None"
+        if (Settings.DispelMode === "None") {
+          return bt.Status.Failure;
+        }
+
+        const spell = Spell.getSpell(spellNameOrId);
+        if (!spell || !spell.isUsable || !spell.cooldown.ready) {
+          return bt.Status.Failure;
+        }
 
         // List to target, either friends or enemies
-        const list = friends ? me.getFriends() : me.getEnemies(40);
-
+        const list = friends ? Heal.priorityList : me.getEnemies(40);
         if (!list) {
           console.error("No list was provided for Dispel");
           return bt.Status.Failure;
@@ -304,31 +337,42 @@ class Spell {
 
         // Loop through each unit in the list
         for (const unit of list) {
-          const auras = unit.auras;
+          if (playersOnly && !unit.isPlayer()) {
+            continue;
+          }
 
+          const auras = unit.auras;
           for (const aura of auras) {
             const dispelTypeMatch = types.includes(aura.dispelType);
-
             // Check for debuff/buff status, dispel priority, and aura duration remaining
             const dispelPriority = dispels[aura.spellId] || DispelPriority.Low;
             const isValidDispel = friends
               ? aura.isDebuff() && dispelPriority >= priority
               : aura.isBuff() && dispelPriority >= priority;
+
             if (isValidDispel && aura.remaining > 2000 && dispelTypeMatch) {
               const durationPassed = aura.duration - aura.remaining;
 
-              // Try to cast the dispel if it's been long enough
-              if (durationPassed > 777 && this.castPrimitive(this.getSpell(spellNameOrId), unit)) {
+              // Check if we should dispel based on the settings
+              let shouldDispel = false;
+
+              if (Settings.DispelMode === "Everything") {
+                shouldDispel = true;
+              } else if (Settings.DispelMode === "List") {
+                shouldDispel = dispels[aura.spellId] !== undefined
+              }
+
+              // Try to cast the dispel if it's been long enough and meets the dispel criteria
+              if (shouldDispel && durationPassed > 777 && spell.cast(unit)) {
                 console.info(`Cast dispel on ${unit.unsafeName} to remove ${aura.name} with priority ${dispelPriority}`);
                 return bt.Status.Success;
               }
             }
           }
         }
-
         return bt.Status.Failure;
       })
-    )
+    );
   }
 
   /**

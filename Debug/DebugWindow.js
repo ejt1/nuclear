@@ -1,6 +1,5 @@
 import objMgr from '../Core/ObjectManager';
 import Settings from "../Core/Settings";
-import nuclear, {availableBehaviors} from "../nuclear";
 
 class DebugWindow {
   constructor() {
@@ -55,45 +54,9 @@ class DebugWindow {
         this.renderPartyInfo();
         imgui.endTabItem();
       }
-
-      if (imgui.beginTabItem("Profile")) {
-        this.renderProfileSettings();
-        imgui.endTabItem();
-      }
     }
 
     imgui.end();
-  }
-
-  renderProfileSettings() {
-    const specializationId = wow.SpecializationInfo.activeSpecializationId;
-    const profileKey = `profile${specializationId}`;
-
-    // Get the current profile for this specialization
-    const currentProfile = Settings[profileKey] ? Settings[profileKey] : "None selected";
-
-    // Find all behaviors that match the current specialization
-    const availableProfiles = this.findAvailableProfilesForSpecialization(specializationId);
-
-
-    // Create a drop-down for the user to select the profile
-    if (imgui.beginCombo("Select Profile", currentProfile)) {
-      availableProfiles.forEach((profile) => {
-        const isSelected = currentProfile === profile;
-        if (imgui.selectable(profile, isSelected)) {
-          // Save the selected profile
-          Settings[profileKey] = profile;
-          nuclear.rebuild();
-        }
-        if (isSelected) {
-          imgui.setItemDefaultFocus();
-        }
-      });
-      imgui.endCombo();
-    }
-
-    // Display the selected profile
-    imgui.text(`Current Profile: ${currentProfile}`);
   }
 
   renderObjectManager() {
@@ -361,13 +324,6 @@ class DebugWindow {
       });
       imgui.endTable();
     }
-  }
-
-  findAvailableProfilesForSpecialization(specializationId) {
-    const matchingBehaviors = availableBehaviors.filter(behavior => behavior.specialization === specializationId);
-
-    // Extract behavior names or other relevant identifiers
-    return matchingBehaviors.map(behavior => behavior.name || behavior.constructor.name);
   }
 }
 
