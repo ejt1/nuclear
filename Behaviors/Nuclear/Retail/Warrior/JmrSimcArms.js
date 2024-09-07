@@ -24,45 +24,53 @@ export class WarriorArmsNewBehavior extends Behavior {
       spell.cast("Victory Rush", () => me.pctHealth < 70),
       spell.interrupt("Pummel", false),
       spell.interrupt("Storm Bolt", false),
-      this.useTrinkets(),
-      this.useRacials(),
       new bt.Decorator(
-        () => !this.hasTalent("Slayer's Dominance") && this.getEnemiesInRange(8) > 2 && me.isWithinMeleeRange(this.getCurrentTarget()),
+        () => me.isWithinMeleeRange(me.target) && this.shouldUseCooldowns() && me.hasVisibleAura("Avatar"),
+        this.useTrinkets(),
+        new bt.Action(() => bt.Status.Success)
+      ),
+      new bt.Decorator(
+        () => me.isWithinMeleeRange(me.target) && this.shouldUseCooldowns() && me.hasVisibleAura("Avatar"),
+        this.useRacials(),
+        new bt.Action(() => bt.Status.Success)
+      ),
+      new bt.Decorator(
+        () => !this.hasTalent("Slayer's Dominance") && this.getEnemiesInRange(10) > 2,
         this.colossusAoe(),
         new bt.Action(() => bt.Status.Success)
       ),
       new bt.Decorator(
-        () => !this.hasTalent("Slayer's Dominance") && this.getEnemiesInRange(8) >= 1 && this.isExecutePhase() && me.isWithinMeleeRange(this.getCurrentTarget()),
+        () => !this.hasTalent("Slayer's Dominance") && this.getEnemiesInRange(10) >= 1 && this.isExecutePhase(),
         this.colossusExecute(),
         new bt.Action(() => bt.Status.Success)
       ),
       new bt.Decorator(
-        () => !this.hasTalent("Slayer's Dominance") && this.getEnemiesInRange(8) === 2 && !this.isExecutePhase() && me.isWithinMeleeRange(this.getCurrentTarget()),
+        () => !this.hasTalent("Slayer's Dominance") && this.getEnemiesInRange(10) === 2 && !this.isExecutePhase(),
         this.colossusSweep(),
         new bt.Action(() => bt.Status.Success)
       ),
       new bt.Decorator(
-        () => !this.hasTalent("Slayer's Dominance") && this.getEnemiesInRange(8) === 1 && me.isWithinMeleeRange(this.getCurrentTarget()),
+        () => !this.hasTalent("Slayer's Dominance") && this.getEnemiesInRange(10) === 1,
         this.colossusSt(),
         new bt.Action(() => bt.Status.Success)
       ),
       new bt.Decorator(
-        () => this.hasTalent("Slayer's Dominance") && this.getEnemiesInRange(8) > 2 && me.isWithinMeleeRange(this.getCurrentTarget()),
+        () => this.hasTalent("Slayer's Dominance") && this.getEnemiesInRange(10) > 2,
         this.slayerAoe(),
         new bt.Action(() => bt.Status.Success)
       ),
       new bt.Decorator(
-        () => this.hasTalent("Slayer's Dominance") && this.getEnemiesInRange(8) >= 1 && this.isExecutePhase() && me.isWithinMeleeRange(this.getCurrentTarget()),
+        () => this.hasTalent("Slayer's Dominance") && this.getEnemiesInRange(10) >= 1,
         this.slayerExecute(),
         new bt.Action(() => bt.Status.Success)
       ),
       new bt.Decorator(
-        () => this.hasTalent("Slayer's Dominance") && this.getEnemiesInRange(8) === 2 && !this.isExecutePhase() && me.isWithinMeleeRange(this.getCurrentTarget()),
+        () => this.hasTalent("Slayer's Dominance") && this.getEnemiesInRange(10) === 2 && !this.isExecutePhase(),
         this.slayerSweep(),
         new bt.Action(() => bt.Status.Success)
       ),
       new bt.Decorator(
-        () => this.hasTalent("Slayer's Dominance") && this.getEnemiesInRange(8) === 1 && me.isWithinMeleeRange(this.getCurrentTarget()),
+        () => this.hasTalent("Slayer's Dominance") && this.getEnemiesInRange(10) === 1,
         this.slayerSt(),
         new bt.Action(() => bt.Status.Success)
       )
@@ -71,7 +79,7 @@ export class WarriorArmsNewBehavior extends Behavior {
 
   useTrinkets() {
     return new bt.Selector(
-      // Implement trinket usage logic here
+      common.useEquippedItemByName("Skarmorak Shard"),
     );
   }
 
@@ -448,7 +456,7 @@ slayerExecute() {
 
   shouldUseCooldowns() {
     const target = this.getCurrentTarget();
-    return target.timeToDeath() > 20;
+    return target.timeToDeath() > 15 && !me.hasAura("Smothering Shadows");
   }
 
   getAuraRemainingTime(auraName) {

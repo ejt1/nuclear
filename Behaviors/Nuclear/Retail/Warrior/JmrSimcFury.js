@@ -36,22 +36,22 @@ export class WarriorFuryNewBehavior extends Behavior {
         new bt.Action(() => bt.Status.Success)
       ),
       new bt.Decorator(
-        () => this.hasTalent("Slayer's Dominance") && this.getEnemiesInRange(8) === 1,
+        () => this.hasTalent("Slayer's Dominance") && this.getEnemiesInRange(10) === 1,
         this.slayerSingleTarget(),
         new bt.Action(() => bt.Status.Success)
       ),
       new bt.Decorator(
-        () => this.hasTalent("Slayer's Dominance") && this.getEnemiesInRange(8) > 1,
+        () => this.hasTalent("Slayer's Dominance") && this.getEnemiesInRange(10) > 1,
         this.slayerMultiTarget(),
         new bt.Action(() => bt.Status.Success)
       ),
       new bt.Decorator(
-        () => this.hasTalent("Lightning Strikes") && this.getEnemiesInRange(8) === 1,
+        () => this.hasTalent("Lightning Strikes") && this.getEnemiesInRange(10) === 1,
         this.thaneSingleTarget(),
         new bt.Action(() => bt.Status.Success)
       ),
       new bt.Decorator(
-        () => this.hasTalent("Lightning Strikes") && this.getEnemiesInRange(8) > 1,
+        () => this.hasTalent("Lightning Strikes") && this.getEnemiesInRange(10) > 1,
         this.thaneMultiTarget(),
         new bt.Action(() => bt.Status.Success)
       )
@@ -88,7 +88,7 @@ export class WarriorFuryNewBehavior extends Behavior {
       // actions.slayer_st+=/champions_spear,if=(buff.enrage.up&talent.titans_torment&cooldown.avatar.remains<gcd)|(buff.enrage.up&!talent.titans_torment)
       spell.cast("Champion's Spear", on => this.getCurrentTarget(), req => this.shouldUseChampionsSpear() && (me.hasAura("Enrage") && this.hasTalent("Titan's Torment") && spell.getCooldown("Avatar").timeleft < 1) || (me.hasAura("Enrage") && !this.hasTalent("Titan's Torment"))),
       // actions.slayer_st+=/odyns_fury,if=dot.odyns_fury_torment_mh.remains<1&(buff.enrage.up|talent.titanic_rage)&cooldown.avatar.remains
-      spell.cast("Odyn's Fury", on => this.getCurrentTarget(), req => this.shouldUseOdynsFury() && (this.getDebuffRemainingTime("Odyn's Fury Torment") < 1 && (me.hasAura("Enrage") || this.hasTalent("Titanic Rage")) && spell.getCooldown("Avatar").timeleft > 0)),
+      spell.cast("Odyn's Fury", on => this.getCurrentTarget(), req => this.shouldUseOdynsFury() && (this.getDebuffRemainingTime("Odyn's Fury") < 1 && (me.hasAura("Enrage") || this.hasTalent("Titanic Rage")) && spell.getCooldown("Avatar").timeleft > 0)),
       // actions.slayer_st+=/execute,if=talent.ashen_juggernaut&buff.ashen_juggernaut.remains<=gcd&buff.enrage.up
       spell.cast("Execute", on => this.getCurrentTarget(), req => this.hasTalent("Ashen Juggernaut") && this.getAuraRemainingTime("Ashen Juggernaut") <= 1.5 && me.hasAura("Enrage")),
       // actions.slayer_st+=/rampage,if=talent.bladestorm&cooldown.bladestorm.remains<=gcd&!debuff.champions_might.up
@@ -141,7 +141,7 @@ export class WarriorFuryNewBehavior extends Behavior {
       // actions.slayer_mt+=/champions_spear,if=(buff.enrage.up&talent.titans_torment&cooldown.avatar.remains<gcd)|(buff.enrage.up&!talent.titans_torment)
       spell.cast("Champion's Spear", on => this.getCurrentTarget(), req => this.shouldUseChampionsSpear() && (me.hasAura("Enrage") && this.hasTalent("Titan's Torment") && spell.getCooldown("Avatar").timeleft < 1) || (me.hasAura("Enrage") && !this.hasTalent("Titan's Torment"))),
       // actions.slayer_mt+=/odyns_fury,if=dot.odyns_fury_torment_mh.remains<1&(buff.enrage.up|talent.titanic_rage)&cooldown.avatar.remains
-      spell.cast("Odyn's Fury", on => this.getCurrentTarget(), req => this.shouldUseOdynsFury() && (this.getDebuffRemainingTime("Odyn's Fury Torment") < 1 && (me.hasAura("Enrage") || this.hasTalent("Titanic Rage")) && spell.getCooldown("Avatar").timeleft > 0)),
+      spell.cast("Odyn's Fury", on => this.getCurrentTarget(), req => this.shouldUseOdynsFury() && (this.getDebuffRemainingTime("Odyn's Fury") < 1 && (me.hasAura("Enrage") || this.hasTalent("Titanic Rage")) && spell.getCooldown("Avatar").timeleft > 0)),
       // actions.slayer_mt+=/whirlwind,if=buff.meat_cleaver.stack=0&talent.meat_cleaver
       spell.cast("Whirlwind", on => this.getCurrentTarget(), req => me.getAuraStacks("Whirlwind") === 0 && this.hasTalent("Meat Cleaver")),
       // actions.slayer_mt+=/execute,if=talent.ashen_juggernaut&buff.ashen_juggernaut.remains<=gcd&buff.enrage.up
@@ -285,26 +285,28 @@ export class WarriorFuryNewBehavior extends Behavior {
 
   shouldUseRecklessness() {
     const target = this.getCurrentTarget();
-    return target.timeToDeath() > 20;
+    return target.timeToDeath() > 15 && !me.hasAura("Smothering Shadows");
   }
 
   shouldUseAvatar() {
     const target = this.getCurrentTarget();
-    return target.timeToDeath() > 20;
+    return target.timeToDeath() > 15 && !me.hasAura("Smothering Shadows");
   }
 
   shouldUseChampionsSpear() {
     const target = this.getCurrentTarget();
-    return target.timeToDeath() > 20;
+    return target.timeToDeath() > 15 && !me.hasAura("Smothering Shadows");
   }
 
   shouldUseOdynsFury() {
     const target = this.getCurrentTarget();
-    return target.timeToDeath() > 20;
+    return target.timeToDeath() > 15 && !me.hasAura("Smothering Shadows");
   }
 
   shouldUseOnGCDRacials() {
+    const target = this.getCurrentTarget();
     return !me.hasAura("Recklessness") &&
+           target.timeToDeath() > 15 && !me.hasAura("Smothering Shadows") &&
            !me.hasAura("Avatar") &&
            me.powerByType(PowerType.Rage) < 80 &&
            !me.hasAura("Bloodbath") &&

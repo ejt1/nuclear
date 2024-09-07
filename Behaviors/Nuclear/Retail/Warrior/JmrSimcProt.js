@@ -27,22 +27,22 @@ export class WarriorProtNewBehavior extends Behavior {
         on => combat.targets.find(unit => unit.inCombat() && unit.distanceTo(me) <= 30 && !unit.isTanking),
         req => combat.targets.find(unit => unit.inCombat() && unit.distanceTo(me) <= 30 && !unit.isTanking) !== undefined),
       new bt.Decorator(
-        () => this.getEnemiesInRange(8) > 0 && me.isWithinMeleeRange(this.getCurrentTarget()),
+        () => this.getEnemiesInRange(12) >= 1 && me.isWithinMeleeRange(this.getCurrentTarget()),
           this.useCooldowns(),
           new bt.Action(() => bt.Status.Success)
       ),
       new bt.Decorator(
-        () => this.getEnemiesInRange(8) > 0 && me.isWithinMeleeRange(this.getCurrentTarget()),
+        () => this.getEnemiesInRange(12) >= 1 && me.isWithinMeleeRange(this.getCurrentTarget()),
           this.useDefensives(),
           new bt.Action(() => bt.Status.Success)
       ),
       new bt.Decorator(
-        () => Boolean(me.isWithinMeleeRange(this.getCurrentTarget()) && this.getEnemiesInRange(8) >= 3),
+        () => this.getEnemiesInRange(12) >= 3,
         this.aoeRotation(),
         new bt.Action(() => bt.Status.Success)
       ),
       new bt.Decorator(
-        () => Boolean(me.isWithinMeleeRange(this.getCurrentTarget()) && this.getEnemiesInRange(8) < 3),
+        () => this.getEnemiesInRange(12) < 3,
         this.genericRotation(),
         new bt.Action(() => bt.Status.Success)
       )
@@ -52,7 +52,7 @@ export class WarriorProtNewBehavior extends Behavior {
   useCooldowns() {
     return new bt.Selector(
       spell.cast("Avatar", () => Boolean(!me.hasAura("Thunder Blast") || me.getAuraStacks("Thunder Blast") <= 2)),
-      spell.cast("Shield Wall", () => Boolean(me.hasAura("Immovable Object") && !me.hasAura("Avatar"))),
+      spell.cast("Shield Wall", () => Boolean(me.hasAura("Immovable Object") && !me.hasAura("Avatar")) || me.pctHealth < 50),
       spell.cast("Blood Fury"),
       spell.cast("Berserking"),
       spell.cast("Arcane Torrent"),
@@ -60,7 +60,7 @@ export class WarriorProtNewBehavior extends Behavior {
       spell.cast("Fireblood"),
       spell.cast("Ancestral Call"),
       spell.cast("Bag of Tricks"),
-      spell.cast("Last Stand", () => Boolean(this.shouldUseLastStand()) && !me.hasAura("Shield Wall")),
+      spell.cast("Last Stand", () => Boolean(this.shouldUseLastStand() || me.pctHealth < 60) && !me.hasAura("Shield Wall")),
       spell.cast("Ravager"),
       spell.cast("Demoralizing Shout", () => Boolean(me.hasAura("Booming Voice"))),
       spell.cast("Spear of Bastion"),
@@ -72,16 +72,15 @@ export class WarriorProtNewBehavior extends Behavior {
   useDefensives() {
     return new bt.Selector(
       spell.cast("Shield Block", on => this.getCurrentTarget(), req => this.getAuraRemainingTime("Shield Block") <= 10),
-      spell.cast("Ignore Pain", on => this.getCurrentTarget(), req => me.powerByType(PowerType.Rage) >= 70)
+      // spell.cast("Ignore Pain", on => this.getCurrentTarget(), req => me.powerByType(PowerType.Rage) >= 70),
       // Commented out detailed rage management as requested
-      /*
       spell.cast("Ignore Pain", on => this.getCurrentTarget(), req => {
         const rage = me.powerByType(PowerType.Rage);
         const rageDeficit = 100 - rage;
         return (
           this.getCurrentTarget().pctHealth >= 20 && (
             (rageDeficit <= 15 && spell.getCooldown("Shield Slam").ready) ||
-            (rageDeficit <= 40 && spell.getCooldown("Shield Charge").ready && this.hasTalent("Champions Bulwark")) ||
+            (rageDeficit <= 40 && spell.getCooldown("Shield Charge").ready && this.hasTalent("Champion's Bulwark")) ||
             (rageDeficit <= 20 && spell.getCooldown("Shield Charge").ready) ||
             (rageDeficit <= 30 && spell.getCooldown("Demoralizing Shout").ready && this.hasTalent("Booming Voice")) ||
             (rageDeficit <= 20 && spell.getCooldown("Avatar").ready) ||
@@ -99,7 +98,6 @@ export class WarriorProtNewBehavior extends Behavior {
            me.hasSetBonus(31, 2))
         );
       })
-      */
     );
   }
 
@@ -185,7 +183,7 @@ export class WarriorProtNewBehavior extends Behavior {
 
   shouldUseCooldowns() {
     const target = this.getCurrentTarget();
-    return target.timeToDeath() > 20;
+    return target.timeToDeath() > 15 && !me.hasAura("Smothering Shadows");
   }
 
   getAuraRemainingTime(auraName) {
@@ -207,7 +205,7 @@ export class WarriorProtNewBehavior extends Behavior {
     if (me.targetUnit && me.isWithinMeleeRange(me.targetUnit)) {
       return me.targetUnit;
     } else {
-      return combat.targets.find(unit => unit.distanceTo(me) <= 10) || null;
+      return combat.targets.find(unit => unit.distanceTo(me) <= 12) || null;
     }
   }
 
