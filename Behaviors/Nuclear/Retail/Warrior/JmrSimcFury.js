@@ -25,8 +25,16 @@ export class WarriorFuryNewBehavior extends Behavior {
       spell.cast("Bloodthirst", () => me.pctHealth < 70 && me.hasVisibleAura("Enraged Regeneration")),
       spell.interrupt("Pummel", false),
       spell.interrupt("Storm Bolt", false),
-      this.useTrinkets(),
-      this.useRacials(),
+      new bt.Decorator(
+        () => me.isWithinMeleeRange(me.target) && this.shouldUseAvatar() && (me.hasVisibleAura("Recklessness") || me.hasVisibleAura("Avatar")),
+        this.useTrinkets(),
+        new bt.Action(() => bt.Status.Success)
+      ),
+      new bt.Decorator(
+        () => me.isWithinMeleeRange(me.target) && this.shouldUseAvatar(),
+        this.useRacials(),
+        new bt.Action(() => bt.Status.Success)
+      ),
       new bt.Decorator(
         () => this.hasTalent("Slayer's Dominance") && this.getEnemiesInRange(8) === 1,
         this.slayerSingleTarget(),
@@ -53,8 +61,9 @@ export class WarriorFuryNewBehavior extends Behavior {
 
 
   useTrinkets() {
-    // Implement trinket usage logic here
-    return new bt.Selector();
+    return new bt.Selector(
+      common.useEquippedItemByName("Skarmorak Shard"),
+    );
   }
 
   useRacials() {
@@ -314,7 +323,7 @@ export class WarriorFuryNewBehavior extends Behavior {
     if (me.targetUnit && me.isWithinMeleeRange(me.targetUnit)) {
       return me.targetUnit;
     } else {
-      return combat.targets.find(unit => unit.distanceTo(me) <= 10);
+      return combat.targets.find(unit => unit.distanceTo(me) <= 10) || null;
     }
   }
 
