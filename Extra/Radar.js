@@ -70,7 +70,7 @@ class Radar {
 
     objects.forEach(obj => {
       const objPos = wow.WorldFrame.getScreenCoordinates(obj.position);
-      if (objPos && objPos.x !== -1) {
+      if (objPos != undefined && objPos.x !== -1) {
         // On-screen object
         if (Settings[drawLinesSetting]) {
           canvas.addLine(mePos, objPos, imgui.getColorU32(color), 1);
@@ -202,7 +202,7 @@ class Radar {
 
     const onScreenObjects = allObjectsArray.filter(obj => {
       const objPos = wow.WorldFrame.getScreenCoordinates(obj.position);
-      return objPos.x !== -1;  // Keep only on-screen objects
+      return objPos != undefined && objPos.x !== -1;  // Keep only on-screen objects
     });
 
     onScreenObjects.sort((a, b) => me.distanceTo(a.position) - me.distanceTo(b.position));
