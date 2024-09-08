@@ -246,7 +246,6 @@ class Spell {
     }
 
     // Return null if no match is found
-    console.error(`Spell ${spellNameOrId} not found using overrideId or original ID/name`);
     return null;
   }
 
