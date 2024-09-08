@@ -15,6 +15,12 @@ Object.defineProperties(wow.CGUnit.prototype, {
     }
   },
 
+  focusTarget: {
+    get: function () {
+      return objMgr.findObject(wow.GameUI.focusTargetGuid);
+    }
+  },
+
   auras: {
     get: function () {
       if (this._cacheAuras === undefined || this._cacheAurasRefreshTime < wow.frameTime) {
