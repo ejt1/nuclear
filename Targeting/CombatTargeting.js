@@ -5,6 +5,7 @@ import PerfMgr from "../Debug/PerfMgr";
 class CombatTargeting extends Targeting {
   constructor() {
     super();
+    this.burstToggle = false;
   }
 
   update() {
@@ -42,20 +43,23 @@ class CombatTargeting extends Targeting {
     });
   }
 
+  toggleBurst() {
+    this.burstToggle = !this.burstToggle;  // Update this line
+    console.log(`Burst mode ${this.burstToggle ? 'enabled' : 'disabled'}`);
+  }
+
   debugRenderTargets() {
     const drawList = imgui.getBackgroundDrawList();
     if (!drawList || !me) { return; }
-
     const fromSC = wow.WorldFrame.getScreenCoordinates(me.position);
     this.targets.forEach(unit => {
       const toSC = wow.WorldFrame.getScreenCoordinates(unit.position);
       if (toSC.x > 0 && toSC.y > 0) {
         drawList.addLine(fromSC, toSC, imgui.getColorU32({ r: 255, g: 0, b: 0, a: 255 }));
-        //drawList.addText(`TTD: ${unit.timeToDeath().toFixed(2)}`, { x: toSC.x - 10, y: toSC.y }, imgui.getColorU32({ r: 255, g: 255, b: 0, a: 255 }));
       }
     });
   }
 }
 
-export const defaultCombatTargeting = new CombatTargeting;
+export const defaultCombatTargeting = new CombatTargeting();
 export default CombatTargeting;
