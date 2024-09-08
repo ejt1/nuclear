@@ -205,14 +205,14 @@ class Spell {
   }
 
   /**
-   * Helper function to retrieve a spell by ID or name.
-   * This function first tries to retrieve the spell directly by ID or name. If not found,
-   * it then iterates through the player's spellbook and constructs spells using their
-   * override ID to check for matches.
-   *
-   * @param {number | string} spellNameOrId - The spell ID or name.
-   * @returns {wow.Spell | null} - The spell object, or null if not found.
-   */
+ * Helper function to retrieve a spell by ID or name.
+ * This function first tries to retrieve the spell directly by ID or name. If not found,
+ * it then iterates through the player's spellbook and constructs spells using their
+ * override ID to check for matches.
+ *
+ * @param {number | string} spellNameOrId - The spell ID or name.
+ * @returns {wow.Spell | null} - The spell object, or null if not found.
+ */
   static getSpell(spellNameOrId) {
     let spell;
 
@@ -231,17 +231,17 @@ class Spell {
       return spell;
     }
 
-    // If the spell wasn't found, search through the player's spellbook and construct spells using their overrideId
+    // If the spell wasn't found, search through the player's spellbook
     const playerSpells = wow.SpellBook.playerSpells;
     for (const playerSpell of playerSpells) {
-      const constructedSpell = new wow.Spell(playerSpell.overrideId);
+      const constructedSpell = new wow.Spell(playerSpell.overrideId);  // Use the spell's actual ID, not overrideId
 
       // Check if the constructed spell matches the original name or ID provided
       if (
         (typeof spellNameOrId === 'number' && (constructedSpell.id === spellNameOrId || constructedSpell.overrideId === spellNameOrId)) ||
-        (typeof spellNameOrId === 'string' && constructedSpell.name === spellNameOrId)
+        (typeof spellNameOrId === 'string' && constructedSpell.name.toLowerCase() === spellNameOrId.toLowerCase())
       ) {
-        return constructedSpell;
+        return playerSpell;
       }
     }
 
