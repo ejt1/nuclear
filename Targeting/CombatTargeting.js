@@ -58,7 +58,7 @@ class CombatTargeting extends Targeting {
     this.targets.forEach(unit => {
       const toSC = wow.WorldFrame.getScreenCoordinates(unit.position);
       if (toSC.x > 0 && toSC.y > 0) {
-        drawList.addLine(fromSC, toSC, imgui.getColorU32({ r: 255, g: 0, b: 0, a: 255 }));
+        drawList.addLine(fromSC, toSC, colors.red);
       }
     });
   }
@@ -76,7 +76,7 @@ class CombatTargeting extends Targeting {
 
       const text = "BURST MODE ENABLED";
 
-      drawList.addText(text, pos, imgui.getColorU32(colors.green));
+      drawList.addText(text, pos, colors.green);
     }
   }
 }

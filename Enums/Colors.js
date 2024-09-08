@@ -1,4 +1,4 @@
-const colors = {
+const rawColors = {
   white: [1.0, 1.0, 1.0, 1.0],
   red: [1.0, 0.0, 0.0, 1.0],
   black: [0.0, 0.0, 0.0, 1.0],
@@ -59,5 +59,82 @@ const colors = {
   lightslategray: [0.47, 0.53, 0.6, 1.0],
   powderblue: [0.69, 0.88, 0.9, 1.0]
 };
+
+function convertColor(rgba) {
+  return (
+    ((Math.round(rgba[3] * 255) & 0xFF) << 24) |  // Alpha
+    ((Math.round(rgba[2] * 255) & 0xFF) << 16) |  // Blue
+    ((Math.round(rgba[1] * 255) & 0xFF) << 8) |   // Green
+    (Math.round(rgba[0] * 255) & 0xFF)            // Red
+  ) >>> 0;
+}
+
+/**
+ * @type {{
+ *   white: number,
+ *   red: number,
+ *   black: number,
+ *   green: number,
+ *   purple: number,
+ *   blue: number,
+ *   pink: number,
+ *   yellow: number,
+ *   teal: number,
+ *   gray: number,
+ *   orange: number,
+ *   lightblue: number,
+ *   maroon: number,
+ *   navy: number,
+ *   olive: number,
+ *   silver: number,
+ *   lime: number,
+ *   fuchsia: number,
+ *   aqua: number,
+ *   skyblue: number,
+ *   indigo: number,
+ *   turquoise: number,
+ *   coral: number,
+ *   tan: number,
+ *   lavender: number,
+ *   plum: number,
+ *   periwinkle: number,
+ *   khaki: number,
+ *   hotpink: number,
+ *   beige: number,
+ *   sienna: number,
+ *   rosybrown: number,
+ *   lightgreen: number,
+ *   midnightblue: number,
+ *   darkred: number,
+ *   darkblue: number,
+ *   darkgreen: number,
+ *   darkpurple: number,
+ *   darkorange: number,
+ *   lightgrey: number,
+ *   darkgrey: number,
+ *   brown: number,
+ *   darkkhaki: number,
+ *   seashell: number,
+ *   peachpuff: number,
+ *   deeppink: number,
+ *   lightcoral: number,
+ *   lightyellow: number,
+ *   lavenderblush: number,
+ *   mistyrose: number,
+ *   lightcyan: number,
+ *   lightpink: number,
+ *   aliceblue: number,
+ *   bisque: number,
+ *   blanchedalmond: number,
+ *   chartreuse: number,
+ *   dimgray: number,
+ *   lightslategray: number,
+ *   powderblue: number
+ * }}
+ */
+const colors = Object.entries(rawColors).reduce((acc, [key, value]) => {
+  acc[key] = convertColor(value);
+  return acc;
+}, {});
 
 export default colors;
