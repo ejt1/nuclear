@@ -26,7 +26,7 @@ export class DruidRestorationBehavior extends Behavior {
         common.waitForCastOrChannel(),
         this.waitForForm(),
         this.panicHeal(),
-        spell.dispel("Remove Corruption", true, DispelPriority.Low, true, WoWDispelType.Magic, WoWDispelType.Curse, WoWDispelType.Poison),
+        spell.dispel("Nature's Cure", true, DispelPriority.Low, true, WoWDispelType.Magic, WoWDispelType.Curse, WoWDispelType.Poison),
         spell.cast("Mark of the Wild", req => this.findMotwTarget()),
         spell.cast("Swiftmend", req => this.findSwiftmendTarget()),
         spell.cast("Regrowth", req => me.hasVisibleAura("Clearcasting") && heal.getPriorityTarget()?.predictedHealthPercent < 90, on => heal.getPriorityTarget()),

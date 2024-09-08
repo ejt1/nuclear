@@ -206,19 +206,50 @@ class Spell {
 
   /**
    * Helper function to retrieve a spell by ID or name.
+   * This function first tries to retrieve the spell directly by ID or name. If not found,
+   * it then iterates through the player's spellbook and constructs spells using their
+   * override ID to check for matches.
+   *
    * @param {number | string} spellNameOrId - The spell ID or name.
    * @returns {wow.Spell | null} - The spell object, or null if not found.
    */
   static getSpell(spellNameOrId) {
+    let spell;
+
+    // First, attempt to get the spell directly by ID or name
     if (typeof spellNameOrId === 'number') {
-      return new wow.Spell(spellNameOrId);
+      spell = new wow.Spell(spellNameOrId);
     } else if (typeof spellNameOrId === 'string') {
-      return wow.SpellBook.getSpellByName(spellNameOrId);
+      spell = wow.SpellBook.getSpellByName(spellNameOrId);
     } else {
-      console.error("Invalid argument type for getSpellByIdOrName method");
-      throw Error("Invalid argument type for getSpellByIdOrName method")
+      console.error("Invalid argument type for getSpell method");
+      throw new Error("Invalid argument type for getSpell method");
     }
+
+    // If the spell was found, return it immediately
+    if (spell) {
+      return spell;
+    }
+
+    // If the spell wasn't found, search through the player's spellbook and construct spells using their overrideId
+    const playerSpells = wow.SpellBook.playerSpells;
+    for (const playerSpell of playerSpells) {
+      const constructedSpell = new wow.Spell(playerSpell.overrideId);
+
+      // Check if the constructed spell matches the original name or ID provided
+      if (
+        (typeof spellNameOrId === 'number' && (constructedSpell.id === spellNameOrId || constructedSpell.overrideId === spellNameOrId)) ||
+        (typeof spellNameOrId === 'string' && constructedSpell.name === spellNameOrId)
+      ) {
+        return constructedSpell;
+      }
+    }
+
+    // Return null if no match is found
+    console.error(`Spell ${spellNameOrId} not found using overrideId or original ID/name`);
+    return null;
   }
+
 
   /**
    * Checks if the global cooldown (GCD) is currently active.
