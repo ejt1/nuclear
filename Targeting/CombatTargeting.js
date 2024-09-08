@@ -1,6 +1,7 @@
 import objMgr, { me } from "../Core/ObjectManager";
 import Targeting from "./Targeting";
 import PerfMgr from "../Debug/PerfMgr";
+import colors from "@/Enums/Colors";
 
 class CombatTargeting extends Targeting {
   constructor() {
@@ -11,6 +12,8 @@ class CombatTargeting extends Targeting {
   update() {
     PerfMgr.begin("Combat Targeting");
     super.update();
+    //this.debugRenderTargets();
+    this.drawBurstStatus();
     PerfMgr.end("Combat Targeting");
   }
 
@@ -45,7 +48,7 @@ class CombatTargeting extends Targeting {
 
   toggleBurst() {
     this.burstToggle = !this.burstToggle;
-    console.log(`Burst mode ${this.burstToggle ? 'enabled' : 'disabled'}`);
+    console.info(`Burst mode ${this.burstToggle ? 'Enabled' : 'Disabled'}`);
   }
 
   debugRenderTargets() {
@@ -58,6 +61,23 @@ class CombatTargeting extends Targeting {
         drawList.addLine(fromSC, toSC, imgui.getColorU32({ r: 255, g: 0, b: 0, a: 255 }));
       }
     });
+  }
+
+  drawBurstStatus() {
+    if (this.burstToggle) {
+      const drawList = imgui.getBackgroundDrawList();
+      if (!drawList) { return; }
+
+      const viewport = imgui.getMainViewport();
+      const pos = {
+        x: viewport.workPos.x + 10,
+        y: viewport.workPos.y + viewport.workSize.y - 30
+      };
+
+      const text = "BURST MODE ENABLED";
+
+      drawList.addText(text, pos, imgui.getColorU32(colors.green));
+    }
   }
 }
 

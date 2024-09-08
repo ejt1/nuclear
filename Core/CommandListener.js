@@ -1,4 +1,4 @@
-import { defaultCombatTargeting } from '@/Targeting/CombatTargeting';
+import { defaultCombatTargeting as Combat } from '@/Targeting/CombatTargeting';
 
 class CommandListener extends wow.EventListener {
   constructor() {
@@ -20,16 +20,12 @@ class CommandListener extends wow.EventListener {
   handleCommand(command) {
     switch (command.toLowerCase()) {
       case 'toggleburst':
-        this.toggleBurst();
+        Combat.toggleBurst();
         break;
       // Add Additional commands as we progress!
       default:
-        console.log(`Unknown custom command: ${command}`);
+        console.info(`Unknown custom command: ${command}`);
     }
-  }
-
-  toggleBurst() {
-    defaultCombatTargeting.toggleBurst();
   }
 }
 
