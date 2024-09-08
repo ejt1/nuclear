@@ -9,7 +9,6 @@ class CommandListener extends wow.EventListener {
   onEvent(event) {
     if (event.name === 'CONSOLE_MESSAGE') {
       const message = event.args[0];
-      console.info(message)
       const match = this.commandRegex.exec(message);
       if (match) {
         const command = match[1];
