@@ -44,7 +44,7 @@ class CombatTargeting extends Targeting {
   }
 
   toggleBurst() {
-    this.burstToggle = !this.burstToggle;  // Update this line
+    this.burstToggle = !this.burstToggle;
     console.log(`Burst mode ${this.burstToggle ? 'enabled' : 'disabled'}`);
   }
 
