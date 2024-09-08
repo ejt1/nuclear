@@ -4,6 +4,7 @@ class CommandListener extends wow.EventListener {
   constructor() {
     super();
     this.commandRegex = /Unknown console command \((.+)\)/;
+    this.spellQueue = [];
   }
 
   onEvent(event) {
@@ -18,14 +19,43 @@ class CommandListener extends wow.EventListener {
   }
 
   handleCommand(command) {
-    switch (command.toLowerCase()) {
+    const parts = command.toLowerCase().split(' ');
+    switch (parts[0]) {
       case 'toggleburst':
         Combat.toggleBurst();
         break;
-      // Add Additional commands as we progress!
+      case 'queue':
+        this.handleQueueCommand(parts.slice(1));
+        break;
       default:
         console.info(`Unknown custom command: ${command}`);
     }
+  }
+
+  handleQueueCommand(args) {
+    if (args.length < 2) {
+      console.info('Invalid queue command. Usage: queue [target|focus|me] [spell name]');
+      return;
+    }
+
+    const target = args[0];
+    const spellName = args.slice(1).join(' ');
+
+    if (!['target', 'focus', 'me'].includes(target)) {
+      console.info('Invalid target. Use "target", "focus", or "me".');
+      return;
+    }
+
+    this.spellQueue.push({ target, spellName });
+    console.info(`Queued spell: ${spellName} on ${target}`);
+  }
+
+  getNextQueuedSpell() {
+    return this.spellQueue.shift();
+  }
+
+  hasQueuedSpells() {
+    return this.spellQueue.length > 0;
   }
 }
 

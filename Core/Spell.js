@@ -5,6 +5,7 @@ import { DispelPriority, dispels } from "../Data/Dispels";
 import { interrupts } from '@/Data/Interrupts';
 import Settings from './Settings';
 import { defaultHealTargeting as Heal } from '@/Targeting/HealTargeting';
+import CommandListener from './CommandListener';
 
 class Spell {
   /** @type {{get: function(): (wow.CGUnit|undefined)}} */
@@ -31,38 +32,68 @@ class Spell {
     if (arguments.length === 0) {
       throw "no arguments given to Spell.cast";
     }
-    const spell = arguments[0];
+    let spellToCast = arguments[0];
     const rest = Array.prototype.slice.call(arguments, 1);
     const sequence = new bt.Sequence();
 
     sequence.addChild(new bt.Action(() => {
-      Spell._currentTarget = me.targetUnit;  // Set fallback target to me.targetUnit
-    }));
-
-    for (const arg of rest) {
-      if (typeof arg === 'function') {
-        sequence.addChild(new bt.Action(() => {
-          const r = arg();
-          if (r === false || r === undefined || r === null) {
-            // function returned a boolean predicate
-            return bt.Status.Failure;
-          } else if (r instanceof wow.CGUnit || r instanceof wow.Guid) {
-            // function returned a target
-            Spell._currentTarget = r;
+      // Check if there's a queued spell
+      if (CommandListener.hasQueuedSpells()) {
+        const queuedSpell = CommandListener.getNextQueuedSpell();
+        if (queuedSpell) {
+          // Override the current spell and target with the queued one
+          spellToCast = queuedSpell.spellName;
+          switch (queuedSpell.target) {
+            case 'target':
+              Spell._currentTarget = me.targetUnit;
+              break;
+            case 'focus':
+              Spell._currentTarget = me.focusTarget;
+              if (!Spell._currentTarget) {
+                console.info("Focus target does not exist. Cancelling queue.");
+                return bt.Status.Failure;
+              }
+              break;
+            case 'me':
+              Spell._currentTarget = me;
+              break;
           }
-          return bt.Status.Success;
-        }));
-      } else {
-        try {
-          throw new Error(`Invalid argument passed to Spell.cast: expected function got ${typeof arg}`);
-        } catch (e) {
-          console.warn(e.message);
-          console.warn(e.stack.split('\n')[1]);
+          console.info(`Casting queued spell: ${spellToCast} on ${queuedSpell.target}`);
+          // Immediately cast the queued spell
+          return Spell.castEx(spellToCast).tick();
         }
       }
-    }
 
-    sequence.addChild(Spell.castEx(spell));
+      // If no queued spell, proceed with the original target
+      Spell._currentTarget = me.targetUnit;
+      return bt.Status.Success;
+    }));
+
+    // Only add the rest of the sequence if it wasn't a queued spell
+    if (!CommandListener.hasQueuedSpells()) {
+      for (const arg of rest) {
+        if (typeof arg === 'function') {
+          sequence.addChild(new bt.Action(() => {
+            const r = arg();
+            if (r === false || r === undefined || r === null) {
+              return bt.Status.Failure;
+            } else if (r instanceof wow.CGUnit || r instanceof wow.Guid) {
+              Spell._currentTarget = r;
+            }
+            return bt.Status.Success;
+          }));
+        } else {
+          try {
+            throw new Error(`Invalid argument passed to Spell.cast: expected function got ${typeof arg}`);
+          } catch (e) {
+            console.warn(e.message);
+            console.warn(e.stack.split('\n')[1]);
+          }
+        }
+      }
+
+      sequence.addChild(Spell.castEx(spellToCast));
+    }
 
     return sequence;
   }
