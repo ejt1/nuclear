@@ -32,6 +32,7 @@ class Spell {
     if (arguments.length === 0) {
       throw "no arguments given to Spell.cast";
     }
+
     let spellToCast = arguments[0];
     const rest = Array.prototype.slice.call(arguments, 1);
     const sequence = new bt.Sequence();
@@ -58,9 +59,18 @@ class Spell {
               Spell._currentTarget = me;
               break;
           }
-          console.info(`Casting queued spell: ${spellToCast} on ${queuedSpell.target}`);
-          // Immediately cast the queued spell
-          return Spell.castEx(spellToCast).tick();
+          console.info(`Attempting to cast queued spell: ${spellToCast} on ${queuedSpell.target}`);
+
+          // Attempt to cast the queued spell immediately
+          const castResult = Spell.castEx(spellToCast).tick();
+          if (castResult === bt.Status.Success) {
+            console.info(`Successfully cast queued spell: ${spellToCast}`);
+            return bt.Status.Success;
+          } else {
+            console.info(`Failed to cast queued spell: ${spellToCast}. Adding back to queue.`);
+            CommandListener.addSpellToQueue(queuedSpell);
+            return bt.Status.Failure;
+          }
         }
       }
 
