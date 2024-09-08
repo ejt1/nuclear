@@ -268,6 +268,17 @@ const ores = {
 
 const treasures = {
   // Treasures
+  273955: "treasure", // Small Treasure Chest
+  273902: "treasure", // Small Treasure Chest
+  273910: "treasure", // Small Treasure Chest
+  273905: "treasure", // Small Treasure Chest
+  273917: "treasure", // Small Treasure Chest
+  273918: "treasure", // Small Treasure Chest
+  273903: "treasure", // Small Treasure Chest
+  275076: "treasure", // Small Treasure Chest
+  273919: "treasure", // Small Treasure Chest
+  273956: "treasure", // Small Treasure Chest
+  280751: "treasure", // Small Treasure Chest
   183385: "treasure", // Sanguine Hibiscus
   185915: "treasure", // Netherwing Egg
   386166: "treasure", // Bone Pile
