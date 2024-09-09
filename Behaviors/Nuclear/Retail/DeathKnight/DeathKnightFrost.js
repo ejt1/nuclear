@@ -4,6 +4,7 @@ import Specialization from "@/Enums/Specialization";
 import common from '@/Core/Common';
 import spell from '@/Core/Spell'
 import { me } from "@/Core/ObjectManager";
+import { defaultCombatTargeting as Combat } from "@/Targeting/CombatTargeting";
 
 const auras = {
   darkSuccor: 101568,
@@ -35,6 +36,7 @@ export class DeathKnightFrostBehavior extends Behavior {
       new bt.Decorator(
         ret => !spell.isGlobalCooldown(),
         new bt.Selector(
+          spell.cast("Frostwyrm's Fury", ret => Combat.burstToggle),
           spell.cast("Death Strike", ret => me.pctHealth < 95 && me.hasAura(auras.darkSuccor)),
           spell.cast("Death Strike", ret => me.pctHealth < 65 && me.power > 35),
           spell.cast("Frost Strike", ret => this.checkFrostStrikeKeepUpBuffs()),

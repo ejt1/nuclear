@@ -4,6 +4,7 @@ import objMgr, { me } from "./Core/ObjectManager";
 import { flagsComponents } from "./Core/Util";
 import { defaultHealTargeting } from "./Targeting/HealTargeting";
 import { defaultCombatTargeting } from "./Targeting/CombatTargeting";
+import commandListener from '@/Core/CommandListener'
 
 export let availableBehaviors = [];
 
