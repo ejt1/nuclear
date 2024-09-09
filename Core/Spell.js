@@ -234,8 +234,11 @@ class Spell {
     // If the spell wasn't found, search through the player's spellbook
     const playerSpells = wow.SpellBook.playerSpells;
     for (const playerSpell of playerSpells) {
-      const constructedSpell = new wow.Spell(playerSpell.overrideId);  // Use the spell's override
+      if (playerSpell.id === playerSpell.overrideId) {
+        continue;
+      }
 
+      const constructedSpell = new wow.Spell(playerSpell.overrideId);  // Use the spell's override
       // Check if the constructed spell matches the original name or ID provided
       if (
         (typeof spellNameOrId === 'number' && (constructedSpell.id === spellNameOrId || constructedSpell.overrideId === spellNameOrId)) ||

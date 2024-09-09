@@ -6,6 +6,7 @@ import Radar from "@/Extra/Radar";
 import General from "@/Extra/General";
 import ProfileSettings from "@/Extra/ProfileSettings";
 import nuclear from "@/nuclear";
+import { me } from "@/Core/ObjectManager";
 
 class NuclearWindow {
   constructor() {
@@ -30,6 +31,10 @@ class NuclearWindow {
   }
 
   tick() {
+    if (!me) {
+      return;
+    }
+
     if (imgui.isKeyPressed(imgui.Key.Insert, false)) {
       if (!this.initialized) {
         this.initializeSettings();
