@@ -73,7 +73,7 @@ class Radar {
       if (objPos != undefined && objPos.x !== -1) {
         // On-screen object
         if (Settings[drawLinesSetting]) {
-          canvas.addLine(mePos, objPos, imgui.getColorU32(color), 1);
+          canvas.addLine(mePos, objPos, color, 1);
         }
         this.drawObjectText(obj, objPos);
       }
@@ -85,8 +85,8 @@ class Radar {
     const maxLines = 5;
     const headerText = "OFF SCREEN";
 
-    const headerColor = imgui.getColorU32(colors.white);
-    const separatorColor = imgui.getColorU32(colors.white);
+    const headerColor = colors.white;
+    const separatorColor = colors.white;
 
     const offScreenObjects = objects.filter(obj => wow.WorldFrame.getScreenCoordinates(obj.position).x === -1);
 
@@ -159,10 +159,10 @@ class Radar {
     const screenPos = wow.WorldFrame.getScreenCoordinates(adjustedObjPos);
 
     if (prefix) {
-      canvas.addText(prefix, screenPos, imgui.getColorU32(prefixColor));
+      canvas.addText(prefix, screenPos, prefixColor);
       screenPos.x += imgui.calcTextSize(prefix).x;
     }
-    canvas.addText(text, screenPos, imgui.getColorU32(colors.white));
+    canvas.addText(text, screenPos, colors.white);
   }
 
   static withinDistance(obj) {
@@ -217,7 +217,7 @@ class Radar {
       const mePos = wow.WorldFrame.getScreenCoordinates(me.position);
       const closestPos = wow.WorldFrame.getScreenCoordinates(closestObject.position);
       if (closestPos.x !== -1) {
-        canvas.addLine(mePos, closestPos, imgui.getColorU32(objectColors.default), 2);
+        canvas.addLine(mePos, closestPos, objectColors.default, 2);
       }
     }
 

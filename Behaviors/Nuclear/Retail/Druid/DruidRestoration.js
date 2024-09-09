@@ -8,21 +8,26 @@ import { PowerType } from "@/Enums/PowerType";
 import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 import { defaultHealTargeting as heal } from "../../../../Targeting/HealTargeting";
 import { ShapeshiftForm } from "../../../../Enums/UnitEnums";
+import { DispelPriority } from "@/Data/Dispels";
+import { WoWDispelType } from "@/Enums/Auras";
 
 export class DruidRestorationBehavior extends Behavior {
   context = BehaviorContext.Any;
   specialization = Specialization.Druid.Restoration;
   version = wow.GameVersion.Retail;
+  name = "Resto Druid"
 
   build() {
     return new bt.Decorator(
       ret => !spell.isGlobalCooldown(),
       new bt.Selector(
+        common.waitForNotSitting(),
         common.waitForNotMounted(),
         common.waitForCastOrChannel(),
         this.waitForForm(),
-
         this.panicHeal(),
+        spell.dispel("Nature's Cure", true, DispelPriority.Low, true, WoWDispelType.Magic, WoWDispelType.Curse, WoWDispelType.Poison),
+        spell.cast("Mark of the Wild", req => this.findMotwTarget()),
         spell.cast("Swiftmend", req => this.findSwiftmendTarget()),
         spell.cast("Regrowth", req => me.hasVisibleAura("Clearcasting") && heal.getPriorityTarget()?.predictedHealthPercent < 90, on => heal.getPriorityTarget()),
         spell.cast("Wild Growth", req => this.wantWildGrowth()),
@@ -31,6 +36,9 @@ export class DruidRestorationBehavior extends Behavior {
         spell.cast("Regrowth", req => this.findRegrowthTarget()),
         spell.cast("Rejuvenation", req => this.findRejuvenationTarget()),
         spell.cast("Regrowth", on => heal.getPriorityTarget(), req => heal.getPriorityTarget()?.predictedHealthPercent < 80),
+        common.waitForTarget(),
+        spell.cast("Moonfire", on => this.findMoonfireTarget()),
+        spell.cast("Wrath", req => me.target)
       )
     );
   }
@@ -44,6 +52,11 @@ export class DruidRestorationBehavior extends Behavior {
     });
   }
 
+  findMotwTarget() {
+    const motwTarget = heal.friends.All.find(unit => !unit.hasAuraByMe("Mark of the Wild"))
+    return motwTarget ? motwTarget : false;
+  }
+
   panicHeal() {
     return new bt.Decorator(
       req => heal.getPriorityTarget()?.pctHealth < 20,
@@ -53,6 +66,11 @@ export class DruidRestorationBehavior extends Behavior {
         spell.cast("Ironbark", on => heal.getPriorityTarget()),
       )
     );
+  }
+
+  findMoonfireTarget() {
+    const moonFireTarget = combat.targets.find(unit => !unit.hasAuraByMe("Moonfire"));
+    return moonFireTarget ? moonFireTarget : false;
   }
 
   findRejuvenationTarget() {
@@ -75,8 +93,7 @@ export class DruidRestorationBehavior extends Behavior {
 
   wantWildGrowth() {
     let damagedUnitsWithin30 = 0;
-    for (const entry of heal.priorityList) {
-      const unit = entry.unit;
+    for (const unit of heal.priorityList) {
       if (unit.pctHealth < 90 && me.distanceTo(unit) < 30) {
         ++damagedUnitsWithin30;
       }
@@ -85,8 +102,7 @@ export class DruidRestorationBehavior extends Behavior {
   }
 
   findSwiftmendTarget() {
-    for (const entry of heal.priorityList) {
-      const unit = entry.unit;
+    for (const unit of heal.priorityList) {
       if (unit.pctHealth < 60 && (unit.hasAuraByMe("Rejuvenation") || unit.hasAuraByMe("Regrowth") || unit.hasAuraByMe("Wild Growth"))) {
         return unit;
       }
@@ -96,8 +112,7 @@ export class DruidRestorationBehavior extends Behavior {
 
   findLifebloomTarget() {
     let lifebloomCounts = 0;
-    for (const entry of heal.priorityList) {
-      const unit = entry.unit;
+    for (const unit of heal.priorityList) {
       if (unit.hasAuraByMe("Lifebloom")) {
         ++lifebloomCounts;
       }
@@ -114,8 +129,7 @@ export class DruidRestorationBehavior extends Behavior {
   }
 
   findHealOverTimeTarget(name, predicate) {
-    for (const entry of heal.priorityList) {
-      const unit = entry.unit;
+    for (const unit of heal.priorityList) {
       if (predicate(unit) && !unit.hasAuraByMe(name)) {
         return unit;
       }
