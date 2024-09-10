@@ -35,8 +35,8 @@ export class MageArcaneBehavior extends Behavior {
           ),
           spell.cast("Arcane Missiles"),
           spell.cast("Arcane Orb", req => {
-            const facingTargets = combat.targets.filter(unit => me.isFacing(unit, 20));
-            return facingTargets.length > 1 && me.powerByType(PowerType.ArcaneCharges);  // Cast if more than 1 target is within 45 degrees
+            const facingTargets = combat.targets.filter(unit => me.isFacing(unit, 20) && !unit.isMoving());
+            return facingTargets.length > 1 && me.powerByType(PowerType.ArcaneCharges);  // Cast if more than 1 target is within 20 degrees
           }),
           spell.cast("Arcane Barrage", req =>
             me.isMoving() || me.powerByType(PowerType.ArcaneCharges) > 3
