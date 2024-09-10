@@ -36,7 +36,6 @@ export class DeathKnightFrostBehavior extends Behavior {
       new bt.Decorator(
         ret => !spell.isGlobalCooldown(),
         new bt.Selector(
-          spell.cast("Frostwyrm's Fury", ret => Combat.burstToggle),
           spell.cast("Death Strike", ret => me.pctHealth < 95 && me.hasAura(auras.darkSuccor)),
           spell.cast("Death Strike", ret => me.pctHealth < 65 && me.power > 35),
           spell.cast("Frost Strike", ret => this.checkFrostStrikeKeepUpBuffs()),
@@ -45,6 +44,7 @@ export class DeathKnightFrostBehavior extends Behavior {
             new bt.Selector(
               spell.cast("Pillar of Frost", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
               spell.cast("Abomination Limb", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+              spell.cast("Empower Rune Weapon", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && me.getReadyRunes() < 5),
             )
           ),
           spell.cast("Soul Reaper", on => me.target, ret => me.target.pctHealth < 40),
@@ -66,7 +66,7 @@ export class DeathKnightFrostBehavior extends Behavior {
   }
 
   wantCooldowns() {
-    return me.isWithinMeleeRange(me.target) && me.target && me.target.timeToDeath() !== 9999 && me.target.timeToDeath() > 10;
+    return me.isWithinMeleeRange(me.target) && me.target && Combat.burstToggle && me.getReadyRunes() > 2;
   }
 
   multiTargetRotation() {

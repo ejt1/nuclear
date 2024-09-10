@@ -5,7 +5,7 @@ import common from '@/Core/Common';
 import spell from "@/Core/Spell";
 import {me} from "@/Core/ObjectManager";
 import {defaultHealTargeting as h} from "@/Targeting/HealTargeting";
-import {DispelPriority} from "@/Data/Dispels";
+import {DispelPriority} from "@/Data/Dispels"
 import {WoWDispelType} from "@/Enums/Auras";
 import spellBlacklist from "@/Data/PVPData";
 
@@ -65,8 +65,8 @@ export class PriestDiscipline extends Behavior {
       spell.dispel("Dispel Magic", false, DispelPriority.High, true, WoWDispelType.Magic),
       spell.cast("Penance", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 69),
       spell.cast("Power Word: Radiance", on => h.getPriorityTarget(), ret => this.shouldCastRadiance(1)),
-      spell.cast("Flash Heal", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 75),
-      spell.cast("Penance", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 90),
+      spell.cast("Flash Heal", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 45),
+      spell.cast("Penance", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 65),
       spell.dispel("Purify", true, DispelPriority.Low, true, WoWDispelType.Magic),
     );
   }

@@ -329,6 +329,7 @@ const treasures = {
   446495: "treasure", // Pile of Refuse
   452706: "treasure", // Deep lost Satchel
   452696: "treasure", // Machine Speaker's Reliquary
+  452697: "treasure", // Etched Machine Speaker's Reliquary
 };
 
 export default { herb: herbs, ore: ores, treasure: treasures };
