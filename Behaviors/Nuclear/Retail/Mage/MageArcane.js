@@ -14,33 +14,35 @@ export class MageArcaneBehavior extends Behavior {
   name = "Basic Ass Arcane";
 
   build() {
-    return new bt.Decorator(
-      ret => !spell.isGlobalCooldown(),
-      new bt.Selector(
-        common.waitForCastOrChannel(),
-        common.waitForNotMounted(),
-        spell.interrupt("Counterspell"),
-        spell.cast("Arcane Explosion", req =>
-          combat.targets.filter(unit => me.distanceTo(unit) <= 12).length > 1 &&
-          me.powerByType(PowerType.ArcaneCharges) < 4
-        ),
-        spell.cast("Arcane Intellect", req =>
-          !me.hasVisibleAura("Arcane Intellect")
-        ),
-        common.waitForTarget(),
-        common.waitForFacing(),
-        spell.cast("Prismatic Barrier", req =>
-          combat.targets.find(unit => me.distanceTo(unit) < 8 && unit.isTanking())
-        ),
-        spell.cast("Arcane Missiles"),
-        spell.cast("Arcane Orb", req => {
-          const facingTargets = combat.targets.filter(unit => me.isFacing(unit, 45));
-          return facingTargets.length > 1 && me.powerByType(PowerType.ArcaneCharges);  // Cast if more than 1 target is within 45 degrees
-        }),
-        spell.cast("Arcane Barrage", req =>
-          me.isMoving() || me.powerByType(PowerType.ArcaneCharges) > 3
-        ),
-        spell.cast("Arcane Blast")
+    return new bt.Selector(
+      common.waitForNotMounted(),
+      spell.interrupt("Counterspell"),
+      common.waitForCastOrChannel(),
+      new bt.Decorator(
+        ret => !spell.isGlobalCooldown(),
+        new bt.Selector(
+          spell.cast("Arcane Explosion", req =>
+            combat.targets.filter(unit => me.distanceTo(unit) <= 12).length > 1 &&
+            me.powerByType(PowerType.ArcaneCharges) < 4
+          ),
+          spell.cast("Arcane Intellect", req =>
+            !me.hasVisibleAura("Arcane Intellect")
+          ),
+          common.waitForTarget(),
+          common.waitForFacing(),
+          spell.cast("Prismatic Barrier", req =>
+            combat.targets.find(unit => me.distanceTo(unit) < 8 && unit.isTanking())
+          ),
+          spell.cast("Arcane Missiles"),
+          spell.cast("Arcane Orb", req => {
+            const facingTargets = combat.targets.filter(unit => me.isFacing(unit, 20));
+            return facingTargets.length > 1 && me.powerByType(PowerType.ArcaneCharges);  // Cast if more than 1 target is within 45 degrees
+          }),
+          spell.cast("Arcane Barrage", req =>
+            me.isMoving() || me.powerByType(PowerType.ArcaneCharges) > 3
+          ),
+          spell.cast("Arcane Blast")
+        )
       )
     );
   }

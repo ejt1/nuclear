@@ -344,6 +344,12 @@ class Spell {
           if (!castInfo) {
             continue;
           }
+          if (!target.isInterruptible) {
+            continue;
+          }
+          if (!me.isFacing(target)) {
+            continue;
+          }
           const currentTime = wow.frameTime;
           const castRemains = castInfo.castEnd - currentTime;
           const castTime = castInfo.castEnd - castInfo.castStart;
@@ -368,7 +374,7 @@ class Spell {
             }
           }
 
-          if (shouldInterrupt && target.isInterruptible && spell.cast(target)) {
+          if (shouldInterrupt && spell.cast(target)) {
             const spellId = target.isChanneling ? target.currentChannel : target.currentCast;
             const interruptTime = target.isChanneling ? `${channelTime.toFixed(2)}ms` : `${castPctRemain.toFixed(2)}%`;
             console.info(`Interrupted ${spellId} being ${target.isChanneling ? 'channeled' : 'cast'} by: ${target.unsafeName} after ${interruptTime}`);
