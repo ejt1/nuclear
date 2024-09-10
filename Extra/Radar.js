@@ -57,7 +57,7 @@ class Radar {
   static getFilteredAndSortedObjects(filterCondition) {
     const validObjects = [];
     objMgr.objects.forEach(obj => {
-      if (filterCondition(obj) && this.withinDistance(obj) && obj.interactable) {
+      if (filterCondition(obj) && this.withinDistance(obj) && obj.isInteractable) {
         validObjects.push(obj);
       }
     });
@@ -173,13 +173,32 @@ class Radar {
     if (!Settings.ExtraRadar) return;
 
     const trackedObjects = new Set();
+    let closestTrackedObject = null;
+    let closestDistance = Infinity;
 
     const categories = [
+      {
+        filter: obj =>
+          (obj instanceof wow.CGUnit && obj.isRelatedToActiveQuest) ||
+          (obj instanceof wow.CGGameObject && obj.isLootable),
+        type: 'quests',
+        track: "ExtraRadarTrackQuests",
+        draw: "ExtraRadarDrawLinesQuests"
+      },
       { filter: obj => obj instanceof wow.CGGameObject && Gatherables.herb[obj.entryId], type: 'herbs', track: "ExtraRadarTrackHerbs", draw: "ExtraRadarDrawLinesHerbs" },
       { filter: obj => obj instanceof wow.CGGameObject && Gatherables.ore[obj.entryId], type: 'ores', track: "ExtraRadarTrackOres", draw: "ExtraRadarDrawLinesOres" },
-      { filter: obj => obj instanceof wow.CGGameObject && Gatherables.treasure[obj.entryId], type: 'treasures', track: "ExtraRadarTrackTreasures", draw: "ExtraRadarDrawLinesTreasures" },
-      { filter: obj => obj instanceof wow.CGObject && (obj.isLootable || obj.isRelatedToActiveQuest), type: 'quests', track: "ExtraRadarTrackQuests", draw: "ExtraRadarDrawLinesQuests" },
-      { filter: obj => obj instanceof wow.CGUnit && obj.classification == Classification.Rare && !obj.deadOrGhost, type: 'rares', track: "ExtraRadarTrackRares", draw: "ExtraRadarDrawLinesRares" },
+      {
+        filter: obj => obj instanceof wow.CGGameObject && Gatherables.treasure[obj.entryId],
+        type: 'treasures',
+        track: "ExtraRadarTrackTreasures",
+        draw: "ExtraRadarDrawLinesTreasures"
+      },
+      {
+        filter: obj => obj instanceof wow.CGUnit && obj.classification == Classification.Rare && !obj.deadOrGhost,
+        type: 'rares',
+        track: "ExtraRadarTrackRares",
+        draw: "ExtraRadarDrawLinesRares"
+      },
     ];
 
     categories.forEach(cat => {
@@ -187,35 +206,45 @@ class Radar {
         const objects = this.getFilteredAndSortedObjects(cat.filter);
         objects.forEach(obj => trackedObjects.add(obj));
         this.drawObjects(objects, objectColors[cat.type], cat.draw);
+
+        // Update closest object if lines are being drawn for this category
+        if (Settings[cat.draw] && objects.length > 0) {
+          const distance = me.distanceTo(objects[0].position);
+          if (distance < closestDistance) {
+            closestDistance = distance;
+            closestTrackedObject = objects[0];
+          }
+        }
       }
     });
 
     if (Settings.ExtraRadarTrackEverything) {
-      // Exclude the player (me) when tracking everything
       const everythingObjects = this.getFilteredAndSortedObjects(obj => obj instanceof wow.CGObject && obj !== me);
       const newObjects = everythingObjects.filter(obj => !trackedObjects.has(obj));
       newObjects.forEach(obj => trackedObjects.add(obj));
       this.drawObjects(newObjects, objectColors.default, "ExtraRadarDrawLinesEverything");
+
+      // Update closest object if lines are being drawn for everything
+      if (Settings.ExtraRadarDrawLinesEverything && newObjects.length > 0) {
+        const distance = me.distanceTo(newObjects[0].position);
+        if (distance < closestDistance) {
+          closestDistance = distance;
+          closestTrackedObject = newObjects[0];
+        }
+      }
     }
 
     const allObjectsArray = Array.from(trackedObjects);
-
-    const onScreenObjects = allObjectsArray.filter(obj => {
-      const objPos = wow.WorldFrame.getScreenCoordinates(obj.position);
-      return objPos != undefined && objPos.x !== -1;  // Keep only on-screen objects
-    });
-
-    onScreenObjects.sort((a, b) => me.distanceTo(a.position) - me.distanceTo(b.position));
 
     if (Settings.ExtraRadarDrawOffScreenObjects) {
       this.drawOffScreenObjects(allObjectsArray);
     }
 
-    if (Settings.ExtraRadarDrawLinesClosest && onScreenObjects.length > 0) {
-      const closestObject = onScreenObjects[0];
+    // Draw line to the closest tracked object
+    if (Settings.ExtraRadarDrawLinesClosest && closestTrackedObject) {
       const canvas = imgui.getBackgroundDrawList();
       const mePos = wow.WorldFrame.getScreenCoordinates(me.position);
-      const closestPos = wow.WorldFrame.getScreenCoordinates(closestObject.position);
+      const closestPos = wow.WorldFrame.getScreenCoordinates(closestTrackedObject.position);
       if (closestPos.x !== -1) {
         canvas.addLine(mePos, closestPos, objectColors.default, 2);
       }
@@ -224,7 +253,7 @@ class Radar {
     // New: Interact with tracked objects within melee range
     if (Settings.ExtraRadarInteractTracked && !me.currentCastOrChannel) {
       for (const obj of trackedObjects) {
-        if (me.distanceTo(obj) < 6) {
+        if (me.withinInteractRange(obj)) {
           obj.interact();
           break;
         }

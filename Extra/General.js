@@ -7,12 +7,12 @@ class General {
     { header: "Interrupt Settings" },
     { type: "combobox", uid: "InterruptMode", text: "Interrupt Mode", options: ["None", "Everything", "List"], default: "None" },
     { type: "slider", uid: "InterruptPercentage", text: "Interrupt Percentage", default: 50, min: 1, max: 100 },
-
     { header: "Dispel Settings" },
     { type: "combobox", uid: "DispelMode", text: "Dispel Mode", options: ["None", "Everything", "List"], default: "None" },
-
     { header: "Healthstone Settings" },
     { type: "slider", uid: "HealthstonePercentage", text: "Healthstone Usage Percentage", default: 0, min: 0, max: 100 },
+    { header: "Attack Out of Combat Settings" },
+    { type: "checkbox", uid: "AttackOOC", text: "Enable Attack Out of Combat", default: false },
   ];
 
   static tabName = "General";
@@ -22,6 +22,7 @@ class General {
       { header: "Interrupt Settings", collapsible: true, options: this.options.slice(0, 3) },
       { header: "Dispel Settings", collapsible: true, options: this.options.slice(3, 5) },
       { header: "Healthstone Settings", collapsible: true, options: this.options.slice(5, 7) },
+      { header: "Attack Out of Combat Settings", collapsible: true, options: this.options.slice(7, 10) },
     ]);
   }
 

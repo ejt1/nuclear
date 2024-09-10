@@ -59,7 +59,7 @@ Object.defineProperties(wow.CGObject.prototype, {
   /**
    * @returns {boolean}
    */
-  interactable: {
+  isInteractable: {
     get: function () {
       return (this.dynamicFlags & ObjectFlags.Interactable) === 0;
     }
@@ -73,6 +73,15 @@ Object.defineProperties(wow.CGObject.prototype, {
       return (this.dynamicFlags & ObjectFlags.Lootable) > 0;
     }
   },
+
+  withinInteractRange: {
+    value: function (obj) {
+      const objRadius = obj.boundingRadius ?? obj.displayHeight ?? 0;  // Defaults to 0 if undefined or null
+      const distance = Math.max(this.boundingRadius + objRadius + 1.333, 6);
+
+      return this.distanceTo(obj) < distance;
+    }
+  }
 });
 
 export default true;

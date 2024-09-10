@@ -31,5 +31,6 @@ declare namespace wow {
     inMyGroup(): boolean;
     isTanking(): boolean;
     withinLineOfSight(target: CGUnit): boolean;
+    isImmune(): boolean;
   }
 }
