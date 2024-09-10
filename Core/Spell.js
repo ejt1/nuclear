@@ -331,13 +331,13 @@ class Spell {
           if (!(target instanceof wow.CGUnit)) {
             continue;
           }
+          if (!target.isCastingOrChanneling) {
+            continue;
+          }
           if (interruptPlayersOnly && !target.isPlayer()) {
             continue;
           }
           if (!spell.inRange(target) && !me.isWithinMeleeRange(target)) {
-            continue;
-          }
-          if (!target.isCasting && !target.isChanneling) {
             continue;
           }
           const castInfo = target.spellInfo;
