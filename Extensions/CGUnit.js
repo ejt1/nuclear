@@ -589,6 +589,16 @@ Object.defineProperties(wow.CGUnit.prototype, {
     get: function () {
       return this.currentCastOrChannel !== undefined
     }
+  },
+
+  isImmune: {
+    /**
+     * Check if the unit is immune
+     * @returns {boolean} - Returns true if the unit is immune, false otherwise
+     */
+    value: function () {
+      return (this.unitFlags & UnitFlags.UNK31) !== 0 || (this.unitFlags & UnitFlags.ImmuneToPC) !== 0;
+    }
   }
 });
 
