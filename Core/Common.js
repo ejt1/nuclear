@@ -110,6 +110,15 @@ class Common {
     const theItem = this.getItemByName(name)
     // use item with checks
   }
+
+  static waitForNotWaitingForArenaToStart() {
+    return new bt.Action(() => {
+      if (me.hasArenaPreparation()) {
+        return bt.Status.Success;
+      }
+      return bt.Status.Failure;
+    });
+  }
 }
 
 export default Common;
