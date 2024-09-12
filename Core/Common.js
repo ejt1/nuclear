@@ -2,6 +2,7 @@ import * as bt from './BehaviorTree'
 import objMgr, { me } from './ObjectManager'
 import CGUnit from "../Extensions/CGUnit";
 import Spell from './Spell';
+import spell from "@/Core/Spell";
 
 class Common {
   static waitForCastOrChannel() {
@@ -106,9 +107,133 @@ class Common {
     return foundItem;
   }
 
-  static useItemByName(name) {
-    const theItem = this.getItemByName(name)
-    // use item with checks
+  /**
+   * Uses an item by its name.
+   *
+   * @param {string} name - The name of the item to use.
+   * @param {wow.CGObject|wow.Guid|undefined} [target] - Optional target for the item use.
+   * @returns {boolean} True if the item was used successfully, false otherwise.
+   */
+  static useItemByName(name, target = undefined) {
+    const item = this.getItemByName(name);
+    
+    if (!item) {
+      console.debug(`Item "${name}" not found.`);
+      return false;
+    }
+
+    if (!item.useSpell) {
+      console.debug(`Item "${name}" is not usable.`);
+      return false;
+    }
+
+    // Check if the item has charges (if applicable)
+    if (item.enchantment && item.enchantment.charges === 0) {
+      console.debug(`Item "${name}" has no charges left.`);
+      return false;
+    }
+
+    // Check if the item has expired (if applicable)
+    if (item.expiration !== 0 && item.expiration <= wow.frameTime) {
+      console.debug(`Item "${name}" has expired.`);
+      return false;
+    }
+
+    // Attempt to use the item
+    const success = item.use(target);
+    if (success) {
+      console.debug(`Successfully used item "${name}".`);
+    } else {
+      console.debug(`Failed to use item "${name}".`);
+    }
+
+    return success;
+  }
+
+  /**
+   * Finds and returns an equipped item by its name.
+   *
+   * @param {string} name - The name of the item to find.
+   * @returns {wow.CGItem|null} The equipped item if found, otherwise null.
+   */
+  static getEquippedItemByName(name) {
+    let foundItem = null;
+
+    // Iterate over all objects in ObjectManager
+    objMgr.objects.forEach((obj) => {
+      if (obj instanceof wow.CGItem && 
+          obj.name === name && 
+          obj.owner && obj.containedIn &&
+          obj.owner.equals(obj.containedIn) &&
+          obj.owner.equals(me.guid)) {
+        foundItem = obj; // Set the found item
+      }
+    });
+
+    // Return the found item or null if not found
+    return foundItem;
+  }
+
+  /**
+   * Uses an equipped item by its name.
+   *
+   * @param {string} name - The name of the equipped item to use.
+   * @param {wow.CGObject|wow.Guid|undefined} [target] - Optional target for the item use.
+   * @returns {boolean} True if the item was used successfully, false otherwise.
+   */
+  static useEquippedItemByName(name, targetSelector = () => undefined) {
+    return new bt.Action(() => {
+      const item = this.getEquippedItemByName(name);
+      
+      if (!item) {
+        console.debug(`Equipped item "${name}" not found.`);
+        return bt.Status.Failure;
+      }
+  
+      if (!item.useSpell) {
+        console.debug(`Equipped item "${name}" is not usable.`);
+        return bt.Status.Failure;
+      }
+  
+      // Check the cooldown of the item's use spell
+      const itemSpell = spell.getSpell(item.useSpell);
+      if (!itemSpell.cooldown.ready) {
+        //console.debug(`Equipped item "${name}" is on cooldown.`);
+        return bt.Status.Failure;
+      }
+  
+      // Check if the item has charges (if applicable)
+      if (item.enchantment && item.enchantment.charges === 0) {
+        console.debug(`Equipped item "${name}" has no charges left.`);
+        return bt.Status.Failure;
+      }
+  
+      // Check if the item has expired (if applicable)
+      if (item.expiration !== 0 && item.expiration <= wow.frameTime) {
+        console.debug(`Equipped item "${name}" has expired.`);
+        return bt.Status.Failure;
+      }
+  
+      const target = targetSelector();
+  
+      // Range check
+      if (target && target instanceof wow.CGUnit) {
+        const range = itemSpell.range(target);
+        if (!itemSpell.inRange(target)) {
+          // console.debug(`Target for "${name}" out of range. Current: ${me.distanceTo(target)}, Max: ${range.max}`);
+          return bt.Status.Failure;
+        }
+      }
+  
+      // Attempt to use the item
+      const success = item.use(target);
+      if (success) {
+        console.info(`Used equipped item "${name}".`);
+        return bt.Status.Success;
+      } else {
+        return bt.Status.Failure;
+      }
+    });
   }
 
   static waitForNotWaitingForArenaToStart() {
