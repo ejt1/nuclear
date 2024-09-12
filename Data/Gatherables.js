@@ -268,6 +268,17 @@ const ores = {
 
 const treasures = {
   // Treasures
+  273955: "treasure", // Small Treasure Chest
+  273902: "treasure", // Small Treasure Chest
+  273910: "treasure", // Small Treasure Chest
+  273905: "treasure", // Small Treasure Chest
+  273917: "treasure", // Small Treasure Chest
+  273918: "treasure", // Small Treasure Chest
+  273903: "treasure", // Small Treasure Chest
+  275076: "treasure", // Small Treasure Chest
+  273919: "treasure", // Small Treasure Chest
+  273956: "treasure", // Small Treasure Chest
+  280751: "treasure", // Small Treasure Chest
   183385: "treasure", // Sanguine Hibiscus
   185915: "treasure", // Netherwing Egg
   386166: "treasure", // Bone Pile
@@ -317,6 +328,8 @@ const treasures = {
   419696: "treasure", // Waxy Lump
   446495: "treasure", // Pile of Refuse
   452706: "treasure", // Deep lost Satchel
+  452696: "treasure", // Machine Speaker's Reliquary
+  452697: "treasure", // Etched Machine Speaker's Reliquary
 };
 
 export default { herb: herbs, ore: ores, treasure: treasures };

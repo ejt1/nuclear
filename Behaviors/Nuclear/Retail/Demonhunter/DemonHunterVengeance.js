@@ -35,11 +35,11 @@ export class DemonhunterVengeanceBehavior extends Behavior {
             spell.cast("Immolation Aura", req => !me.hasVisibleAura("Immolation Aura")),
             spell.cast("Fel Devastation", req => me.power > 50),
             //spell.cast("Metamorphosis"),
-            spell.cast("Demon's Bite", req => this.soulFragments() < 4 && me.power < 75),
+            spell.cast("Fracture", req => this.soulFragments() < 4 && me.power < 75),
             spell.cast("Soul Carver"),
             spell.cast("Spirit Bomb", req => this.soulFragments() > 4),
             spell.cast("Fiery Brand", on => me.target, req => me.power > 70),
-            spell.cast("Chaos Strike", on => me.target),
+            spell.cast("Soul Cleave", on => me.target),
           )
         ),
         spell.cast("Throw Glaive"),

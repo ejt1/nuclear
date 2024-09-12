@@ -15,6 +15,12 @@ Object.defineProperties(wow.CGUnit.prototype, {
     }
   },
 
+  focusTarget: {
+    get: function () {
+      return objMgr.findObject(wow.GameUI.focusTargetGuid);
+    }
+  },
+
   auras: {
     get: function () {
       if (this._cacheAuras === undefined || this._cacheAurasRefreshTime < wow.frameTime) {
@@ -582,6 +588,16 @@ Object.defineProperties(wow.CGUnit.prototype, {
      */
     get: function () {
       return this.currentCastOrChannel !== undefined
+    }
+  },
+
+  isImmune: {
+    /**
+     * Check if the unit is immune
+     * @returns {boolean} - Returns true if the unit is immune, false otherwise
+     */
+    value: function () {
+      return (this.unitFlags & UnitFlags.UNK31) !== 0 || (this.unitFlags & UnitFlags.ImmuneToPC) !== 0;
     }
   }
 });

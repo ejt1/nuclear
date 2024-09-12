@@ -5,6 +5,7 @@ import { DispelPriority, dispels } from "../Data/Dispels";
 import { interrupts } from '@/Data/Interrupts';
 import Settings from './Settings';
 import { defaultHealTargeting as Heal } from '@/Targeting/HealTargeting';
+import CommandListener from './CommandListener';
 
 class Spell {
   /** @type {{get: function(): (wow.CGUnit|undefined)}} */
@@ -31,38 +32,78 @@ class Spell {
     if (arguments.length === 0) {
       throw "no arguments given to Spell.cast";
     }
-    const spell = arguments[0];
+
+    let spellToCast = arguments[0];
     const rest = Array.prototype.slice.call(arguments, 1);
     const sequence = new bt.Sequence();
 
     sequence.addChild(new bt.Action(() => {
-      Spell._currentTarget = me.targetUnit;  // Set fallback target to me.targetUnit
-    }));
-
-    for (const arg of rest) {
-      if (typeof arg === 'function') {
-        sequence.addChild(new bt.Action(() => {
-          const r = arg();
-          if (r === false || r === undefined || r === null) {
-            // function returned a boolean predicate
-            return bt.Status.Failure;
-          } else if (r instanceof wow.CGUnit || r instanceof wow.Guid) {
-            // function returned a target
-            Spell._currentTarget = r;
+      // Check if there's a queued spell
+      if (CommandListener.hasQueuedSpells()) {
+        const queuedSpell = CommandListener.getNextQueuedSpell();
+        if (queuedSpell) {
+          // Override the current spell and target with the queued one
+          spellToCast = queuedSpell.spellName;
+          switch (queuedSpell.target) {
+            case 'target':
+              Spell._currentTarget = me.targetUnit;
+              break;
+            case 'focus':
+              Spell._currentTarget = me.focusTarget;
+              if (!Spell._currentTarget) {
+                console.info("Focus target does not exist. Cancelling queue.");
+                return bt.Status.Failure;
+              }
+              break;
+            case 'me':
+              Spell._currentTarget = me;
+              break;
           }
-          return bt.Status.Success;
-        }));
-      } else {
-        try {
-          throw new Error(`Invalid argument passed to Spell.cast: expected function got ${typeof arg}`);
-        } catch (e) {
-          console.warn(e.message);
-          console.warn(e.stack.split('\n')[1]);
+          console.info(`Attempting to cast queued spell: ${spellToCast} on ${queuedSpell.target}`);
+
+          // Attempt to cast the queued spell immediately
+          const castResult = Spell.castEx(spellToCast).tick();
+          if (castResult === bt.Status.Success) {
+            console.info(`Successfully cast queued spell: ${spellToCast}`);
+            return bt.Status.Success;
+          } else {
+            console.info(`Failed to cast queued spell: ${spellToCast}. Adding back to queue.`);
+            CommandListener.addSpellToQueue(queuedSpell);
+            return bt.Status.Failure;
+          }
         }
       }
-    }
 
-    sequence.addChild(Spell.castEx(spell));
+      // If no queued spell, proceed with the original target
+      Spell._currentTarget = me.targetUnit;
+      return bt.Status.Success;
+    }));
+
+    // Only add the rest of the sequence if it wasn't a queued spell
+    if (!CommandListener.hasQueuedSpells()) {
+      for (const arg of rest) {
+        if (typeof arg === 'function') {
+          sequence.addChild(new bt.Action(() => {
+            const r = arg();
+            if (r === false || r === undefined || r === null) {
+              return bt.Status.Failure;
+            } else if (r instanceof wow.CGUnit || r instanceof wow.Guid) {
+              Spell._currentTarget = r;
+            }
+            return bt.Status.Success;
+          }));
+        } else {
+          try {
+            throw new Error(`Invalid argument passed to Spell.cast: expected function got ${typeof arg}`);
+          } catch (e) {
+            console.warn(e.message);
+            console.warn(e.stack.split('\n')[1]);
+          }
+        }
+      }
+
+      sequence.addChild(Spell.castEx(spellToCast));
+    }
 
     return sequence;
   }
@@ -164,20 +205,53 @@ class Spell {
   }
 
   /**
-   * Helper function to retrieve a spell by ID or name.
-   * @param {number | string} spellNameOrId - The spell ID or name.
-   * @returns {wow.Spell | null} - The spell object, or null if not found.
-   */
+ * Helper function to retrieve a spell by ID or name.
+ * This function first tries to retrieve the spell directly by ID or name. If not found,
+ * it then iterates through the player's spellbook and constructs spells using their
+ * override ID to check for matches.
+ *
+ * @param {number | string} spellNameOrId - The spell ID or name.
+ * @returns {wow.Spell | null} - The spell object, or null if not found.
+ */
   static getSpell(spellNameOrId) {
+    let spell;
+
+    // First, attempt to get the spell directly by ID or name
     if (typeof spellNameOrId === 'number') {
-      return new wow.Spell(spellNameOrId);
+      spell = new wow.Spell(spellNameOrId);
     } else if (typeof spellNameOrId === 'string') {
-      return wow.SpellBook.getSpellByName(spellNameOrId);
+      spell = wow.SpellBook.getSpellByName(spellNameOrId);
     } else {
-      console.error("Invalid argument type for getSpellByIdOrName method");
-      throw Error("Invalid argument type for getSpellByIdOrName method")
+      console.error("Invalid argument type for getSpell method");
+      throw new Error("Invalid argument type for getSpell method");
     }
+
+    // If the spell was found, return it immediately
+    if (spell) {
+      return spell;
+    }
+
+    // If the spell wasn't found, search through the player's spellbook
+    const playerSpells = wow.SpellBook.playerSpells;
+    for (const playerSpell of playerSpells) {
+      if (playerSpell.id === playerSpell.overrideId) {
+        continue;
+      }
+
+      const constructedSpell = new wow.Spell(playerSpell.overrideId);  // Use the spell's override
+      // Check if the constructed spell matches the original name or ID provided
+      if (
+        (typeof spellNameOrId === 'number' && (constructedSpell.id === spellNameOrId || constructedSpell.overrideId === spellNameOrId)) ||
+        (typeof spellNameOrId === 'string' && constructedSpell.name === spellNameOrId)
+      ) {
+        return playerSpell;
+      }
+    }
+
+    // Return null if no match is found
+    return null;
   }
+
 
   /**
    * Checks if the global cooldown (GCD) is currently active.
@@ -257,17 +331,23 @@ class Spell {
           if (!(target instanceof wow.CGUnit)) {
             continue;
           }
+          if (!target.isCastingOrChanneling) {
+            continue;
+          }
           if (interruptPlayersOnly && !target.isPlayer()) {
             continue;
           }
           if (!spell.inRange(target) && !me.isWithinMeleeRange(target)) {
             continue;
           }
-          if (!target.isCasting && !target.isChanneling) {
-            continue;
-          }
           const castInfo = target.spellInfo;
           if (!castInfo) {
+            continue;
+          }
+          if (!target.isInterruptible) {
+            continue;
+          }
+          if (!me.isFacing(target)) {
             continue;
           }
           const currentTime = wow.frameTime;
@@ -294,7 +374,7 @@ class Spell {
             }
           }
 
-          if (shouldInterrupt && target.isInterruptible && spell.cast(target)) {
+          if (shouldInterrupt && spell.cast(target)) {
             const spellId = target.isChanneling ? target.currentChannel : target.currentCast;
             const interruptTime = target.isChanneling ? `${channelTime.toFixed(2)}ms` : `${castPctRemain.toFixed(2)}%`;
             console.info(`Interrupted ${spellId} being ${target.isChanneling ? 'channeled' : 'cast'} by: ${target.unsafeName} after ${interruptTime}`);

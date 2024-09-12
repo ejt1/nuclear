@@ -4,6 +4,7 @@ import Specialization from "@/Enums/Specialization";
 import common from '@/Core/Common';
 import spell from '@/Core/Spell'
 import { me } from "@/Core/ObjectManager";
+import { defaultCombatTargeting as Combat } from "@/Targeting/CombatTargeting";
 
 const auras = {
   darkSuccor: 101568,
@@ -24,45 +25,48 @@ export class DeathKnightFrostBehavior extends Behavior {
   version = wow.GameVersion.Retail;
 
   build() {
-    return new bt.Decorator(
-      ret => !spell.isGlobalCooldown(),
-      new bt.Selector(
-        common.waitForNotSitting(),
-        common.waitForNotMounted(),
-        common.waitForTarget(),
-        common.waitForCastOrChannel(),
-        common.waitForFacing(),
-        common.ensureAutoAttack(),
-        spell.interrupt("Mind Freeze"),
-        spell.cast("Death Strike", ret => me.pctHealth < 95 && me.hasAura(auras.darkSuccor)),
-        spell.cast("Death Strike", ret => me.pctHealth < 65 && me.power > 35),
-        spell.cast("Frost Strike", ret => this.checkFrostStrikeKeepUpBuffs()),
-        new bt.Decorator(
-          req => this.wantCooldowns(),
-          new bt.Selector(
-            spell.cast("Pillar of Frost", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
-            spell.cast("Abomination Limb", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
-          )
-        ),
-        spell.cast("Soul Reaper", on => me.target, ret => me.target.pctHealth < 40),
-        spell.cast("Remorseless Winter", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
-        this.multiTargetRotation(),
-        spell.cast("Rune Strike", ret => me.hasAura(auras.killingMachine)),
-        spell.cast("Frost Strike", ret => me.targetUnit?.getAura(auras.razorice)?.stacks === 5 || me.getReadyRunes() < 2),
-        spell.cast("Howling Blast", ret => me.hasAura(auras.rime)),
-        spell.cast("Frost Strike", ret => me.power > 45),
-        spell.cast("Chains of Ice", on => me.targetUnit, ret => {
-          const coldHeart = me.getAura(auras.coldHeart);
-          return !!(coldHeart && coldHeart.stacks === 20);
-        }),
-        spell.cast("Rune Strike"),
-        spell.cast("Horn of Winter", ret => me.targetUnit && me.power < 70 && me.getReadyRunes() <= 4),
+    return new bt.Selector(
+      common.waitForNotSitting(),
+      common.waitForNotMounted(),
+      common.waitForCastOrChannel(),
+      spell.interrupt("Mind Freeze"),
+      common.waitForTarget(),
+      common.waitForFacing(),
+      common.ensureAutoAttack(),
+      new bt.Decorator(
+        ret => !spell.isGlobalCooldown(),
+        new bt.Selector(
+          spell.cast("Death Strike", ret => me.pctHealth < 95 && me.hasAura(auras.darkSuccor)),
+          spell.cast("Death Strike", ret => me.pctHealth < 65 && me.power > 35),
+          spell.cast("Frost Strike", ret => this.checkFrostStrikeKeepUpBuffs()),
+          new bt.Decorator(
+            req => this.wantCooldowns(),
+            new bt.Selector(
+              spell.cast("Pillar of Frost", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+              spell.cast("Abomination Limb", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+              spell.cast("Empower Rune Weapon", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && me.getReadyRunes() < 5),
+            )
+          ),
+          spell.cast("Soul Reaper", on => me.target, ret => me.target.pctHealth < 40),
+          spell.cast("Remorseless Winter", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+          this.multiTargetRotation(),
+          spell.cast("Rune Strike", ret => me.hasAura(auras.killingMachine)),
+          spell.cast("Frost Strike", ret => me.targetUnit?.getAura(auras.razorice)?.stacks === 5 || me.getReadyRunes() < 2),
+          spell.cast("Howling Blast", ret => me.hasAura(auras.rime)),
+          spell.cast("Frost Strike", ret => me.power > 45),
+          spell.cast("Chains of Ice", on => me.targetUnit, ret => {
+            const coldHeart = me.getAura(auras.coldHeart);
+            return !!(coldHeart && coldHeart.stacks === 20);
+          }),
+          spell.cast("Rune Strike"),
+          spell.cast("Horn of Winter", ret => me.targetUnit && me.power < 70 && me.getReadyRunes() <= 4),
+        )
       )
     );
   }
 
   wantCooldowns() {
-    return me.isWithinMeleeRange(me.target) && me.target && me.target.timeToDeath() !== 9999 && me.target.timeToDeath() > 10;
+    return me.isWithinMeleeRange(me.target) && me.target && Combat.burstToggle && me.getReadyRunes() > 2;
   }
 
   multiTargetRotation() {

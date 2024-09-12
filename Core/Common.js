@@ -235,6 +235,15 @@ class Common {
       }
     });
   }
+
+  static waitForNotWaitingForArenaToStart() {
+    return new bt.Action(() => {
+      if (me.hasArenaPreparation()) {
+        return bt.Status.Success;
+      }
+      return bt.Status.Failure;
+    });
+  }
 }
 
 export default Common;
