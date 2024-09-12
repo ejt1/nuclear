@@ -1,6 +1,49 @@
-
+const ARENA_PERIODIC_AURA = 74410;
+const ARENA_PREPARATION = [32727, 32728];
+const CHALLENGERS_BURDEN = 206151;
 
 Object.defineProperties(wow.CGActivePlayer.prototype, {
+
+  /**
+   * Returns true if the player is in an arena, false otherwise.
+   * @returns {boolean}
+   */
+  inArena: {
+    value: function () {
+      const arenaAura = this.getAura(ARENA_PERIODIC_AURA);
+      return arenaAura !== undefined;
+    }
+  },
+
+  /**
+   * Returns true if the player is in an arena and in the preparation phase.
+   * @returns {boolean}
+   */
+  hasArenaPreparation: {
+    value: function () {
+      if (this.inArena()) {
+        for (const auraId of ARENA_PREPARATION) {
+          const prepAura = this.getAura(auraId);
+          if (prepAura !== undefined) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+  },
+
+  /**
+   * Returns true if the player is in a Mythic+ instance, false otherwise.
+   * @returns {boolean}
+   */
+  inMythicPlus: {
+    value: function () {
+      const mythicPlusAura = this.getAura(CHALLENGERS_BURDEN);
+      return mythicPlusAura !== undefined;
+    }
+  },
+
 
   currentParty: {
     /**
