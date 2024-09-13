@@ -4,12 +4,14 @@ import Specialization from '../../../../Enums/Specialization';
 import common from '../../../../Core/Common';
 import spell from "../../../../Core/Spell";
 import { me } from "../../../../Core/ObjectManager";
+import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
+import colors from "@/Enums/Colors";
 
 export class WarriorFuryBehavior extends Behavior {
   context = BehaviorContext.Any;
   specialization = Specialization.Warrior.Fury;
   version = wow.GameVersion.Retail;
-  name = "Fury Warrior";
+  name = "JMR Warrior Fury";  
 
   build() {
     return new bt.Selector(
@@ -17,8 +19,11 @@ export class WarriorFuryBehavior extends Behavior {
       common.waitForTarget(),
       common.waitForCastOrChannel(),
       common.waitForFacing(),
+      spell.cast("Battle Shout", () => !me.hasAura("Battle Shout")),
       spell.cast("Victory Rush", () => me.pctHealth < 70),
       spell.cast("Bloodthirst", () => me.pctHealth < 70 && me.hasVisibleAura("Enraged Regeneration")),
+      spell.interrupt("Pummel", false),
+      spell.interrupt("Storm Bolt", false),
       this.useCooldowns(),
       new bt.Decorator(
         () => Boolean(me.getUnitsAroundCount(8) >= 2),
@@ -28,7 +33,7 @@ export class WarriorFuryBehavior extends Behavior {
         )
       ),
       new bt.Decorator(
-        () => Boolean(me.isWithinMeleeRange(me.target)),
+        () => Boolean(me.getUnitsAroundCount(8) < 2),
         this.singleTargetRotation()
       )
     );
@@ -38,7 +43,7 @@ export class WarriorFuryBehavior extends Behavior {
     return new bt.Selector(
       spell.cast("Lights Judgment", () => Boolean(!me.hasAura("Recklessness"))),
       spell.cast("Berserking", () => Boolean(me.hasAura("Recklessness"))),
-      spell.cast("Blood Fury"),
+      spell.cast("Blood Fury", () => Boolean(me.hasAura("Recklessness") && me.getUnitsAroundCount(8) >= 1)),
       spell.cast("Fireblood"),
       spell.cast("Ancestral Call")
     );
@@ -46,140 +51,140 @@ export class WarriorFuryBehavior extends Behavior {
 
   multiTargetRotation() {
     return new bt.Selector(
-      spell.cast("Recklessness", () => Boolean(
+      this.castOnTargetOrClosest("Recklessness", () => Boolean(
         (!me.hasAura(this.talentSpellIds.angerManagement) && spell.getCooldown("Avatar").timeleft < 1 && me.hasAura(this.talentSpellIds.titansTorment)) ||
         me.hasAura(this.talentSpellIds.angerManagement) ||
         !me.hasAura(this.talentSpellIds.titansTorment)
       )),
-      spell.cast("Avatar", () => Boolean(
+      this.castOnTargetOrClosest("Avatar", () => Boolean(
         (me.hasAura(this.talentSpellIds.titansTorment) && (me.hasAura("Enrage") || me.hasAura(this.talentSpellIds.titanicRage))) ||
         !me.hasAura(this.talentSpellIds.titansTorment)
       )),
-      spell.cast("Thunderous Roar", () => Boolean(me.hasAura("Enrage"))),
-      spell.cast("Champions Spear", () => Boolean(me.hasAura("Enrage"))),
-      spell.cast("Odyn's Fury", () => Boolean(
-        (this.getDebuffRemainingTime("385060") < 1 || !me.targetUnit.getAura(385060)) &&
+      this.castOnTargetOrClosest("Thunderous Roar", () => Boolean(me.hasAura("Enrage"))),
+      this.castOnTargetOrClosest("Champions Spear", () => Boolean(me.hasAura("Enrage"))),
+      this.castOnTargetOrClosest("Odyn's Fury", () => Boolean(
+        (this.getDebuffRemainingTime("385060") < 1 || !this.getTargetUnit().getAura(385060)) &&
         (me.hasAura("Enrage") || me.hasAura(this.talentSpellIds.titanicRage)) &&
         spell.getCooldown("Avatar").timeleft > 0
       )),
-      spell.cast("Whirlwind", () => Boolean(this.getAuraStacks("Whirlwind") === 0 && me.hasAura(this.talentSpellIds.improvedWhirlwind))),
-      spell.cast("Execute", () => Boolean(
+      this.castOnTargetOrClosest("Whirlwind", () => Boolean(this.getAuraStacks("Whirlwind") === 0 && me.hasAura(this.talentSpellIds.improvedWhirlwind))),
+      this.castOnTargetOrClosest("Execute", () => Boolean(
         me.hasAura("Enrage") &&
         this.getAuraRemainingTime("Ashen Juggernaut") <= 1.5 &&
         me.hasAura(this.talentSpellIds.ashenJuggernaut)
       )),
-      spell.cast("Rampage", () => Boolean(
+      this.castOnTargetOrClosest("Rampage", () => Boolean(
         me.rage >= 85 &&
         spell.getCooldown("Bladestorm").timeleft <= 1.5 &&
-        !me.targetUnit.hasAura("Champions Might")
+        !me.hasAura("Champion's Might")
       )),
-      spell.cast("Bladestorm", () => Boolean(me.hasAura("Enrage") && spell.getCooldown("Avatar").timeleft >= 9)),
-      spell.cast("Ravager", () => Boolean(me.hasAura("Enrage"))),
-      spell.cast("Rampage", () => Boolean(me.hasAura(this.talentSpellIds.angerManagement))),
-      spell.cast("Bloodbath", () => Boolean(me.hasAura("Furious Bloodthirst"))),
-      spell.cast("Crushing Blow"),
-      spell.cast("Onslaught", () => Boolean(me.hasAura(this.talentSpellIds.tenderize) || me.hasAura("Enrage"))),
-      spell.cast("Bloodbath", () => Boolean(!me.targetUnit.hasAuraByMe("Gushing Wound"))),
-      spell.cast("Rampage", () => Boolean(me.hasAura(this.talentSpellIds.recklessAbandon))),
-      spell.cast("Execute", () => Boolean(
+      this.castOnTargetOrClosest("Bladestorm", () => Boolean(me.hasAura("Enrage") && spell.getCooldown("Avatar").timeleft >= 9)),
+      this.castOnTargetOrClosest("Ravager", () => Boolean(me.hasAura("Enrage"))),
+      this.castOnTargetOrClosest("Rampage", () => Boolean(me.hasAura(this.talentSpellIds.angerManagement))),
+      this.castOnTargetOrClosest("Bloodbath", () => Boolean(me.hasAura("Furious Bloodthirst"))),
+      this.castOnTargetOrClosest("Crushing Blow"),
+      this.castOnTargetOrClosest("Onslaught", () => Boolean(me.hasAura(this.talentSpellIds.tenderize) || me.hasAura("Enrage"))),
+      this.castOnTargetOrClosest("Bloodbath", (target) => Boolean(!target.hasAuraByMe("Gushing Wound"))),
+      this.castOnTargetOrClosest("Rampage", () => Boolean(me.hasAura(this.talentSpellIds.recklessAbandon))),
+      this.castOnTargetOrClosest("Execute", (target) => Boolean(
         me.hasAura("Enrage") &&
-        ((me.targetUnit.health.pct > 35 && me.hasAura(this.talentSpellIds.massacre)) || me.targetUnit.health.pct > 20) &&
+        ((target.health.pct > 35 && me.hasAura(this.talentSpellIds.massacre)) || target.health.pct > 20) &&
         this.getAuraRemainingTime("Sudden Death") <= 1.5
       )),
-      spell.cast("Bloodbath"),
-      spell.cast("Bloodthirst"),
-      spell.cast("Raging Blow"),
-      spell.cast("Execute"),
-      spell.cast("Whirlwind")
+      this.castOnTargetOrClosest("Bloodbath"),
+      this.castOnTargetOrClosest("Bloodthirst"),
+      this.castOnTargetOrClosest("Raging Blow"),
+      this.castOnTargetOrClosest("Execute"),
+      this.castOnTargetOrClosest("Whirlwind")
     );
   }
-
+  
   singleTargetRotation() {
     return new bt.Selector(
-      spell.cast("Ravager", () => Boolean(spell.getCooldown("Recklessness").timeleft < 1.5 || me.hasAura("Recklessness"))),
-      spell.cast("Recklessness", () => Boolean(
+      this.castOnTargetOrClosest("Ravager", () => Boolean(spell.getCooldown("Recklessness").timeleft < 1.5 || me.hasAura("Recklessness"))),
+      this.castOnTargetOrClosest("Recklessness", () => Boolean(
         !me.hasAura(this.talentSpellIds.angerManagement) ||
         (me.hasAura(this.talentSpellIds.angerManagement) && (spell.getCooldown("Avatar").ready || spell.getCooldown("Avatar").timeleft < 1.5 || spell.getCooldown("Avatar").timeleft > 30))
       )),
-      spell.cast("Avatar", () => Boolean(
+      this.castOnTargetOrClosest("Avatar", () => Boolean(
         !me.hasAura(this.talentSpellIds.titansTorment) ||
         (me.hasAura(this.talentSpellIds.titansTorment) && (me.hasAura("Enrage") || me.hasAura(this.talentSpellIds.titanicRage)))
       )),
-      spell.cast("Champions Spear", () => Boolean(
+      this.castOnTargetOrClosest("Champions Spear", () => Boolean(
         me.hasAura("Enrage") &&
         ((me.hasAura("Furious Bloodthirst") && me.hasAura(this.talentSpellIds.titansTorment)) ||
           !me.hasAura(this.talentSpellIds.titansTorment) ||
-          me.targetUnit.timeToDie < 20 ||
+          this.getTargetTimeToDie() < 20 ||
           this.getEnemiesInRange(8) > 1)
       )),
-      spell.cast("Whirlwind", () => Boolean(
+      this.castOnTargetOrClosest("Whirlwind", () => Boolean(
         (this.getEnemiesInRange(8) > 1 && me.hasAura(this.talentSpellIds.improvedWhirlwind) && !me.hasAura("Meat Cleaver")) ||
         (this.timeToAdds() < 2 && me.hasAura(this.talentSpellIds.improvedWhirlwind) && !me.hasAura("Meat Cleaver"))
       )),
-      spell.cast("Execute", () => Boolean(
+      this.castOnTargetOrClosest("Execute", () => Boolean(
         me.hasAura("Ashen Juggernaut") &&
         this.getAuraRemainingTime("Ashen Juggernaut") < 1.5
       )),
-      spell.cast("Bladestorm", () => Boolean(
+      this.castOnTargetOrClosest("Bladestorm", () => Boolean(
         me.hasAura("Enrage") &&
         (me.hasAura("Avatar") || (me.hasAura("Recklessness") && me.hasAura(this.talentSpellIds.angerManagement)))
       )),
-      spell.cast("Odyns Fury", () => Boolean(
+      this.castOnTargetOrClosest("Odyns Fury", () => Boolean(
         me.hasAura("Enrage") &&
         (this.getEnemiesInRange(8) > 1 || this.timeToAdds() > 15) &&
         (me.hasAura(this.talentSpellIds.dancingBlades) && this.getAuraRemainingTime("Dancing Blades") < 5 || !me.hasAura(this.talentSpellIds.dancingBlades))
       )),
-      spell.cast("Rampage", () => Boolean(
+      this.castOnTargetOrClosest("Rampage", () => Boolean(
         me.hasAura(this.talentSpellIds.angerManagement) &&
         (me.hasAura("Recklessness") || this.getAuraRemainingTime("Enrage") < 1.5 || me.rage > 85)
       )),
-      spell.cast("Bloodthirst", () => Boolean(
+      this.castOnTargetOrClosest("Bloodthirst", (target) => Boolean(
         (!me.hasAura(this.talentSpellIds.recklessAbandon) &&
           me.hasAura("Furious Bloodthirst") &&
           me.hasAura("Enrage") &&
-          (!me.targetUnit.hasAuraByMe("Gushing Wound") || me.hasAura("Champions Might")))
+          (!target.hasAuraByMe("Gushing Wound") || me.hasAura("Champions Might")))
       )),
-      spell.cast("Bloodbath", () => Boolean(me.hasAura("Furious Bloodthirst"))),
-      spell.cast("Thunderous Roar", () => Boolean(
+      this.castOnTargetOrClosest("Bloodbath", () => Boolean(me.hasAura("Furious Bloodthirst"))),
+      this.castOnTargetOrClosest("Thunderous Roar", () => Boolean(
         me.hasAura("Enrage") &&
         (this.getEnemiesInRange(8) > 1 || this.timeToAdds() > 15)
       )),
-      spell.cast("Onslaught", () => Boolean(me.hasAura("Enrage") || me.hasAura(this.talentSpellIds.tenderize))),
-      spell.cast("Crushing Blow", () => Boolean(me.hasAura("Enrage"))),
-      spell.cast("Rampage", () => Boolean(
+      this.castOnTargetOrClosest("Onslaught", () => Boolean(me.hasAura("Enrage") || me.hasAura(this.talentSpellIds.tenderize))),
+      this.castOnTargetOrClosest("Crushing Blow", () => Boolean(me.hasAura("Enrage"))),
+      this.castOnTargetOrClosest("Rampage", () => Boolean(
         me.hasAura(this.talentSpellIds.recklessAbandon) &&
         (me.hasAura("Recklessness") || this.getAuraRemainingTime("Enrage") < 1.5 || me.rage > 85)
       )),
-      spell.cast("Execute", () => Boolean(
+      this.castOnTargetOrClosest("Execute", (target) => Boolean(
         me.hasAura("Enrage") &&
         !me.hasAura("Furious Bloodthirst") &&
         me.hasAura("Ashen Juggernaut") ||
         this.getAuraRemainingTime("Sudden Death") <= 1.5 &&
-        (me.targetUnit.health.pct > 35 && me.hasAura(this.talentSpellIds.massacre) || me.targetUnit.health.pct > 20)
+        (target.health.pct > 35 && me.hasAura(this.talentSpellIds.massacre) || target.health.pct > 20)
       )),
-      spell.cast("Execute", () => Boolean(me.hasAura("Enrage"))),
-      spell.cast("Rampage", () => Boolean(me.hasAura(this.talentSpellIds.angerManagement))),
-      spell.cast("Bloodbath", () => Boolean(
+      this.castOnTargetOrClosest("Execute", () => Boolean(me.hasAura("Enrage"))),
+      this.castOnTargetOrClosest("Rampage", () => Boolean(me.hasAura(this.talentSpellIds.angerManagement))),
+      this.castOnTargetOrClosest("Bloodbath", () => Boolean(
         me.hasAura("Enrage") &&
         me.hasAura(this.talentSpellIds.recklessAbandon)
       )),
-      spell.cast("Rampage", () => Boolean(me.targetUnit.health.pct < 35 && me.hasAura(this.talentSpellIds.massacre))),
-      spell.cast("Bloodthirst", () => Boolean(!me.hasAura("Enrage") || !me.hasAura("Furious Bloodthirst"))),
-      spell.cast("Raging Blow", () => Boolean(spell.getCharges("Raging Blow") > 1)),
-      spell.cast("Crushing Blow", () => Boolean(spell.getCharges("Raging Blow") > 1)),
-      spell.cast("Bloodbath", () => Boolean(!me.hasAura("Enrage"))),
-      spell.cast("Crushing Blow", () => Boolean(
+      this.castOnTargetOrClosest("Rampage", (target) => Boolean(target.health.pct < 35 && me.hasAura(this.talentSpellIds.massacre))),
+      this.castOnTargetOrClosest("Bloodthirst", () => Boolean(!me.hasAura("Enrage") || !me.hasAura("Furious Bloodthirst"))),
+      this.castOnTargetOrClosest("Raging Blow", () => Boolean(spell.getCharges("Raging Blow") > 1)),
+      this.castOnTargetOrClosest("Crushing Blow", () => Boolean(spell.getCharges("Raging Blow") > 1)),
+      this.castOnTargetOrClosest("Bloodbath", () => Boolean(!me.hasAura("Enrage"))),
+      this.castOnTargetOrClosest("Crushing Blow", () => Boolean(
         me.hasAura("Enrage") &&
         me.hasAura(this.talentSpellIds.recklessAbandon)
       )),
-      spell.cast("Bloodthirst", () => Boolean(!me.hasAura("Furious Bloodthirst"))),
-      spell.cast("Raging Blow", () => Boolean(spell.getCharges("Raging Blow") > 1)),
-      spell.cast("Rampage"),
-      spell.cast("Bloodbath"),
-      spell.cast("Raging Blow"),
-      spell.cast("Crushing Blow"),
-      spell.cast("Bloodthirst"),
-      spell.cast("Slam")
+      this.castOnTargetOrClosest("Bloodthirst", () => Boolean(!me.hasAura("Furious Bloodthirst"))),
+      this.castOnTargetOrClosest("Raging Blow", () => Boolean(spell.getCharges("Raging Blow") > 1)),
+      this.castOnTargetOrClosest("Rampage"),
+      this.castOnTargetOrClosest("Bloodbath"),
+      this.castOnTargetOrClosest("Raging Blow"),
+      this.castOnTargetOrClosest("Crushing Blow"),
+      this.castOnTargetOrClosest("Bloodthirst"),
+      this.castOnTargetOrClosest("Slam")
     );
   }
 
@@ -210,17 +215,63 @@ export class WarriorFuryBehavior extends Behavior {
   }
 
   getDebuffRemainingTime(debuffName) {
-    const debuff = me.targetUnit.getAura(debuffName);
+    const target = this.getTargetUnit();
+    const debuff = target.getAura(debuffName);
     return debuff ? debuff.remaining : 0;
   }
-
+  
   getDebuffStacks(debuffName) {
-    const debuff = me.targetUnit.getAura(debuffName);
+    const target = this.getTargetUnit();
+    const debuff = target.getAura(debuffName);
     return debuff ? debuff.stacks : 0;
   }
 
+  getTargetTimeToDie() {
+    const target = this.getTargetUnit();
+    return target ? target.timeToDeath() : 0;
+  }
+  
   getAuraStacks(auraName) {
     const aura = me.getAura(auraName);
     return aura ? aura.stacks : 0;
+  }
+
+  getCurrentTarget() {
+    if (me.targetUnit && me.isWithinMeleeRange(me.targetUnit)) {
+      return me.targetUnit;
+    } else {
+      // Find any enemy in combat within melee range, not just the closest one
+      return combat.targets.find(unit => unit.distanceTo(me) <= 10);
+    }
+  }
+
+  getTargetUnit() {
+    const closestTarget = this.getCurrentTarget();
+    return closestTarget || me.targetUnit;
+  }
+
+  castOnTargetOrClosest(spellName, condition = () => true) {
+    return new bt.Action(() => {
+      const spellObject = spell.getSpell(spellName);
+      if (!spellObject) return bt.Status.Failure;
+  
+      // Check if we have a current target and it's in range
+      let target = this.getTargetUnit();
+      const inRange = target && me.distanceTo(target) <= 10;
+  
+      if (!inRange) {
+        // If target is out of range, find the closest valid target
+        target = combat.targets.find(unit => unit.distanceTo(me) <= 10) // Get the closest target
+      }
+  
+      // Ensure we have a valid target
+      if (target) {
+        if (condition(target)) {
+          return spell.cast(spellName, () => target).tick();
+        }
+      }
+  
+      return bt.Status.Failure;
+    });
   }
 }

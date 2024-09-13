@@ -6,6 +6,7 @@ import spell from "@/Core/Spell";
 import { me } from "@/Core/ObjectManager";
 import { PowerType } from "@/Enums/PowerType";
 import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
+import { drawNgonAroundTarget } from '@/Extra/DrawingUtils';
 
 export class WarriorProtNewBehavior extends Behavior {
   context = BehaviorContext.Any;
@@ -13,8 +14,18 @@ export class WarriorProtNewBehavior extends Behavior {
   version = wow.GameVersion.Retail;
   name = "Jmr SimC Warrior Protection";
 
+  constructor() {
+    super();
+    this.lastDrawTime = 0;
+    this.drawInterval = 1; // Draw every 100ms
+  }
+
   build() {
     return new bt.Selector(
+      new bt.Action(() => {
+        this.drawTargetNgon();
+        return bt.Status.Running;
+      }),
       common.waitForNotMounted(),
       common.waitForTarget(),
       common.waitForCastOrChannel(),
@@ -24,8 +35,8 @@ export class WarriorProtNewBehavior extends Behavior {
       spell.interrupt("Pummel", false),
       spell.interrupt("Storm Bolt", false),
       spell.cast("Taunt",
-        on => combat.targets.find(unit => unit.inCombat() && unit.distanceTo(me) <= 30 && !unit.isTanking),
-        req => combat.targets.find(unit => unit.inCombat() && unit.distanceTo(me) <= 30 && !unit.isTanking) !== undefined),
+      on => combat.targets.find(unit => unit.inCombatWith(me) && unit.distanceTo(me) <= 30 && !unit.isTanking()),
+      req => combat.targets.find(unit => unit.inCombatWith(me) && unit.distanceTo(me) <= 30 && !unit.isTanking()) !== undefined),
       new bt.Decorator(
         () => this.getEnemiesInRange(12) >= 1 && me.isWithinMeleeRange(this.getCurrentTarget()),
           this.useCooldowns(),
@@ -71,7 +82,7 @@ export class WarriorProtNewBehavior extends Behavior {
 
   useDefensives() {
     return new bt.Selector(
-      spell.cast("Shield Block", on => this.getCurrentTarget(), req => this.getAuraRemainingTime("Shield Block") <= 10),
+      spell.cast("Shield Block", on => this.getCurrentTarget(), req => this.getAuraRemainingTime("Shield Block") <= 10000),
       // spell.cast("Ignore Pain", on => this.getCurrentTarget(), req => me.powerByType(PowerType.Rage) >= 70),
       // Commented out detailed rage management as requested
       spell.cast("Ignore Pain", on => this.getCurrentTarget(), req => {
@@ -94,7 +105,7 @@ export class WarriorProtNewBehavior extends Behavior {
           ) || 
           ((rage >= 70 || (me.getAuraStacks("Seeing Red") === 7 && rage >= 35)) && 
            spell.getCooldown("Shield Slam").remaining <= 1 && 
-           this.getAuraRemainingTime("Shield Block") >= 4 && 
+           this.getAuraRemainingTime("Shield Block") >= 4000 && 
            me.hasSetBonus(31, 2))
         );
       })
@@ -104,9 +115,9 @@ export class WarriorProtNewBehavior extends Behavior {
   aoeRotation() {
     return new bt.Selector(
       // actions.aoe=thunder_blast,if=dot.rend.remains<=1
-      spell.cast("Thunder Blast", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 4),
+      spell.cast("Thunder Blast", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 4000),
       // actions.aoe+=/thunder_clap,if=dot.rend.remains<=1
-      spell.cast("Thunder Clap", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 4),
+      spell.cast("Thunder Clap", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 4000),
       // actions.aoe+=/thunder_blast,if=buff.violent_outburst.up&spell_targets.thunderclap>=2&buff.avatar.up&talent.unstoppable_force.enabled
       spell.cast("Thunder Blast", on => this.getCurrentTarget(), req => me.hasAura("Violent Outburst") && this.getEnemiesInRange(8) >= 2 && me.hasAura("Avatar") && this.hasTalent("Unstoppable Force")),
       // actions.aoe+=/thunder_clap,if=buff.violent_outburst.up&spell_targets.thunderclap>=4&buff.avatar.up&talent.unstoppable_force.enabled&talent.crashing_thunder.enabled|buff.violent_outburst.up&spell_targets.thunderclap>6&buff.avatar.up&talent.unstoppable_force.enabled
@@ -135,11 +146,11 @@ export class WarriorProtNewBehavior extends Behavior {
       // actions.generic+=/shield_slam
       spell.cast("Shield Slam", on => this.getCurrentTarget()),
       // actions.generic+=/thunder_blast,if=dot.rend.remains<=2&buff.violent_outburst.down
-      spell.cast("Thunder Blast", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 2 && !me.hasAura("Violent Outburst")),
+      spell.cast("Thunder Blast", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 2000 && !me.hasAura("Violent Outburst")),
       // actions.generic+=/thunder_blast
       spell.cast("Thunder Blast", on => this.getCurrentTarget()),
       // actions.generic+=/thunder_clap,if=dot.rend.remains<=2&buff.violent_outburst.down
-      spell.cast("Thunder Clap", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 2 && !me.hasAura("Violent Outburst")),
+      spell.cast("Thunder Clap", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 2000 && !me.hasAura("Violent Outburst")),
       // actions.generic+=/thunder_blast,if=(spell_targets.thunder_clap>1|cooldown.shield_slam.remains&!buff.violent_outburst.up)
       spell.cast("Thunder Blast", on => this.getCurrentTarget(), req => this.getEnemiesInRange(8) >= 1 || !spell.getCooldown("Shield Slam").ready && !me.hasAura("Violent Outburst")),
       // actions.generic+=/thunder_clap,if=(spell_targets.thunder_clap>1|cooldown.shield_slam.remains&!buff.violent_outburst.up)
@@ -201,12 +212,39 @@ export class WarriorProtNewBehavior extends Behavior {
     return me.getUnitsAroundCount(range);
   }
 
-  getCurrentTarget() {
-    if (me.targetUnit && me.isWithinMeleeRange(me.targetUnit)) {
-      return me.targetUnit;
-    } else {
-      return combat.targets.find(unit => unit.distanceTo(me) <= 12) || null;
+  update() {
+    const result = super.update();
+    this.drawTargetNgon();
+    return result;
+  }
+
+  drawTargetNgon() {
+    const currentTime = Date.now();
+    if (currentTime - this.lastDrawTime >= this.drawInterval) {
+      const target = this.getCurrentTarget();
+      if (target && !target.dead && target.health > 0) {
+        const boundingRadius = target.boundingRadius || 1;
+        const interactionRadius = boundingRadius; // 5 yards added to bounding radius
+        drawNgonAroundTarget(target, interactionRadius);
+      }
+      this.lastDrawTime = currentTime;
     }
+  }
+
+  getCurrentTarget() {
+    let target;
+  
+    // Check if current target is valid and alive
+    if (me.targetUnit && !me.targetUnit.dead && me.targetUnit.health > 0 && me.targetUnit.distanceTo(me) <= 10) {
+      target = me.targetUnit;
+    } else {
+      // Find the closest living enemy
+      target = combat.targets
+        .filter(unit => !unit.dead && unit.health > 0 && unit.distanceTo(me) <= 10 && me.isFacing(unit) && me.inCombatWith(unit))
+        .sort((a, b) => a.distanceTo(me) - b.distanceTo(me))[0] || me.targetUnit;
+    }
+  
+    return target;
   }
 
   hasTalent(talentName) {

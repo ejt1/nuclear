@@ -6,6 +6,7 @@ import spell from "@/Core/Spell";
 import { me } from "@/Core/ObjectManager";
 import { PowerType } from "@/Enums/PowerType";
 import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
+import { drawNgonAroundTarget } from '@/Extra/DrawingUtils';
 
 export class WarriorFuryNewBehavior extends Behavior {
   context = BehaviorContext.Any;
@@ -13,8 +14,18 @@ export class WarriorFuryNewBehavior extends Behavior {
   version = wow.GameVersion.Retail;
   name = "Jmr SimC Warrior Fury";
 
+  constructor() {
+    super();
+    this.lastDrawTime = 0;
+    this.drawInterval = 1; // Draw every 100ms
+  }
+
   build() {
     return new bt.Selector(
+      new bt.Action(() => {
+        this.drawTargetNgon();
+        return bt.Status.Running;
+      }),
       common.waitForNotMounted(),
       common.waitForTarget(),
       common.waitForCastOrChannel(),
@@ -88,9 +99,9 @@ export class WarriorFuryNewBehavior extends Behavior {
       // actions.slayer_st+=/champions_spear,if=(buff.enrage.up&talent.titans_torment&cooldown.avatar.remains<gcd)|(buff.enrage.up&!talent.titans_torment)
       spell.cast("Champion's Spear", on => this.getCurrentTarget(), req => this.shouldUseChampionsSpear() && (me.hasAura("Enrage") && this.hasTalent("Titan's Torment") && spell.getCooldown("Avatar").timeleft < 1) || (me.hasAura("Enrage") && !this.hasTalent("Titan's Torment"))),
       // actions.slayer_st+=/odyns_fury,if=dot.odyns_fury_torment_mh.remains<1&(buff.enrage.up|talent.titanic_rage)&cooldown.avatar.remains
-      spell.cast("Odyn's Fury", on => this.getCurrentTarget(), req => this.shouldUseOdynsFury() && (this.getDebuffRemainingTime("Odyn's Fury") < 1 && (me.hasAura("Enrage") || this.hasTalent("Titanic Rage")) && spell.getCooldown("Avatar").timeleft > 0)),
+      spell.cast("Odyn's Fury", on => this.getCurrentTarget(), req => this.shouldUseOdynsFury() && (this.getDebuffRemainingTime("Odyn's Fury") < 1000 && (me.hasAura("Enrage") || this.hasTalent("Titanic Rage")) && spell.getCooldown("Avatar").timeleft > 0)),
       // actions.slayer_st+=/execute,if=talent.ashen_juggernaut&buff.ashen_juggernaut.remains<=gcd&buff.enrage.up
-      spell.cast("Execute", on => this.getCurrentTarget(), req => this.hasTalent("Ashen Juggernaut") && this.getAuraRemainingTime("Ashen Juggernaut") <= 1.5 && me.hasAura("Enrage")),
+      spell.cast("Execute", on => this.getCurrentTarget(), req => this.hasTalent("Ashen Juggernaut") && this.getAuraRemainingTime("Ashen Juggernaut") <= 1500 && me.hasAura("Enrage")),
       // actions.slayer_st+=/rampage,if=talent.bladestorm&cooldown.bladestorm.remains<=gcd&!debuff.champions_might.up
       spell.cast("Rampage", on => this.getCurrentTarget(), req => this.hasTalent("Bladestorm") && spell.getCooldown("Bladestorm").timeleft <= 1.5 && !this.getCurrentTarget().hasAuraByMe("Champion's Might")),
       // actions.slayer_st+=/bladestorm,if=buff.enrage.up&cooldown.avatar.remains>=9
@@ -141,11 +152,11 @@ export class WarriorFuryNewBehavior extends Behavior {
       // actions.slayer_mt+=/champions_spear,if=(buff.enrage.up&talent.titans_torment&cooldown.avatar.remains<gcd)|(buff.enrage.up&!talent.titans_torment)
       spell.cast("Champion's Spear", on => this.getCurrentTarget(), req => this.shouldUseChampionsSpear() && (me.hasAura("Enrage") && this.hasTalent("Titan's Torment") && spell.getCooldown("Avatar").timeleft < 1) || (me.hasAura("Enrage") && !this.hasTalent("Titan's Torment"))),
       // actions.slayer_mt+=/odyns_fury,if=dot.odyns_fury_torment_mh.remains<1&(buff.enrage.up|talent.titanic_rage)&cooldown.avatar.remains
-      spell.cast("Odyn's Fury", on => this.getCurrentTarget(), req => this.shouldUseOdynsFury() && (this.getDebuffRemainingTime("Odyn's Fury") < 1 && (me.hasAura("Enrage") || this.hasTalent("Titanic Rage")) && spell.getCooldown("Avatar").timeleft > 0)),
+      spell.cast("Odyn's Fury", on => this.getCurrentTarget(), req => this.shouldUseOdynsFury() && (this.getDebuffRemainingTime("Odyn's Fury") < 1000 && (me.hasAura("Enrage") || this.hasTalent("Titanic Rage")) && spell.getCooldown("Avatar").timeleft > 0)),
       // actions.slayer_mt+=/whirlwind,if=buff.meat_cleaver.stack=0&talent.meat_cleaver
       spell.cast("Whirlwind", on => this.getCurrentTarget(), req => me.getAuraStacks("Whirlwind") === 0 && this.hasTalent("Meat Cleaver")),
       // actions.slayer_mt+=/execute,if=talent.ashen_juggernaut&buff.ashen_juggernaut.remains<=gcd&buff.enrage.up
-      spell.cast("Execute", on => this.getCurrentTarget(), req => this.hasTalent("Ashen Juggernaut") && this.getAuraRemainingTime("Ashen Juggernaut") <= 1.5 && me.hasAura("Enrage")),
+      spell.cast("Execute", on => this.getCurrentTarget(), req => this.hasTalent("Ashen Juggernaut") && this.getAuraRemainingTime("Ashen Juggernaut") <= 1500 && me.hasAura("Enrage")),
       // actions.slayer_mt+=/rampage,if=talent.bladestorm&cooldown.bladestorm.remains<=gcd&!debuff.champions_might.up
       spell.cast("Rampage", on => this.getCurrentTarget(), req => this.hasTalent("Bladestorm") && spell.getCooldown("Bladestorm").timeleft <= 1.5 && !this.getCurrentTarget().hasAuraByMe("Champion's Might")),
       // actions.slayer_mt+=/bladestorm,if=buff.enrage.up&cooldown.avatar.remains>=9
@@ -179,7 +190,9 @@ export class WarriorFuryNewBehavior extends Behavior {
       // actions.slayer_mt+=/whirlwind
       spell.cast("Whirlwind", on => this.getCurrentTarget()),
       // actions.slayer_mt+=/storm_bolt,if=buff.bladestorm.up
-      spell.cast("Storm Bolt", on => this.getCurrentTarget(), req => me.hasAura("Bladestorm"))
+      spell.cast("Storm Bolt", on => this.getCurrentTarget(), req => me.hasAura("Bladestorm")),
+      // auto attack
+      //spell.cast("Auto Attack", on => this.getCurrentTarget()),
     );
   }
 
@@ -198,9 +211,9 @@ export class WarriorFuryNewBehavior extends Behavior {
       // actions.thane_st+=/champions_spear,if=buff.enrage.up&(cooldown.avatar.remains<gcd|!talent.titans_torment)
       spell.cast("Champion's Spear", on => this.getCurrentTarget(), req => this.shouldUseChampionsSpear() && (me.hasAura("Enrage") && (spell.getCooldown("Avatar").timeleft < 1 || !this.hasTalent("Titan's Torment")))),
       // actions.thane_st+=/odyns_fury,if=dot.odyns_fury_torment_mh.remains<1&(buff.enrage.up|talent.titanic_rage)&cooldown.avatar.remains
-      spell.cast("Odyn's Fury", on => this.getCurrentTarget(), req => this.shouldUseOdynsFury() && (this.getDebuffRemainingTime("Odyn's Fury Torment") < 1 && (me.hasAura("Enrage") || this.hasTalent("Titanic Rage")) && spell.getCooldown("Avatar").timeleft > 0.1)),
+      spell.cast("Odyn's Fury", on => this.getCurrentTarget(), req => this.shouldUseOdynsFury() && (this.getDebuffRemainingTime("Odyn's Fury Torment") < 1000 && (me.hasAura("Enrage") || this.hasTalent("Titanic Rage")) && spell.getCooldown("Avatar").timeleft > 0.1)),
       // actions.thane_st+=/execute,if=talent.ashen_juggernaut&buff.ashen_juggernaut.remains<=gcd&buff.enrage.up
-      spell.cast("Execute", on => this.getCurrentTarget(), req => this.hasTalent("Ashen Juggernaut") && this.getAuraRemainingTime("Ashen Juggernaut") <= 1.5 && me.hasAura("Enrage")),
+      spell.cast("Execute", on => this.getCurrentTarget(), req => this.hasTalent("Ashen Juggernaut") && this.getAuraRemainingTime("Ashen Juggernaut") <= 1500 && me.hasAura("Enrage")),
       // actions.thane_st+=/rampage,if=talent.bladestorm&cooldown.bladestorm.remains<=gcd&!debuff.champions_might.up
       spell.cast("Rampage", on => this.getCurrentTarget(), req => this.hasTalent("Bladestorm") && spell.getCooldown("Bladestorm").timeleft <= 1.5 && !this.getCurrentTarget().hasAuraByMe("Champion's Might")),
       // actions.thane_st+=/bladestorm,if=buff.enrage.up&talent.unhinged
@@ -251,9 +264,9 @@ export class WarriorFuryNewBehavior extends Behavior {
       // actions.thane_mt+=/champions_spear,if=buff.enrage.up
       spell.cast("Champion's Spear", on => this.getCurrentTarget(), req => this.shouldUseChampionsSpear() && me.hasAura("Enrage")),
       // actions.thane_mt+=/odyns_fury,if=dot.odyns_fury_torment_mh.remains<1&(buff.enrage.up|talent.titanic_rage)&cooldown.avatar.remains
-      spell.cast("Odyn's Fury", on => this.getCurrentTarget(), req => this.shouldUseOdynsFury() && (this.getDebuffRemainingTime("Odyn's Fury Torment") < 1 && (me.hasAura("Enrage") || this.hasTalent("Titanic Rage")) && spell.getCooldown("Avatar").timeleft > 0.1)),
+      spell.cast("Odyn's Fury", on => this.getCurrentTarget(), req => this.shouldUseOdynsFury() && (this.getDebuffRemainingTime("Odyn's Fury Torment") < 1000 && (me.hasAura("Enrage") || this.hasTalent("Titanic Rage")) && spell.getCooldown("Avatar").timeleft > 0.1)),
       // actions.thane_mt+=/execute,if=talent.ashen_juggernaut&buff.ashen_juggernaut.remains<=gcd&buff.enrage.up
-      spell.cast("Execute", on => this.getCurrentTarget(), req => this.hasTalent("Ashen Juggernaut") && this.getAuraRemainingTime("Ashen Juggernaut") <= 1.5 && me.hasAura("Enrage")),
+      spell.cast("Execute", on => this.getCurrentTarget(), req => this.hasTalent("Ashen Juggernaut") && this.getAuraRemainingTime("Ashen Juggernaut") <= 1500 && me.hasAura("Enrage")),
       // actions.thane_mt+=/rampage,if=talent.bladestorm&cooldown.bladestorm.remains<=gcd&!debuff.champions_might.up
       spell.cast("Rampage", on => this.getCurrentTarget(), req => this.hasTalent("Bladestorm") && spell.getCooldown("Bladestorm").timeleft <= 1.5 && !this.getCurrentTarget().hasAuraByMe("Champion's Might")),
       // actions.thane_mt+=/bladestorm,if=buff.enrage.up
@@ -285,35 +298,35 @@ export class WarriorFuryNewBehavior extends Behavior {
 
   shouldUseRecklessness() {
     const target = this.getCurrentTarget();
-    return target.timeToDeath() > 15 && !me.hasAura("Smothering Shadows");
+    return target?.timeToDeath() > 15 && !me.hasAura("Smothering Shadows") || false;
   }
 
   shouldUseAvatar() {
     const target = this.getCurrentTarget();
-    return target.timeToDeath() > 15 && !me.hasAura("Smothering Shadows");
+    return target?.timeToDeath() > 15 && !me.hasAura("Smothering Shadows") || false;
   }
 
   shouldUseChampionsSpear() {
     const target = this.getCurrentTarget();
-    return target.timeToDeath() > 15 && !me.hasAura("Smothering Shadows");
+    return target?.timeToDeath() > 15 && !me.hasAura("Smothering Shadows") || false;
   }
 
   shouldUseOdynsFury() {
     const target = this.getCurrentTarget();
-    return target.timeToDeath() > 15 && !me.hasAura("Smothering Shadows");
+    return target?.timeToDeath() > 15 && !me.hasAura("Smothering Shadows") || false;
   }
 
   shouldUseOnGCDRacials() {
     const target = this.getCurrentTarget();
     return !me.hasAura("Recklessness") &&
-           target.timeToDeath() > 15 && !me.hasAura("Smothering Shadows") &&
+           target?.timeToDeath() > 15 && !me.hasAura("Smothering Shadows") &&
            !me.hasAura("Avatar") &&
            me.powerByType(PowerType.Rage) < 80 &&
            !me.hasAura("Bloodbath") &&
            !me.hasAura("Crushing Blow") &&
            !me.hasAura("Sudden Death") &&
            !spell.getCooldown("Bladestorm").ready &&
-           (!spell.getCooldown("Execute").ready || !this.isExecutePhase());
+           (!spell.getCooldown("Execute").ready || !this.isExecutePhase()) || false;
   }
 
   isExecutePhase() {
@@ -321,12 +334,39 @@ export class WarriorFuryNewBehavior extends Behavior {
     return (this.hasTalent("Massacre") && target.pctHealth < 35) || target.pctHealth < 20;
   }
 
-  getCurrentTarget() {
-    if (me.targetUnit && me.isWithinMeleeRange(me.targetUnit)) {
-      return me.targetUnit;
-    } else {
-      return combat.targets.find(unit => unit.distanceTo(me) <= 10) || null;
+  update() {
+    const result = super.update();
+    this.drawTargetNgon();
+    return result;
+  }
+
+  drawTargetNgon() {
+    const currentTime = Date.now();
+    if (currentTime - this.lastDrawTime >= this.drawInterval) {
+      const target = this.getCurrentTarget();
+      if (target && !target.dead && target.health > 0) {
+        const boundingRadius = target.boundingRadius || 1;
+        const interactionRadius = boundingRadius; // 5 yards added to bounding radius
+        drawNgonAroundTarget(target, interactionRadius);
+      }
+      this.lastDrawTime = currentTime;
     }
+  }
+
+  getCurrentTarget() {
+    let target;
+  
+    // Check if current target is valid and alive
+    if (me.targetUnit && !me.targetUnit.dead && me.targetUnit.health > 0 && me.targetUnit.distanceTo(me) <= 10) {
+      target = me.targetUnit;
+    } else {
+      // Find the closest living enemy
+      target = combat.targets
+        .filter(unit => !unit.dead && unit.health > 0 && unit.distanceTo(me) <= 10 && me.isFacing(unit))
+        .sort((a, b) => a.distanceTo(me) - b.distanceTo(me))[0] || me.targetUnit;
+    }
+  
+    return target;
   }
 
   getEnemiesInRange(range) {
