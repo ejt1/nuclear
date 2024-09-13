@@ -16,7 +16,12 @@ export class WarriorArmsNewBehavior extends Behavior {
   build() {
     return new bt.Selector(
       common.waitForNotMounted(),
-      common.waitForTarget(),
+      new bt.Action(() => {
+        if (this.getCurrentTarget() === null) {
+          return bt.Status.Success;
+        }
+        return bt.Status.Failure;
+      }),
       common.waitForCastOrChannel(),
       spell.cast("Battle Shout", () => !me.hasAura("Battle Shout")),
       spell.cast("Rallying Cry", () => me.pctHealth < 30),
@@ -25,12 +30,12 @@ export class WarriorArmsNewBehavior extends Behavior {
       spell.interrupt("Pummel", false),
       spell.interrupt("Storm Bolt", false),
       new bt.Decorator(
-        () => me.isWithinMeleeRange(me.target) && this.shouldUseCooldowns() && me.hasVisibleAura("Avatar"),
+        () => this.shouldUseCooldowns() && me.hasVisibleAura("Avatar"),
         this.useTrinkets(),
         new bt.Action(() => bt.Status.Success)
       ),
       new bt.Decorator(
-        () => me.isWithinMeleeRange(me.target) && this.shouldUseCooldowns() && me.hasVisibleAura("Avatar"),
+        () => this.shouldUseCooldowns() && me.hasVisibleAura("Avatar"),
         this.useRacials(),
         new bt.Action(() => bt.Status.Success)
       ),
@@ -321,7 +326,7 @@ export class WarriorArmsNewBehavior extends Behavior {
     );
   }
 
-slayerExecute() {
+  slayerExecute() {
     return new bt.Selector(
       // actions.slayer_execute=sweeping_strikes,if=active_enemies=2
       spell.cast("Sweeping Strikes", on => this.getCurrentTarget(), req => this.getEnemiesInRange(8) === 2),
@@ -443,11 +448,12 @@ slayerExecute() {
   }
 
   getCurrentTarget() {
-    if (me.targetUnit && me.isWithinMeleeRange(me.targetUnit)) {
-      return me.targetUnit;
-    } else {
-      return combat.targets.find(unit => unit.inCombat && unit.distanceTo(me) <= 8) || null;
+    const targetPredicate = unit => common.validTarget(unit) && me.isWithinMeleeRange(unit) && me.isFacing(unit);
+    const target = me.target;
+    if (target !== null && targetPredicate(target)) {
+      return target;
     }
+    return combat.targets.find(targetPredicate) || null;
   }
 
   getEnemiesInRange(range) {
@@ -488,7 +494,7 @@ slayerExecute() {
   isExecutePhase() {
     const target = this.getCurrentTarget();
     if (target && target.distanceTo(me) <= 8) {
-    return (this.hasTalent("Massacre") && target.pctHealth < 35) || target.pctHealth < 20;
+      return (this.hasTalent("Massacre") && target.pctHealth < 35) || target.pctHealth < 20;
     }
   }
 

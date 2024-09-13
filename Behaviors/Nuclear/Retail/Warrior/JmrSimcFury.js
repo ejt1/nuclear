@@ -16,7 +16,12 @@ export class WarriorFuryNewBehavior extends Behavior {
   build() {
     return new bt.Selector(
       common.waitForNotMounted(),
-      common.waitForTarget(),
+      new bt.Action(() => {
+        if (this.getCurrentTarget() === null) {
+          return bt.Status.Success;
+        }
+        return bt.Status.Failure;
+      }),
       common.waitForCastOrChannel(),
       spell.cast("Battle Shout", () => !me.hasAura("Battle Shout")),
       spell.cast("Rallying Cry", () => me.pctHealth < 30),
@@ -26,12 +31,12 @@ export class WarriorFuryNewBehavior extends Behavior {
       spell.interrupt("Pummel", false),
       spell.interrupt("Storm Bolt", false),
       new bt.Decorator(
-        () => me.isWithinMeleeRange(me.target) && this.shouldUseAvatar() && (me.hasVisibleAura("Recklessness") || me.hasVisibleAura("Avatar")),
+        () => this.shouldUseAvatar() && (me.hasVisibleAura("Recklessness") || me.hasVisibleAura("Avatar")),
         this.useTrinkets(),
         new bt.Action(() => bt.Status.Success)
       ),
       new bt.Decorator(
-        () => me.isWithinMeleeRange(me.target) && this.shouldUseAvatar(),
+        () => this.shouldUseAvatar(),
         this.useRacials(),
         new bt.Action(() => bt.Status.Success)
       ),
@@ -322,11 +327,12 @@ export class WarriorFuryNewBehavior extends Behavior {
   }
 
   getCurrentTarget() {
-    if (me.targetUnit && me.isWithinMeleeRange(me.targetUnit)) {
-      return me.targetUnit;
-    } else {
-      return combat.targets.find(unit => unit.distanceTo(me) <= 10) || null;
+    const targetPredicate = unit => common.validTarget(unit) && me.isWithinMeleeRange(unit) && me.isFacing(unit);
+    const target = me.target;
+    if (target !== null && targetPredicate(target)) {
+      return target;
     }
+    return combat.targets.find(targetPredicate) || null;
   }
 
   getEnemiesInRange(range) {
