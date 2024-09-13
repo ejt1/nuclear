@@ -31,7 +31,7 @@ export class PaladinProtectionnBehavior extends Behavior {
                 spell.cast("Consecration", req => !me.isMoving() && !me.hasAura(auras.consecration)),
                 spell.cast("Avenger's Shield", on => combat.targets.find(unit => unit.isCastingOrChanneling && unit.isInterruptible)),
                 spell.cast("Shield of the Righteous"),
-                spell.cast("Hammer of Wrath", on => combat.targets.find(unit => unit.pctHealth < 20)),
+                spell.cast("Hammer of Wrath", on => combat.targets.find(unit => unit.pctHealth < 20), { skipUsableCheck: true }),
                 spell.cast("Avenger's Shield"),
                 spell.cast("Judgment"),
                 spell.cast("Crusader Strike"),
