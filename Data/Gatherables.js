@@ -318,10 +318,6 @@ const treasures = {
   376587: "treasure", // Expedition Scout's Pack
   // The War Within
   // Delve treasures
-  454093: "treasure", // Sturdy Chest
-  455495: "treasure", // Sturdy Chest
-  455496: "treasure", // Sturdy Chest
-  455583: "treasure", // Sturdy Chest
   478443: "treasure", // Mislaid Curiosity
   // Disturbed Earth
   422531: "treasure", // Disturbed Earth

@@ -165,6 +165,7 @@ export const dispels = {
   17: DispelPriority.Medium, // Priest - Powerword Shield
   11426: DispelPriority.High, // Mage - Ice Barrier
   358385: DispelPriority.Medium, // Evoker - Land Slide
+  360806: DispelPriority.High, // Evoker - Sleep Walk
   217832: DispelPriority.High, // Demon Hunter - Imprison
   339: DispelPriority.Medium, // Druid - Entangling Roots
   2637: DispelPriority.High, // Druid - Hibernate
