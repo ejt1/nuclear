@@ -136,7 +136,7 @@ export class RogueAssassinationNewBehavior extends Behavior {
         ))
       ),
       new bt.Decorator(
-        () => me.comboPointsDeficit >= 1 && this.isRefreshable("Garrote") && !this.regenSaturated,
+        () => this.comboPointsDeficit >= 1 && this.isRefreshable("Garrote") && !this.regenSaturated,
         spell.cast("Garrote", on => validTargets.find(target => 
           this.getPmultiplier("Garrote", target) <= 1 && 
           target.timeToDeath() - this.getDebuffRemainingTime("Garrote", target) > 12
@@ -327,11 +327,11 @@ racials() {
   useVanish() {
     return new bt.Selector(
       spell.cast("Vanish", req => !me.hasAura("Fatebound Lucky Coin") && (me.getAuraStacks("Fatebound Coin Tails") >= 5 || me.getAuraStacks("Fatebound Coin Heads") >= 5)),
-      spell.cast("Vanish", req => !this.hasTalent("Master Assassin") && !this.hasTalent("Indiscriminate Carnage") && this.hasTalent("Improved Garrote") && spell.getCooldown("Garrote").ready && (this.getPmultiplier("Garrote") <= 1 || this.isRefreshable("Garrote")) && (this.getCurrentTarget().hasAuraByMe("Deathmark") || spell.getCooldown("Deathmark").remaining < 4) && me.comboPointsDeficit >= Math.min(this.getEnemiesInRange(10), 4)),
+      spell.cast("Vanish", req => !this.hasTalent("Master Assassin") && !this.hasTalent("Indiscriminate Carnage") && this.hasTalent("Improved Garrote") && spell.getCooldown("Garrote").ready && (this.getPmultiplier("Garrote") <= 1 || this.isRefreshable("Garrote")) && (this.getCurrentTarget().hasAuraByMe("Deathmark") || spell.getCooldown("Deathmark").remaining < 4) && this.comboPointsDeficit >= Math.min(this.getEnemiesInRange(10), 4)),
       spell.cast("Vanish", req => !this.hasTalent("Master Assassin") && this.hasTalent("Indiscriminate Carnage") && this.hasTalent("Improved Garrote") && spell.getCooldown("Garrote").ready && (this.getPmultiplier("Garrote") <= 1 || this.isRefreshable("Garrote")) && this.getEnemiesInRange(10) > 2 && (this.getTargetTimeToDie() - this.getDebuffRemainingTime("Garrote") > 15 || this.getTimeToAdds() > 20)),
       spell.cast("Vanish", req => !this.hasTalent("Improved Garrote") && this.hasTalent("Master Assassin") && !this.isRefreshable("Rupture") && this.getDebuffRemainingTime("Garrote") > 3 && this.getCurrentTarget().hasAuraByMe("Deathmark") && (this.getCurrentTarget().hasAuraByMe("Shiv") || this.getDebuffRemainingTime("Deathmark") < 4)),
       spell.cast("Vanish", req => this.hasTalent("Improved Garrote") && spell.getCooldown("Garrote").ready && (this.getPmultiplier("Garrote") <= 1 || this.isRefreshable("Garrote")) && (this.getCurrentTarget().hasAuraByMe("Deathmark") || spell.getCooldown("Deathmark").remaining < 4) && this.getTimeToAdds() > 30),
-      spell.cast("Vanish", req => !this.hasTalent("Improved Garrote") && me.hasAura("Darkest Night") && me.comboPointsDeficit >= 3 && this.singleTarget)
+      spell.cast("Vanish", req => !this.hasTalent("Improved Garrote") && me.hasAura("Darkest Night") && this.comboPointsDeficit >= 3 && this.singleTarget)
     );
   }
 
@@ -382,6 +382,10 @@ racials() {
     if (this.hasTalent("Sanguine Stratagem")) max += 1;    
     return max;
   }
+
+  get comboPointsDeficit() {
+    return this.getComboPointsMaxSpend() - this.getEffectiveComboPoints();
+  }
   
   get effectiveCPSpend() {
     return Math.max(this.getComboPointsMaxSpend() - 2, 5 * Number(this.hasTalent("Hand of Fate")));
@@ -400,14 +404,14 @@ racials() {
   }
 
   get useFiller() {
-    return me.comboPointsDeficit > 1 || this.notPooling || !this.singleTarget;
+    return this.comboPointsDeficit > 1 || this.notPooling || !this.singleTarget;
   }
 
   get useCausticFiller() {
     return this.hasTalent("Caustic Spatter") && 
            this.getCurrentTarget().hasAuraByMe("Rupture") && 
            (!this.getCurrentTarget().hasAuraByMe("Caustic Spatter") || this.getDebuffRemainingTime("Caustic Spatter") <= 2) && 
-           me.comboPointsDeficit > 1 && 
+           this.comboPointsDeficit > 1 && 
            !this.singleTarget;
   }
 
