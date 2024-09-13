@@ -54,7 +54,7 @@ export class PriestDiscipline extends Behavior {
   // Healing Rotation
   healRotation() {
     return new bt.Selector(
-      spell.cast("Power Word: Life", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 35),
+      spell.cast("Power Word: Life", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 50),
       spell.cast("Desperate Prayer", on => me, ret => me.pctHealth < 40),
       spell.cast("Pain Suppression", on => h.getPriorityTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(34)),
       spell.cast("Rapture", on => h.getPriorityTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(42)),
@@ -72,7 +72,7 @@ export class PriestDiscipline extends Behavior {
       spell.cast("Power Word: Radiance", on => h.getPriorityTarget(), ret => this.shouldCastRadiance(1)),
       spell.cast("Penance", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 65),
       spell.cast("Flash Heal", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 55),
-      spell.dispel("Purify", true, DispelPriority.Low, true, WoWDispelType.Magic),
+      spell.dispel("Purify", true, DispelPriority.Medium, true, WoWDispelType.Magic),
     );
   }
 
@@ -186,7 +186,7 @@ export class PriestDiscipline extends Behavior {
     if (!healTarget) {
       return false;
     }
-    return (healTarget.pctHealth < health || healTarget.timeToDeath() < 2) && !healTarget.hasAuraByMe(auras.painSuppression);
+    return (healTarget.pctHealth < health || healTarget.timeToDeath() < 3) && !healTarget.hasAuraByMe(auras.painSuppression);
   }
 
   shouldCastRadiance(charges) {
