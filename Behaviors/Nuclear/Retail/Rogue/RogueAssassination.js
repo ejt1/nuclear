@@ -40,7 +40,10 @@ export class RogueAssassinationNewBehavior extends Behavior {
       this.maintainSliceAndDice(),
       this.cooldowns(),
       this.coreDot(),
-      this.aoeDoT(),
+      new bt.Decorator(
+        () => this.getEnemiesInRange(10).length > 1,
+        this.aoeDoT()
+      ),
       this.directDamage(),
       this.racials(),
       this.energyPooling()
@@ -87,17 +90,17 @@ export class RogueAssassinationNewBehavior extends Behavior {
   stealthedRotation() {
     return new bt.Selector(
       spell.cast("Ambush", on => this.getCurrentTarget(), req => !this.getCurrentTarget().hasAuraByMe("Deathstalker's Mark") && this.hasTalent("Deathstalker's Mark")),
-      spell.cast("Shiv", on => this.getCurrentTarget(), req => this.hasTalent("Kingsbane") && (this.getCurrentTarget().hasAuraByMe("Kingsbane") || spell.getCooldown("Kingsbane").timeleft === 0) && (!this.getCurrentTarget().hasAuraByMe("Shiv") && this.getDebuffRemainingTime("Shiv") < 1000) && me.hasAura("Envenom")),
+      spell.cast("Shiv", on => this.getCurrentTarget(), req => this.hasTalent("Kingsbane") && (this.getCurrentTarget().hasAuraByMe("Kingsbane") || spell.getCooldown("Kingsbane").timeleft === 0) && (!this.getCurrentTarget().hasAuraByMe("Shiv") && this.getDebuffRemainingTime("Shiv") < 1) && me.hasAura("Envenom")),
       spell.cast("Envenom", on => this.getCurrentTarget(), req => this.getEffectiveComboPoints() >= 4 && this.getDebuffRemainingTime("Kingsbane") > 0 && me.hasAura("Envenom") && (this.getCurrentTarget().hasAuraByMe("Deathstalker's Mark") || me.hasAura("Edge Case") || me.hasAura("Cold Blood"))),
-      spell.cast("Rupture", on => this.getCurrentTarget(), req => this.getEffectiveComboPoints() >= 4 && me.hasAura("Indiscriminate Carnage") && this.getDebuffRemainingTime("Rupture") < 5000 && (me.powerByType(PowerType.Energy) < 50 || this.getEffectiveComboPoints() < 4 || !this.getCurrentTarget().hasAuraByMe("Rupture")) && this.getTargetTimeToDie() > 15),
-      spell.cast("Garrote", on => this.getCurrentTarget(), req => me.hasVisibleAura("Improved Garrote") && (this.getDebuffRemainingTime("Garrote") < 12000 || (!this.singleTarget && me.hasVisibleAura("Master Assassin") && this.getAuraRemainingTime("Master Assassin") < 3000)) && this.getEffectiveComboPoints() >= 1 + 2 * this.hasTalent("Shrouded Suffocation"))
+      spell.cast("Rupture", on => this.getCurrentTarget(), req => this.getEffectiveComboPoints() >= 4 && me.hasAura("Indiscriminate Carnage") && this.getDebuffRemainingTime("Rupture") < 5 && (me.powerByType(PowerType.Energy) < 50 || this.getEffectiveComboPoints() < 4 || !this.getCurrentTarget().hasAuraByMe("Rupture")) && this.getTargetTimeToDie() > 15),
+      spell.cast("Garrote", on => this.getCurrentTarget(), req => me.hasVisibleAura("Improved Garrote") && (this.getDebuffRemainingTime("Garrote") < 12 || (!this.singleTarget && me.hasVisibleAura("Master Assassin") && this.getAuraRemainingTime("Master Assassin") < 3)) && this.getEffectiveComboPoints() >= 1 + 2 * this.hasTalent("Shrouded Suffocation"))
     );
   }
 
   maintainSliceAndDice() {
     return new bt.Selector(
       spell.cast("Slice and Dice", on => me, req => !me.hasVisibleAura("Slice and Dice")),
-      spell.cast("Envenom", on => this.getCurrentTarget(), req => me.hasAura("Slice and Dice") && this.getAuraRemainingTime("Slice and Dice") < 5000 && this.getEffectiveComboPoints() >= 5)
+      spell.cast("Envenom", on => this.getCurrentTarget(), req => me.hasAura("Slice and Dice") && this.getAuraRemainingTime("Slice and Dice") < 5 && this.getEffectiveComboPoints() >= 5)
     );
   }
 
@@ -105,27 +108,22 @@ export class RogueAssassinationNewBehavior extends Behavior {
     return new bt.Selector(
       spell.cast("Deathmark", on => this.getCurrentTarget(), req => this.shouldUseDeathmark() && this.getCurrentTarget().timeToDeath() >= 10),
       this.useShiv(),
-      spell.cast("Kingsbane", on => this.getCurrentTarget(), req => (this.getCurrentTarget().hasAuraByMe("Shiv") || spell.getCooldown("Shiv").remaining < 6000) && me.hasAura("Envenom") && (spell.getCooldown("Deathmark").remaining >= 50000 || this.getCurrentTarget().hasAuraByMe("Deathmark")) || this.getTargetTimeToDie() <= 15),
-      spell.cast("Thistle Tea", on => me, req => !me.hasVisibleAura("Thistle Tea") && (((me.powerByType(PowerType.Energy) <= 100 || me.powerByType(PowerType.Energy) >= 100 && me.powerByType(PowerType.Energy) <= 150) && this.getDebuffRemainingTime("Shiv") >= 4000) || this.getEnemiesInRange(10) >= 4 && this.getDebuffRemainingTime("Shiv") >= 6000) || this.getTargetTimeToDie() < spell.getCharges("Thistle Tea") * 6000),
+      spell.cast("Kingsbane", on => this.getCurrentTarget(), req => (this.getCurrentTarget().hasAuraByMe("Shiv") || spell.getCooldown("Shiv").remaining < 6) && me.hasAura("Envenom") && (spell.getCooldown("Deathmark").remaining >= 50 || this.getCurrentTarget().hasAuraByMe("Deathmark")) || this.getTargetTimeToDie() <= 15),
+      spell.cast("Thistle Tea", on => me, req => !me.hasVisibleAura("Thistle Tea") && (((me.powerByType(PowerType.Energy) <= 100 || me.powerByType(PowerType.Energy) >= 100 && me.powerByType(PowerType.Energy) <= 150) && this.getDebuffRemainingTime("Shiv") >= 4) || this.getEnemiesInRange(10) >= 4 && this.getDebuffRemainingTime("Shiv") >= 6) || this.getTargetTimeToDie() < spell.getCharges("Thistle Tea") * 6),
       this.useMiscCooldowns(),
       this.useVanish(),
-      spell.cast("Cold Blood", on => me, req => !me.hasAura("Edge Case") && spell.getCooldown("Deathmark").remaining > 10000 && !me.hasAura("Darkest Night") && this.getEffectiveComboPoints() >= 4 && (me.getAuraStacks("Amplifying Poison") >= 20 || this.singleTarget) && !me.hasAura("Vanish") && (!spell.getCooldown("Kingsbane").ready || this.singleTarget) && !spell.getCooldown("Deathmark").ready)
+      spell.cast("Cold Blood", on => me, req => !me.hasAura("Edge Case") && spell.getCooldown("Deathmark").remaining > 10 && !me.hasAura("Darkest Night") && this.getEffectiveComboPoints() >= 4 && (me.getAuraStacks("Amplifying Poison") >= 20 || this.singleTarget) && !me.hasAura("Vanish") && (!spell.getCooldown("Kingsbane").ready || this.singleTarget) && !spell.getCooldown("Deathmark").ready)
     );
   }
 
   coreDot() {
     return new bt.Selector(
-      spell.cast("Garrote", on => this.getCurrentTarget(), req => this.isRefreshable("Garrote", this.getCurrentTarget()) && this.getCurrentTarget().timeToDeath() > 12),
-      spell.cast("Rupture", on => this.getCurrentTarget(), req => this.getEffectiveComboPoints() >= 4 && this.isRefreshable("Rupture", this.getCurrentTarget()) && this.getCurrentTarget().timeToDeath() - this.getDebuffRemainingTime("Rupture", this.getCurrentTarget()) > (4 + (me.hasAura("Dashing Scoundrel") && 1 * 5 || 0) + (me.powerByType(PowerType.Energy) >= 50 * 6)) && !me.hasAura("Darkest Night")),
-      spell.cast("Crimson Tempest", on => this.getCurrentTarget(), req => this.getEffectiveComboPoints() >= 4 && this.isRefreshable("Crimson Tempest", this.getCurrentTarget()) && me.hasAura("Momentum of Despair") > 6000 && this.singleTarget)
+      spell.cast("Garrote", on => this.getCurrentTarget(), req => this.isRefreshable("Garrote") && this.getCurrentTarget().timeToDeath() > 12),
+      spell.cast("Rupture", on => this.getCurrentTarget(), req => this.getEffectiveComboPoints() >= 4 && this.isRefreshable("Rupture") && this.getCurrentTarget().timeToDeath() - this.getDebuffRemainingTime("Rupture", this.getCurrentTarget()) > (4 + (me.hasAura("Dashing Scoundrel") ? 5 : 0) + (me.powerByType(PowerType.Energy) >= 50 ? 6 : 0)) && !me.hasAura("Darkest Night")),
+      spell.cast("Crimson Tempest", on => this.getCurrentTarget(), req => this.getEffectiveComboPoints() >= 4 && this.isRefreshable("Crimson Tempest") && me.hasAura("Momentum of Despair") > 6 && this.singleTarget)
     );
   }
 
-  get effectiveCPSpend() {
-    const maxComboPoints = this.getComboPointsMaxSpend() || 7; // Fallback to 5 if the property doesn't exist
-    return Math.max(maxComboPoints - 2, 5 * Number(this.hasTalent("Hand of Fate")));
-  }
-  
   aoeDoT() {
     const validTargets = this.getValidTargets();
     
@@ -134,14 +132,14 @@ export class RogueAssassinationNewBehavior extends Behavior {
         () => validTargets.length >= 2 && this.dotFinisherCondition && this.isRefreshable("Crimson Tempest"),
         spell.cast("Crimson Tempest", on => validTargets.find(target => 
           this.getPmultiplier("Crimson Tempest", target) <= 1 && 
-          target.timeToDeath() - this.getDebuffRemainingTime("Crimson Tempest", target) > 6 // Now in seconds
+          target.timeToDeath() - this.getDebuffRemainingTime("Crimson Tempest", target) > 6
         ))
       ),
       new bt.Decorator(
         () => me.comboPointsDeficit >= 1 && this.isRefreshable("Garrote") && !this.regenSaturated,
         spell.cast("Garrote", on => validTargets.find(target => 
           this.getPmultiplier("Garrote", target) <= 1 && 
-          target.timeToDeath() - this.getDebuffRemainingTime("Garrote", target) > 12 // Now in seconds
+          target.timeToDeath() - this.getDebuffRemainingTime("Garrote", target) > 12
         ))
       ),
       new bt.Decorator(
@@ -152,45 +150,27 @@ export class RogueAssassinationNewBehavior extends Behavior {
         spell.cast("Rupture", on => validTargets.find(target => 
           this.getPmultiplier("Rupture", target) <= 1 && 
           (!target.hasAuraByMe("Kingsbane") || me.hasAura("Cold Blood")) &&
-          target.timeToDeath() - this.getDebuffRemainingTime("Rupture", target) > (7 + (this.hasTalent("Dashing Scoundrel") ? 5 : 0) + (this.regenSaturated ? 6 : 0)) // Now in seconds
+          target.timeToDeath() - this.getDebuffRemainingTime("Rupture", target) > (7 + (this.hasTalent("Dashing Scoundrel") ? 5 : 0) + (this.regenSaturated ? 6 : 0))
         ))
       )
     );
   }
-  
-  getEnemiesInRange(range) {
-    return combat.targets.filter(unit => unit.distanceTo(me) <= range);
-  }
-  
-  get dotFinisherCondition() {
-    return this.getEffectiveComboPoints() >= this.effectiveCPSpend;
-  }
-  
-  get envenomFinisherCondition() {
-    return this.getEffectiveComboPoints() >= this.effectiveCPSpend;
-  }
-
-  getComboPointsMaxSpend() {
-    return 5 + 
-      (me.hasAura("Deeper Stratagem") ? 1 : 0) + 
-      (me.hasAura("Sanguine Stratagem") ? 1 : 0)
-  }
 
   directDamage() {
     return new bt.Selector(
-        spell.cast("Envenom", on => this.getCurrentTarget(), req => 
-          !me.hasAura("Darkest Night") && 
-          this.envenomFinisherCondition &&
-          (this.notPooling || 
-           this.getCurrentTarget().hasAuraByMe("Amplifying Poison").stacks >= 20 || 
-           this.getEffectiveComboPoints() >= this.getComboPointsMaxSpend() || 
-           !this.singleTarget) && 
-          !me.hasAura("Vanish")
-        ),
-        spell.cast("Envenom", on => this.getCurrentTarget(), req => 
-          me.hasAura("Darkest Night") && 
-          this.getEffectiveComboPoints() >= this.getComboPointsMaxSpend()
-        ),
+      spell.cast("Envenom", on => this.getCurrentTarget(), req => 
+        !me.hasAura("Darkest Night") && 
+        this.envenomFinisherCondition &&
+        (this.notPooling || 
+         this.getCurrentTarget().hasAuraByMe("Amplifying Poison").stacks >= 20 || 
+         this.getEffectiveComboPoints() > this.getComboPointsMaxSpend() || 
+         !this.singleTarget) && 
+        !me.hasAura("Vanish")
+      ),
+      spell.cast("Envenom", on => this.getCurrentTarget(), req => 
+        me.hasAura("Darkest Night") && 
+        this.getEffectiveComboPoints() >= this.getComboPointsMaxSpend()
+      ),
       spell.cast("Mutilate", on => this.getCurrentTarget(), req => this.useCausticFiller),
       spell.cast("Ambush", on => this.getCurrentTarget(), req => this.useCausticFiller),
       spell.cast("Echoing Reprimand", on => this.getCurrentTarget(), req => 
@@ -213,12 +193,12 @@ export class RogueAssassinationNewBehavior extends Behavior {
     );
   }
 
-  racials() {
+racials() {
     return new bt.Selector(
       spell.cast("Blood Fury", on => this.getCurrentTarget(), req => this.getCurrentTarget().hasAuraByMe("Deathmark")),
       spell.cast("Berserking", on => this.getCurrentTarget(), req => this.getCurrentTarget().hasAuraByMe("Deathmark")),
       spell.cast("Fireblood", on => this.getCurrentTarget(), req => this.getCurrentTarget().hasAuraByMe("Deathmark")),
-      spell.cast("Ancestral Call", on => this.getCurrentTarget(), req => (!this.hasTalent("Kingsbane") && this.getCurrentTarget().hasAuraByMe("Deathmark") && this.getCurrentTarget().hasAuraByMe("Shiv")) || (this.hasTalent("Kingsbane") && this.getCurrentTarget().hasAuraByMe("Deathmark") && this.getCurrentTarget().hasAuraByMe("Kingsbane") && this.getDebuffRemainingTime("Kingsbane") < 8000))
+      spell.cast("Ancestral Call", on => this.getCurrentTarget(), req => (!this.hasTalent("Kingsbane") && this.getCurrentTarget().hasAuraByMe("Deathmark") && this.getCurrentTarget().hasAuraByMe("Shiv")) || (this.hasTalent("Kingsbane") && this.getCurrentTarget().hasAuraByMe("Deathmark") && this.getCurrentTarget().hasAuraByMe("Kingsbane") && this.getDebuffRemainingTime("Kingsbane") < 8))
     );
   }
 
@@ -226,7 +206,7 @@ export class RogueAssassinationNewBehavior extends Behavior {
     return spell.cast("Pool Energy", req => me.powerByType(PowerType.Energy) < 50 && !this.notPooling);
   }
 
-  // Helper methods (implement these based on your needs)
+  // Helper methods
   getCurrentTarget() {
     let target;
   
@@ -297,7 +277,7 @@ export class RogueAssassinationNewBehavior extends Behavior {
 
   getAuraRemainingTime(auraName) {
     const aura = me.getAura(auraName);
-    return aura ? aura.remaining : 0;
+    return aura ? aura.remaining / 1000 : 0; // Convert milliseconds to seconds
   }
 
   getTargetTimeToDie() {
@@ -308,7 +288,7 @@ export class RogueAssassinationNewBehavior extends Behavior {
   shouldUseDeathmark() {
     return !me.hasAura("Stealth") &&
            me.hasAura("Slice and Dice") &&
-           this.getAuraRemainingTime("Slice and Dice") > 5000 &&
+           this.getAuraRemainingTime("Slice and Dice") > 5 &&
            this.getCurrentTarget().hasAuraByMe("Rupture") &&
            me.hasAura("Envenom") &&
            !this.getCurrentTarget().hasAuraByMe("Deathmark") &&
@@ -321,7 +301,7 @@ export class RogueAssassinationNewBehavior extends Behavior {
   }
 
   deathmarkKingsbaneCondition() {
-    return !this.hasTalent("Kingsbane") || spell.getCooldown("Kingsbane").remaining <= 2000;
+    return !this.hasTalent("Kingsbane") || spell.getCooldown("Kingsbane").remaining <= 2;
   }
 
   useShiv() {
@@ -340,7 +320,7 @@ export class RogueAssassinationNewBehavior extends Behavior {
       spell.cast("Blood Fury", on => this.getCurrentTarget(), req => this.getCurrentTarget().hasAuraByMe("Deathmark")),
       spell.cast("Berserking", on => this.getCurrentTarget(), req => this.getCurrentTarget().hasAuraByMe("Deathmark")),
       spell.cast("Fireblood", on => this.getCurrentTarget(), req => this.getCurrentTarget().hasAuraByMe("Deathmark")),
-      spell.cast("Ancestral Call", on => this.getCurrentTarget(), req => (!this.hasTalent("Kingsbane") && this.getCurrentTarget().hasAuraByMe("Deathmark") && this.getCurrentTarget().hasAuraByMe("Shiv")) || (this.hasTalent("Kingsbane") && this.getCurrentTarget().hasAuraByMe("Deathmark") && this.getCurrentTarget().hasAuraByMe("Kingsbane") && this.getDebuffRemainingTime("Kingsbane") < 8000))
+      spell.cast("Ancestral Call", on => this.getCurrentTarget(), req => (!this.hasTalent("Kingsbane") && this.getCurrentTarget().hasAuraByMe("Deathmark") && this.getCurrentTarget().hasAuraByMe("Shiv")) || (this.hasTalent("Kingsbane") && this.getCurrentTarget().hasAuraByMe("Deathmark") && this.getCurrentTarget().hasAuraByMe("Kingsbane") && this.getDebuffRemainingTime("Kingsbane") < 8))
     );
   }
 
@@ -361,7 +341,7 @@ export class RogueAssassinationNewBehavior extends Behavior {
       const target = this.getCurrentTarget();
       if (target && !target.dead && target.health > 0) {
         const boundingRadius = target.boundingRadius || 1;
-        const interactionRadius = boundingRadius; // 5 yards added to bounding radius
+        const interactionRadius = boundingRadius;
         drawNgonAroundTarget(target, interactionRadius);
       }
       this.lastDrawTime = currentTime;
@@ -383,12 +363,12 @@ export class RogueAssassinationNewBehavior extends Behavior {
 
   // Additional properties
   get singleTarget() {
-    return this.getEnemiesInRange(this.AOE_RANGE) === 1;
+    return this.getEnemiesInRange(this.AOE_RANGE).length === 1;
   }
 
   get notPooling() {
     return (this.getCurrentTarget().hasAuraByMe("Deathmark") || this.getCurrentTarget().hasAuraByMe("Kingsbane") || this.getCurrentTarget().hasAuraByMe("Shiv"))
-      || (me.hasVisibleAura("Envenom") && this.getAuraRemainingTime("32645") <= 1)
+      || (me.hasVisibleAura("Envenom") && this.getAuraRemainingTime("Envenom") <= 1)
       || me.powerByType(PowerType.Energy) >= (40 + 30 * Number(this.hasTalent("Hand of Fate")) - 15 * Number(this.hasTalent("Vicious Venoms")))
       || this.getTargetTimeToDie() <= 20;
   }
@@ -426,7 +406,7 @@ export class RogueAssassinationNewBehavior extends Behavior {
   get useCausticFiller() {
     return this.hasTalent("Caustic Spatter") && 
            this.getCurrentTarget().hasAuraByMe("Rupture") && 
-           (!this.getCurrentTarget().hasAuraByMe("Caustic Spatter") || this.getDebuffRemainingTime("Caustic Spatter") <= 2000) && 
+           (!this.getCurrentTarget().hasAuraByMe("Caustic Spatter") || this.getDebuffRemainingTime("Caustic Spatter") <= 2) && 
            me.comboPointsDeficit > 1 && 
            !this.singleTarget;
   }
@@ -434,6 +414,24 @@ export class RogueAssassinationNewBehavior extends Behavior {
   getTimeToAdds() {
     // Implement logic to predict when adds will spawn
     return 9999; // Default to a high value if no adds are expected
+  }
+
+  getEnemiesInRange(range) {
+    return combat.targets.filter(unit => unit.distanceTo(me) <= range);
+  }
+
+  get dotFinisherCondition() {
+    return this.getEffectiveComboPoints() >= this.effectiveCPSpend;
+  }
+  
+  get envenomFinisherCondition() {
+    return this.getEffectiveComboPoints() >= this.effectiveCPSpend;
+  }
+
+getComboPointsMaxSpend() {
+    return 5 + 
+      (me.hasAura("Deeper Stratagem") ? 1 : 0) + 
+      (me.hasAura("Sanguine Stratagem") ? 1 : 0)
   }
 }
 
