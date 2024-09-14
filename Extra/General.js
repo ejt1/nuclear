@@ -33,7 +33,7 @@ class General {
 
   static general() {
     const currentTime = wow.frameTime;
-    if (Settings.AutoTargetSwitch && combat.bestTarget && currentTime - this.lastAutoTargetTime > 200) {
+    if (Settings.AutoTargetSwitch && combat.bestTarget && currentTime - this.lastAutoTargetTime > 1000) {
       wow.GameUI.setTarget(combat.bestTarget);
       this.lastAutoTargetTime = currentTime;
     }
