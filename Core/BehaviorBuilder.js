@@ -22,26 +22,29 @@ export default class BehaviorBuilder {
     const selectedBehaviorName = Settings[`profile${spec}`];
 
     let behaviors;
+    let behaviorSettings = [];
 
     if (selectedBehaviorName) {
-      // Try to find the behavior by path if it was saved in settings
       behaviors = this.behaviors.filter(v => v.name === selectedBehaviorName);
       if (behaviors.length === 0) {
         console.error(`Selected behavior "${selectedBehaviorName}" not found. Falling back to defaults.`);
       } else {
         console.info(`You are using "${selectedBehaviorName}"`);
+        behaviorSettings = this.collectBehaviorSettings(behaviors[0]);
       }
     }
 
     if (!behaviors || behaviors.length === 0) {
-      // Fallback to default behavior selection based on specialization
       behaviors = this.getComposites(spec, context);
     }
+
+    const selectedBehavior = behaviors[0]; // Assuming we're using the first matching behavior
+    behaviorSettings = this.collectBehaviorSettings(selectedBehavior);
 
     console.debug(`Built ${behaviors.length} composites`);
     behaviors.forEach(v => root.addChild(v.build()));
 
-    return root;
+    return { root, settings: behaviorSettings };
   }
 
   getComposites(spec, context){
@@ -104,5 +107,12 @@ export default class BehaviorBuilder {
       return false;
     }
     return true;
+  }
+
+  collectBehaviorSettings(behavior) {
+    if (behavior.constructor.settings && Array.isArray(behavior.constructor.settings)) {
+      return behavior.constructor.settings;
+    }
+    return [];
   }
 }

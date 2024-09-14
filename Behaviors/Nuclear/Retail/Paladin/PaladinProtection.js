@@ -9,6 +9,7 @@ import { DispelPriority } from "@/Data/Dispels";
 import { WoWDispelType } from "@/Enums/Auras";
 import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 import { defaultHealTargeting as heal } from "@/Targeting/HealTargeting";
+import Settings from "@/Core/Settings";
 
 const auras = {
   consecration: 188370,
@@ -21,6 +22,9 @@ export class PaladinProtectionnBehavior extends Behavior {
   context = BehaviorContext.Any;
   specialization = Specialization.Paladin.Protection;
   version = wow.GameVersion.Retail;
+  static settings = [
+    { type: "slider", uid: "WordOfGloryPercent", text: "Word of Glory Percent", min: 0, max: 100, default: 70 }
+  ];
 
   build() {
     return new bt.Selector(
@@ -38,7 +42,7 @@ export class PaladinProtectionnBehavior extends Behavior {
             const targetInRange = combat.targets.some(unit => me.isWithinMeleeRange(unit) || unit.distanceTo(me) < 14);
             return auraExpiring && targetInRange;
           }),
-          spell.cast("Word of Glory", on => heal.friends.All.find(unit => unit.pctHealth < 70), req => me.hasAura(auras.shininglight)),
+          spell.cast("Word of Glory", on => heal.friends.All.find(unit => unit.pctHealth < Settings.WordOfGloryPercent), req => me.hasAura(auras.shininglight)),
           spell.cast("Lay on Hands", on => heal.friends.All.find(unit => unit.pctHealth < 20)),
           spell.cast("Blessing of Protection", on => heal.friends.All.find(unit =>
             unit.pctHealth < 50 &&
