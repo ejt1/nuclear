@@ -29,7 +29,7 @@ export class PaladinProtectionBehavior extends Behavior {
   build() {
     return new bt.Selector(
       spell.interrupt("Rebuke"),
-      spell.cast("Shield of the Righteous", req => combat.targets.some(unit => me.isWithinMeleeRange(unit) && me.isFacing(unit, 30))),
+      spell.cast("Shield of the Righteous", req => combat.targets.find(unit => me.isWithinMeleeRange(unit) && me.isFacing(unit, 30))),
       spell.cast("Hand of Reckoning", on => combat.targets.find(unit => unit.inCombat && unit.target && !unit.isTanking())),
       new bt.Decorator(
         ret => !spell.isGlobalCooldown(),
@@ -39,7 +39,7 @@ export class PaladinProtectionBehavior extends Behavior {
           spell.cast("Consecration", () => {
             const consecrationAura = me.auras.find(aura => aura.spellId === auras.consecration);
             const auraExpiring = !consecrationAura || (consecrationAura.remaining < 1500 && consecrationAura.remaining !== 0);
-            const targetInRange = combat.targets.some(unit => me.isWithinMeleeRange(unit) || unit.distanceTo(me) < 14);
+            const targetInRange = combat.targets.find(unit => me.isWithinMeleeRange(unit) || unit.distanceTo(me) < 14);
             return auraExpiring && targetInRange;
           }),
           spell.cast("Word of Glory", on => heal.friends.All.find(unit => unit.pctHealth < Settings.WordOfGloryPercent), req => me.hasAura(auras.shininglight)),
@@ -47,13 +47,13 @@ export class PaladinProtectionBehavior extends Behavior {
           spell.cast("Blessing of Protection", on => heal.friends.All.find(unit =>
             unit.pctHealth < 50 &&
             unit.guid !== me.guid &&
-            combat.targets.some(enemy =>
+            combat.targets.find(enemy =>
               enemy.targetUnit &&
               enemy.targetUnit.guid === unit.guid &&
               enemy.isWithinMeleeRange(unit)
             )
           )),
-          spell.cast("Blessing of Freedom", on => heal.friends.All.some(unit => unit.isStunned() || unit.isRooted())),
+          spell.cast("Blessing of Freedom", on => heal.friends.All.find(unit => unit.isStunned() || unit.isRooted())),
           spell.cast("Avenger's Shield", on => combat.targets
             .filter(unit => unit.isCastingOrChanneling && unit.isInterruptible && me.isFacing(unit))
             .sort((a, b) => b.distanceTo(me) - a.distanceTo(me))[0]),
@@ -68,8 +68,8 @@ export class PaladinProtectionBehavior extends Behavior {
           spell.cast("Judgment", on => combat.targets.find(unit => me.isFacing(unit) && !unit.isTanking())),
           spell.cast("Judgment", on => combat.bestTarget),
           spell.cast("Avenger's Shield", on => combat.bestTarget),
-          spell.cast("Blessed Hammer", req => combat.targets.some(unit => me.isWithinMeleeRange(unit))),
-          spell.cast("Consecration", req => combat.targets.some(unit => me.isWithinMeleeRange(unit))),
+          spell.cast("Blessed Hammer", req => combat.targets.find(unit => me.isWithinMeleeRange(unit))),
+          spell.cast("Consecration", req => combat.targets.find(unit => me.isWithinMeleeRange(unit))),
         )
       )
     );
