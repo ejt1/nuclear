@@ -17,7 +17,7 @@ const auras = {
   avengingwrath: 31884
 }
 
-export class PaladinProtectionnBehavior extends Behavior {
+export class PaladinProtectionBehavior extends Behavior {
   name = "Protection Paladin";
   context = BehaviorContext.Any;
   specialization = Specialization.Paladin.Protection;
