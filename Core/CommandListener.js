@@ -93,20 +93,27 @@ class CommandListener extends wow.EventListener {
   addSpellToQueue(spellInfo) {
     const existingSpellIndex = this.spellQueue.findIndex(spell => spell.spellName === spellInfo.spellName);
     if (existingSpellIndex !== -1) {
-      // Spell already exists in the queue
-      // Option 1: Update the existing spell's target
-      // this.spellQueue[existingSpellIndex].target = spellInfo.target;
-      // console.info(`Updated target for queued spell: ${spellInfo.spellName} to ${spellInfo.target}`);
-
-      // Option 2: Ignore the new command (keep the existing spell as is)
       return false;
     }
-    this.spellQueue.push(spellInfo);
+    this.spellQueue.push({
+      ...spellInfo,
+      timestamp: wow.frameTime
+    });
     return true;
   }
 
   getNextQueuedSpell() {
-    return this.spellQueue.shift();
+    const currentTime = wow.frameTime;
+    while (this.spellQueue.length > 0) {
+      const nextSpell = this.spellQueue[0];
+      if (currentTime - nextSpell.timestamp > 2000) {
+        this.spellQueue.shift();
+        console.info(`Removed expired queued spell: ${nextSpell.spellName}`);
+      } else {
+        return nextSpell; // Return the spell without removing it from the queue
+      }
+    }
+    return null;
   }
 
   hasQueuedSpells() {
@@ -116,30 +123,32 @@ class CommandListener extends wow.EventListener {
   processQueuedSpell() {
     if (this.hasQueuedSpells()) {
       const spellInfo = this.getNextQueuedSpell();
-      let targetFunction;
+      if (spellInfo) {
+        let targetFunction;
 
-      switch (spellInfo.target) {
-        case 'me':
-          targetFunction = () => me;
-          break;
-        case 'focus':
-          targetFunction = () => me.focusTarget;
-          break;
-        case 'target':
-          targetFunction = () => me.targetUnit;
-          break;
-        default:
-          console.error(`Invalid target type: ${spellInfo.target}`);
-          return;
-      }
+        switch (spellInfo.target) {
+          case 'me':
+            targetFunction = () => me;
+            break;
+          case 'focus':
+            targetFunction = () => me.focusTarget;
+            break;
+          case 'target':
+            targetFunction = () => me.targetUnit;
+            break;
+          default:
+            console.error(`Invalid target type: ${spellInfo.target}`);
+            return;
+        }
 
-      const result = Spell.cast(spellInfo.spellName, targetFunction).tick();
+        const result = Spell.cast(spellInfo.spellName, targetFunction).tick();
 
-      if (result === bt.Status.Failure) {
-        console.info(`Failed to cast ${spellInfo.spellName} on ${spellInfo.target}. Adding back to queue.`);
-        this.addSpellToQueue(spellInfo);
-      } else {
-        console.info(`Successfully cast ${spellInfo.spellName} on ${spellInfo.target}`);
+        if (result === bt.Status.Failure) {
+          console.info(`Failed to cast ${spellInfo.spellName} on ${spellInfo.target}. Keeping in queue.`);
+        } else {
+          console.info(`Successfully cast ${spellInfo.spellName} on ${spellInfo.target}`);
+          this.spellQueue.shift(); // Remove the spell from the queue after successful cast
+        }
       }
     }
   }
