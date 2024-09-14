@@ -44,7 +44,7 @@ class CombatTargeting extends Targeting {
       if (unit.isDeadOrGhost || unit.health <= 1) { return false; }
       if (unit.distanceTo(me) >= 40) { return false; }
       if (unit === me.target && Settings.AttackOOC) { return true; }
-      if (!unit.inCombatWithMe) { return false; }
+      if (!unit.inCombatWithMe && !wow.Party.currentParty?.isUnitInCombatWithParty(unit)) { return false; }
       return true;
     });
   }
@@ -102,7 +102,7 @@ class CombatTargeting extends Targeting {
         );
       case "Highest Health":
         return facingTargets.reduce((highest, current) =>
-          current.pctHealth > highest.pctHealth ? current : highest
+          current.health > highest.health ? current : highest
         );
       default:
         return facingTargets[0];
