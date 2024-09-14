@@ -186,12 +186,12 @@ class Common {
       const item = this.getEquippedItemByName(name);
       
       if (!item) {
-        console.debug(`Equipped item "${name}" not found.`);
+        //console.debug(`Equipped item "${name}" not found.`);
         return bt.Status.Failure;
       }
   
       if (!item.useSpell) {
-        console.debug(`Equipped item "${name}" is not usable.`);
+        //console.debug(`Equipped item "${name}" is not usable.`);
         return bt.Status.Failure;
       }
   
@@ -204,13 +204,13 @@ class Common {
   
       // Check if the item has charges (if applicable)
       if (item.enchantment && item.enchantment.charges === 0) {
-        console.debug(`Equipped item "${name}" has no charges left.`);
+        //console.debug(`Equipped item "${name}" has no charges left.`);
         return bt.Status.Failure;
       }
   
       // Check if the item has expired (if applicable)
       if (item.expiration !== 0 && item.expiration <= wow.frameTime) {
-        console.debug(`Equipped item "${name}" has expired.`);
+        //console.debug(`Equipped item "${name}" has expired.`);
         return bt.Status.Failure;
       }
   
