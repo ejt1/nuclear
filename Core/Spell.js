@@ -14,19 +14,14 @@ class Spell {
   /**
    * Constructs and returns a sequence of actions for casting a spell.
    *
-   * This method builds a behavior tree sequence that attempts to cast a spell on a target. It
-   * can accept a combination of a spell (by name or ID) and additional functions that
-   * determine the target of the spell or conditions that must be satisfied for casting. The
-   * target will be set during the sequence based on the result of the provided functions.
-   *
    * @param {string | number} spell - The spell to cast, specified by name (string) or ID (number).
-   * @param {...function} args - Additional functions that can determine the target of the spell or
-   *                             conditions to be checked before casting.
+   * @param {...(function | Object)} args - Additional functions that can determine the target of the spell or
+   *                                        conditions to be checked before casting. The last argument can be an
+   *                                        options object to specify which checks to skip.
    *
    * @throws {Error} - Throws an error if no arguments are provided to the function.
    *
    * @returns {bt.Sequence} - A behavior tree sequence that handles the spell casting logic.
-   *                          If the conditions are met and the target is valid, the spell will be cast.
    */
   static cast(...args) {
     if (arguments.length === 0) {
@@ -36,6 +31,19 @@ class Spell {
     let spellToCast = arguments[0];
     const rest = Array.prototype.slice.call(arguments, 1);
     const sequence = new bt.Sequence();
+
+    // Default options
+    let options = {
+      skipUsableCheck: false,
+      skipMovingCheck: false,
+      skipRangeCheck: false,
+      skipLineOfSightCheck: false
+    };
+
+    // Check if the last argument is an options object
+    if (typeof rest[rest.length - 1] === 'object') {
+      options = { ...options, ...rest.pop() };
+    }
 
     sequence.addChild(new bt.Action(() => {
       // Check if there's a queued spell
@@ -62,7 +70,7 @@ class Spell {
           console.info(`Attempting to cast queued spell: ${spellToCast} on ${queuedSpell.target}`);
 
           // Attempt to cast the queued spell immediately
-          const castResult = Spell.castEx(spellToCast).tick();
+          const castResult = Spell.castEx(spellToCast, options).tick();
           if (castResult === bt.Status.Success) {
             console.info(`Successfully cast queued spell: ${spellToCast}`);
             return bt.Status.Success;
@@ -74,7 +82,6 @@ class Spell {
         }
       }
 
-      // If no queued spell, proceed with the original target
       Spell._currentTarget = me.targetUnit;
       return bt.Status.Success;
     }));
@@ -102,7 +109,7 @@ class Spell {
         }
       }
 
-      sequence.addChild(Spell.castEx(spellToCast));
+      sequence.addChild(Spell.castEx(spellToCast, options));
     }
 
     return sequence;
@@ -111,9 +118,10 @@ class Spell {
   /**
    * Unified casting method that handles casting a spell by ID or name.
    * @param {number | string} spellNameOrId - The spell ID or name.
+   * @param {Object} options - Options for skipping certain checks.
    * @returns {bt.Sequence} - The behavior tree sequence for casting the spell.
    */
-  static castEx(spellNameOrId) {
+  static castEx(spellNameOrId, options) {
     return new bt.Sequence(
       new bt.Action(() => {
         let target = Spell._currentTarget;
@@ -130,7 +138,7 @@ class Spell {
           return bt.Status.Failure;
         }
 
-        if (!Spell.canCast(spell, target)) {
+        if (!Spell.canCast(spell, target, options)) {
           return bt.Status.Failure;
         }
         if (!Spell.castPrimitive(spell, target)) {
@@ -150,15 +158,12 @@ class Spell {
   /**
    * Determines whether a spell can be cast on a given target.
    *
-   * This method checks various conditions to determine if a spell can be successfully cast
-   * on the specified target, including whether the spell is known, off cooldown, usable, and
-   * whether the target is within line of sight and range.
-   *
    * @param {wow.Spell} spell - The spell to be cast.
    * @param {wow.CGUnit | wow.Guid} target - The target on which the spell is to be cast.
+   * @param {Object} options - Options for skipping certain checks.
    * @returns {boolean} - Returns true if the spell can be cast, false otherwise.
    */
-  static canCast(spell, target) {
+  static canCast(spell, target, options) {
     if (!spell || spell.name === undefined) {
       return false;
     }
@@ -176,19 +181,19 @@ class Spell {
       return false;
     }
 
-    if (!spell.isUsable) {
+    if (!options.skipUsableCheck && !spell.isUsable) {
       return false;
     }
 
-    if (spell.castTime > 0 && me.isMoving()) {
+    if (!options.skipMovingCheck && spell.castTime > 0 && me.isMoving()) {
       return false;
     }
 
-    if ((target instanceof wow.CGUnit && !losExclude[target.entryId]) && !me.withinLineOfSight(target)) {
+    if (!options.skipLineOfSightCheck && (target instanceof wow.CGUnit && !losExclude[target.entryId]) && !me.withinLineOfSight(target)) {
       return false;
     }
 
-    if ((target instanceof wow.CGUnit && !losExclude[target.entryId]) && !this.inRange(spell, target)) {
+    if (!options.skipRangeCheck && (target instanceof wow.CGUnit && !losExclude[target.entryId]) && !this.inRange(spell, target)) {
       return false;
     }
 
