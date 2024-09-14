@@ -1,38 +1,37 @@
 import { defaultCombatTargeting as Combat } from '@/Targeting/CombatTargeting';
 import Spell from './Spell';
-import * as bt from './BehaviorTree';
 import { me } from './ObjectManager';
+import Settings from './Settings';
 
 class CommandListener extends wow.EventListener {
   constructor() {
     super();
     this.commandRegex = /Unknown console command \((.+)\)/;
     this.spellQueue = [];
+    this.targetFunctions = {
+      me: () => me,
+      focus: () => me.focusTarget,
+      target: () => me.targetUnit
+    };
   }
 
   onEvent(event) {
     if (event.name === 'CONSOLE_MESSAGE') {
-      const message = event.args[0];
-      const match = this.commandRegex.exec(message);
+      const match = this.commandRegex.exec(event.args[0]);
       if (match) {
-        const command = match[1];
-        this.handleCommand(command);
+        this.handleCommand(match[1]);
       }
     }
   }
 
   handleCommand(command) {
-    const parts = command.toLowerCase().split(' ');
-    switch (parts[0]) {
-      case 'toggleburst':
-        Combat.toggleBurst();
-        break;
-      case 'queue':
-        this.handleQueueCommand(parts.slice(1));
-        break;
-      default:
-        console.info(`Unknown custom command: ${command}`);
-    }
+    const [action, ...args] = command.toLowerCase().split(' ');
+    const handlers = {
+      toggleburst: () => Combat.toggleBurst(),
+      queue: () => this.handleQueueCommand(args)
+    };
+
+    (handlers[action] || (() => console.info(`Unknown custom command: ${command}`)))();
   }
 
   handleQueueCommand(args) {
@@ -40,102 +39,80 @@ class CommandListener extends wow.EventListener {
       wow.Chat.addMessage('Invalid queue command. Usage: queue [target|focus|me] [spell name]');
       return;
     }
-    const target = args[0];
-    const spellName = args.slice(1).join(' ');
-    if (!['target', 'focus', 'me'].includes(target)) {
+
+    const [target, ...spellNameParts] = args;
+    const spellName = spellNameParts.join(' ');
+
+    if (!this.targetFunctions[target]) {
       console.info('Invalid target. Use "target", "focus", or "me".');
       return;
     }
 
-    // Check if the target exists
-    let targetExists = false;
-    switch (target) {
-      case 'me':
-        targetExists = true;
-        break;
-      case 'focus':
-        targetExists = me.focusTarget != null;
-        break;
-      case 'target':
-        targetExists = me.targetUnit != null;
-        break;
-    }
-
-    if (!targetExists) {
+    if (!this.targetFunctions[target]()) {
       console.info(`${target.charAt(0).toUpperCase() + target.slice(1)} does not exist. Cannot queue spell.`);
       return;
     }
 
-    // Check if the spell is on cooldown
-    const cooldown = Spell.getCooldown(spellName);
-    if (cooldown && cooldown.timeleft > 2000) {
+    const spell = Spell.getSpell(spellName);
+    if (!spell || !spell.isKnown) {
+      console.info(`Spell ${spellName} is not known. Cannot queue.`);
+      return;
+    }
+
+    if (spell.cooldown && spell.cooldown.timeleft > 2000) {
       console.info(`Spell ${spellName} is on cooldown. Cannot queue.`);
       return;
     }
 
-    const added = this.addSpellToQueue({ target, spellName });
-    if (added) {
-      console.info(`Queued spell: ${spellName} on ${target}`);
-      // Attempt to cast the spell immediately
-      this.processQueuedSpell();
-    } else {
-      this.processQueuedSpell();
-      console.info(`Spell ${spellName} is already in the queue. Ignoring duplicate.`);
-    }
+    const added = this.addSpellToQueue({ target, spellName, spellId: spell.id });
+    console.info(added
+      ? `Queued spell: ${spellName} (ID: ${spell.id}) on ${target}`
+      : `Spell ${spellName} (ID: ${spell.id}) is already in the queue. Ignoring duplicate.`
+    );
+
+    this.processQueuedSpell();
   }
 
   addSpellToQueue(spellInfo) {
-    const existingSpellIndex = this.spellQueue.findIndex(spell => spell.spellName === spellInfo.spellName);
-    if (existingSpellIndex !== -1) {
-      // Spell already exists in the queue
-      // Option 1: Update the existing spell's target
-      // this.spellQueue[existingSpellIndex].target = spellInfo.target;
-      // console.info(`Updated target for queued spell: ${spellInfo.spellName} to ${spellInfo.target}`);
-
-      // Option 2: Ignore the new command (keep the existing spell as is)
+    if (this.spellQueue.some(spell => spell.spellId === spellInfo.spellId)) {
       return false;
     }
-    this.spellQueue.push(spellInfo);
+    this.spellQueue.push({ ...spellInfo, timestamp: wow.frameTime });
     return true;
   }
 
   getNextQueuedSpell() {
-    return this.spellQueue.shift();
-  }
+    const currentTime = wow.frameTime;
+    const expirationTime = currentTime - Settings.SpellQueueExpirationTimer;
 
-  hasQueuedSpells() {
-    return this.spellQueue.length > 0;
+    // Remove expired spells
+    this.spellQueue = this.spellQueue.filter(spell => {
+      if (spell.timestamp >= expirationTime) {
+        return true;
+      }
+      console.info(`Removed expired queued spell: ${spell.spellName}`);
+      return false;
+    });
+
+    return this.spellQueue[0] || null;
   }
 
   processQueuedSpell() {
-    if (this.hasQueuedSpells()) {
-      const spellInfo = this.getNextQueuedSpell();
-      let targetFunction;
-
-      switch (spellInfo.target) {
-        case 'me':
-          targetFunction = () => me;
-          break;
-        case 'focus':
-          targetFunction = () => me.focusTarget;
-          break;
-        case 'target':
-          targetFunction = () => me.targetUnit;
-          break;
-        default:
-          console.error(`Invalid target type: ${spellInfo.target}`);
-          return;
+    const spellInfo = this.getNextQueuedSpell();
+    if (spellInfo) {
+      const targetFunction = this.targetFunctions[spellInfo.target];
+      if (!targetFunction) {
+        console.error(`Invalid target type: ${spellInfo.target}`);
+        return;
       }
 
-      const result = Spell.cast(spellInfo.spellName, targetFunction).tick();
-
-      if (result === bt.Status.Failure) {
-        console.info(`Failed to cast ${spellInfo.spellName} on ${spellInfo.target}. Adding back to queue.`);
-        this.addSpellToQueue(spellInfo);
-      } else {
-        console.info(`Successfully cast ${spellInfo.spellName} on ${spellInfo.target}`);
-      }
+      Spell.cast(spellInfo.spellName, targetFunction).tick();
     }
+  }
+
+  removeSpellFromQueue(spellId) {
+    this.spellQueue = this.spellQueue.filter(spell => spell.spellId !== spellId);
+    console.info(`Removed spell from queue: ID ${spellId}`);
   }
 }
 

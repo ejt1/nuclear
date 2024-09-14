@@ -7,12 +7,40 @@ import Settings from './Settings';
 import { defaultHealTargeting as Heal } from '@/Targeting/HealTargeting';
 import CommandListener from './CommandListener';
 
-class Spell {
+class Spell extends wow.EventListener {
+  constructor() {
+    super();
+    this._currentTarget = null;
+    this._lastCastTimes = new Map();
+    this._lastSuccessfulCastTimes = new Map();
+  }
   /** @type {{get: function(): (wow.CGUnit|undefined)}} */
-  static _currentTarget;
+  _currentTarget;
 
   /** @type {Map<number, number>} */
-  static _lastCastTimes = new Map();
+  _lastCastTimes = new Map();
+
+  /** @type {Map<number, number>} */
+  _lastSuccessfulCastTimes = new Map();
+
+  onEvent(event) {
+    if (event.name === "COMBAT_LOG_EVENT_UNFILTERED") {
+      const [eventData] = event.args;
+
+      if (eventData.eventType === 6) { // SPELL_CAST_SUCCESS
+        if (eventData.source.guid.equals(me.guid)) {
+          const spellId = eventData.args[0];
+          this._lastSuccessfulCastTimes.set(spellId, wow.frameTime);
+
+          // Check if there's a queued spell before removing it
+          const queuedSpell = CommandListener.getNextQueuedSpell();
+          if (queuedSpell && queuedSpell.spellId === spellId) {
+            CommandListener.removeSpellFromQueue(spellId);
+          }
+        }
+      }
+    }
+  }
 
   /**
    * Constructs and returns a sequence of actions for casting a spell.
@@ -26,7 +54,7 @@ class Spell {
    *
    * @returns {bt.Sequence} - A behavior tree sequence that handles the spell casting logic.
    */
-  static cast(...args) {
+  cast(...args) {
     if (arguments.length === 0) {
       throw "no arguments given to Spell.cast";
     }
@@ -50,58 +78,38 @@ class Spell {
 
     sequence.addChild(new bt.Action(() => {
       // Check if there's a queued spell
-      if (CommandListener.hasQueuedSpells()) {
-        const queuedSpell = CommandListener.getNextQueuedSpell();
-        if (queuedSpell) {
-          // Get the spell object
-          const spell = Spell.getSpell(queuedSpell.spellName);
+      const queuedSpell = CommandListener.getNextQueuedSpell();
+      if (queuedSpell) {
+        const spell = this.getSpell(queuedSpell.spellName);
+        const target = CommandListener.targetFunctions[queuedSpell.target]();
 
-          // Determine the target
-          let target;
-          switch (queuedSpell.target) {
-            case 'target':
-              target = me.targetUnit;
-              break;
-            case 'focus':
-              target = me.focusTarget;
-              break;
-            case 'me':
-              target = me;
-              break;
-          }
+        if (!target) {
+          console.info(`Target ${queuedSpell.target} not found. Removing from queue.`);
+          CommandListener.removeSpellFromQueue(queuedSpell.spellId);
+          return bt.Status.Failure;
+        }
 
-          // Check if the spell is off cooldown and in range
-          if (spell && spell.cooldown.ready && Spell.inRange(spell, target)) {
-            // Proceed with casting the queued spell
-            spellToCast = queuedSpell.spellName;
-            Spell._currentTarget = target;
+        if (me.isCastingOrChanneling) {
+          return bt.Status.Failure;
+        }
 
-            console.info(`Attempting to cast queued spell: ${spellToCast} on ${queuedSpell.target}`);
-
-            // Attempt to cast the queued spell
-            if (Spell.castPrimitive(spell, target)) {
-              console.info(`Successfully cast queued spell: ${spellToCast}`);
-              return bt.Status.Success;
-            } else {
-              console.info(`Failed to cast queued spell: ${spellToCast}. Adding back to queue.`);
-              CommandListener.addSpellToQueue(queuedSpell);
-              return bt.Status.Failure;
-            }
-          } else {
-            // Spell is on cooldown or out of range, keep it in the queue
-            CommandListener.addSpellToQueue(queuedSpell);
-            return bt.Status.Failure;
+        if (spell && spell.cooldown.ready && this.inRange(spell, target)) {
+          spellToCast = queuedSpell.spellName;
+          this._currentTarget = target;
+          if (this.castPrimitive(spell, target)) {
+            return bt.Status.Success;
           }
         }
+        return bt.Status.Failure;
       }
 
-      // If no queued spell or queued spell couldn't be cast, proceed with normal targeting
-      Spell._currentTarget = me.targetUnit;
+      // If no queued spell, proceed with normal targeting
+      this._currentTarget = me.targetUnit;
       return bt.Status.Success;
     }));
 
     // Only add the rest of the sequence if it wasn't a queued spell
-    if (!CommandListener.hasQueuedSpells()) {
+    if (!CommandListener.getNextQueuedSpell()) {
       for (const arg of rest) {
         if (typeof arg === 'function') {
           sequence.addChild(new bt.Action(() => {
@@ -109,7 +117,7 @@ class Spell {
             if (r === false || r === undefined || r === null) {
               return bt.Status.Failure;
             } else if (r instanceof wow.CGUnit || r instanceof wow.Guid) {
-              Spell._currentTarget = r;
+              this._currentTarget = r;
             }
             return bt.Status.Success;
           }));
@@ -123,7 +131,7 @@ class Spell {
         }
       }
 
-      sequence.addChild(Spell.castEx(spellToCast, options));
+      sequence.addChild(this.castEx(spellToCast, options));
     }
 
     return sequence;
@@ -135,10 +143,10 @@ class Spell {
    * @param {Object} options - Options for skipping certain checks.
    * @returns {bt.Sequence} - The behavior tree sequence for casting the spell.
    */
-  static castEx(spellNameOrId, options) {
+  castEx(spellNameOrId, options) {
     return new bt.Sequence(
       new bt.Action(() => {
-        let target = Spell._currentTarget;
+        let target = this._currentTarget;
         if (!target) {
           target = me.targetUnit;
         }
@@ -147,30 +155,30 @@ class Spell {
           return bt.Status.Failure;
         }
 
-        const spell = Spell.getSpell(spellNameOrId);
+        const spell = this.getSpell(spellNameOrId);
         if (!spell) {
           return bt.Status.Failure;
         }
 
         const currentTime = wow.frameTime;
-        const lastCastTime = Spell._lastCastTimes.get(spell.id);
+        const lastCastTime = this._lastCastTimes.get(spell.id);
         if (lastCastTime && currentTime - lastCastTime < 200) {
           return bt.Status.Failure;
         }
 
-        if (!Spell.canCast(spell, target, options)) {
+        if (!this.canCast(spell, target, options)) {
           return bt.Status.Failure;
         }
-        if (!Spell.castPrimitive(spell, target)) {
+        if (!this.castPrimitive(spell, target)) {
           return bt.Status.Failure;
         }
 
-        Spell._lastCastTimes.set(spell.id, currentTime);
+        this._lastCastTimes.set(spell.id, currentTime);
         return bt.Status.Success;
       }),
 
       new bt.Action(() => {
-        console.info(`Cast ${spellNameOrId} on ${Spell._currentTarget?.unsafeName}`);
+        console.info(`Cast ${spellNameOrId} on ${this._currentTarget?.unsafeName}`);
         return bt.Status.Success;
       })
     );
@@ -184,7 +192,7 @@ class Spell {
    * @param {Object} options - Options for skipping certain checks.
    * @returns {boolean} - Returns true if the spell can be cast, false otherwise.
    */
-  static canCast(spell, target, options) {
+  canCast(spell, target, options) {
     if (!spell || spell.name === undefined) {
       return false;
     }
@@ -194,6 +202,10 @@ class Spell {
     }
 
     if (!spell.isKnown) {
+      return false;
+    }
+
+    if (!this.canCastAfterDelay(spell)) {
       return false;
     }
 
@@ -226,7 +238,7 @@ class Spell {
    * @param {wow.Spell} spell
    * @returns {boolean}
    */
-  static castPrimitive(spell, target) {
+  castPrimitive(spell, target) {
     return spell.cast(target);
   }
 
@@ -239,7 +251,7 @@ class Spell {
  * @param {number | string} spellNameOrId - The spell ID or name.
  * @returns {wow.Spell | null} - The spell object, or null if not found.
  */
-  static getSpell(spellNameOrId) {
+  getSpell(spellNameOrId) {
     let spell;
 
     // First, attempt to get the spell directly by ID or name
@@ -257,6 +269,7 @@ class Spell {
       return spell;
     }
 
+
     // If the spell wasn't found, search through the player's spellbook
     const playerSpells = wow.SpellBook.playerSpells;
     for (const playerSpell of playerSpells) {
@@ -268,7 +281,7 @@ class Spell {
       // Check if the constructed spell matches the original name or ID provided
       if (
         (typeof spellNameOrId === 'number' && (constructedSpell.id === spellNameOrId || constructedSpell.overrideId === spellNameOrId)) ||
-        (typeof spellNameOrId === 'string' && constructedSpell.name === spellNameOrId)
+        (typeof spellNameOrId === 'string' && constructedSpell.name.toLowerCase() === spellNameOrId.toLowerCase())
       ) {
         return playerSpell;
       }
@@ -287,7 +300,7 @@ class Spell {
    *
    * @returns {boolean} - Returns true if the global cooldown is active, false otherwise.
    */
-  static isGlobalCooldown() {
+  isGlobalCooldown() {
     const gcd = wow.SpellBook.gcdSpell;
     if (gcd && !gcd.cooldown.ready) {
       return true;
@@ -307,7 +320,7 @@ class Spell {
    * @param {boolean} [expire=false] - If true, forces the aura to be reapplied regardless of remaining duration.
    * @returns {bt.Sequence} - A behavior tree sequence that handles the aura application logic.
    */
-  static applyAura(spellNameOrId, unit, expire = false) {
+  applyAura(spellNameOrId, unit, expire = false) {
     return new bt.Sequence(
       new bt.Action(() => {
         if (!unit) {
@@ -320,10 +333,10 @@ class Spell {
           return bt.Status.Failure;
         }
 
-        Spell._currentTarget = unit;
+        this._currentTarget = unit;
         return bt.Status.Success;
       }),
-      Spell.castEx(spellNameOrId)
+      this.castEx(spellNameOrId)
     );
   }
 
@@ -340,14 +353,14 @@ class Spell {
   * @param {boolean} [interruptPlayersOnly=false] - If set to true, only player units will be interrupted.
   * @returns {bt.Sequence} - A behavior tree sequence that handles the interrupt logic.
   */
-  static interrupt(spellNameOrId, interruptPlayersOnly = false) {
+  interrupt(spellNameOrId, interruptPlayersOnly = false) {
     return new bt.Sequence(
       new bt.Action(() => {
         // Early return if interrupt mode is set to "None"
         if (Settings.InterruptMode === "None") {
           return bt.Status.Failure;
         }
-        const spell = Spell.getSpell(spellNameOrId);
+        const spell = this.getSpell(spellNameOrId);
         if (!spell || !spell.isUsable || !spell.cooldown.ready) {
           return bt.Status.Failure;
         }
@@ -421,7 +434,7 @@ class Spell {
     * @param {...number} types - The types of dispel we can use, e.g., Magic, Curse, Disease, Poison.
     * @returns {bt.Status} - Whether a dispel was cast.
     */
-  static dispel(spellNameOrId, friends, priority = DispelPriority.Low, playersOnly = false, ...types) {
+  dispel(spellNameOrId, friends, priority = DispelPriority.Low, playersOnly = false, ...types) {
     return new bt.Sequence(
       new bt.Action(() => {
         // Early return if dispel mode is set to "None"
@@ -429,7 +442,7 @@ class Spell {
           return bt.Status.Failure;
         }
 
-        const spell = Spell.getSpell(spellNameOrId);
+        const spell = this.getSpell(spellNameOrId);
         if (!spell || !spell.isUsable || !spell.cooldown.ready) {
           return bt.Status.Failure;
         }
@@ -486,8 +499,8 @@ class Spell {
    * @param {number | string} spellNameOrId - The name or ID of the spell.
    * @returns {{ duration: number, start: number, timeleft: number, active: number, modRate: number, ready: boolean } | null} - The cooldown information or null if the spell is not found.
    */
-  static getCooldown(spellNameOrId) {
-    const spell = Spell.getSpell(spellNameOrId);
+  getCooldown(spellNameOrId) {
+    const spell = this.getSpell(spellNameOrId);
 
     if (!spell) {
       console.error(`Spell ${spellNameOrId} not found`);
@@ -502,8 +515,8 @@ class Spell {
    * @param {number | string} spellNameOrId - The name or ID of the spell.
    * @returns {number} - The charges
    */
-  static getCharges(spellNameOrId) {
-    const spell = Spell.getSpell(spellNameOrId);
+  getCharges(spellNameOrId) {
+    const spell = this.getSpell(spellNameOrId);
     return spell.charges.charges
   }
 
@@ -518,13 +531,26 @@ class Spell {
    * @param {wow.CGUnit | wow.Guid} target - The target to check the range against.
    * @returns {boolean} - Returns `true` if the spell can be cast (either because it has no range limit or it is within range of the target), `false` otherwise.
    */
-  static inRange(spell, target) {
+  inRange(spell, target) {
     if (spell.baseMaxRange === 0) {
       return true;
     } else {
       return spell.inRange(target);
     }
   }
+
+  canCastAfterDelay(spell) {
+    if (spell.castTime === 0) {
+      return true;
+    }
+
+    const lastSuccessfulCastTime = this._lastSuccessfulCastTimes.get(spell.id);
+    if (!lastSuccessfulCastTime) return true;
+
+    const currentTime = wow.frameTime;
+    const timeSinceLastCast = currentTime - lastSuccessfulCastTime;
+    return timeSinceLastCast >= Settings.SpellCastDelay;
+  }
 }
 
-export default Spell;
+export default new Spell();

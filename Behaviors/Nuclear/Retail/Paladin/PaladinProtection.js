@@ -39,9 +39,8 @@ export class PaladinProtectionnBehavior extends Behavior {
             return auraExpiring && targetInRange;
           }),
           spell.cast("Word of Glory", on => heal.friends.All.find(unit => unit.pctHealth < 70), req => me.hasAura(auras.shininglight)),
+          spell.cast("Lay on Hands", on => heal.friends.All.find(unit => unit.pctHealth < 20)),
           spell.cast("Blessing of Freedom", on => heal.friends.All.some(unit => unit.isStunned() || unit.isRooted())),
-          common.waitForTarget(),
-          common.waitForFacing(),
           spell.cast("Avenger's Shield", on => combat.targets
             .filter(unit => unit.isCastingOrChanneling && unit.isInterruptible && me.isFacing(unit))
             .sort((a, b) => b.distanceTo(me) - a.distanceTo(me))[0]),

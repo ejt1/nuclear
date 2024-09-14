@@ -1,5 +1,5 @@
-import objMgr, {me} from "../Core/ObjectManager";
-import {GroupRole} from "../Enums/UnitEnums";
+import objMgr, { me } from "../Core/ObjectManager";
+import { GroupRole } from "../Enums/UnitEnums";
 
 /**
  * Home is your open-world groups
@@ -94,8 +94,24 @@ Object.defineProperties(wow.Party.prototype, {
 
       return tanks;
     }
-  }
+  },
 
+  isUnitInCombatWithParty: {
+    /**
+     * Check if a unit is in combat with any party member (excluding the player).
+     * @param {wow.CGUnit} unit - The unit to check.
+     * @returns {boolean} - Returns true if the unit is in combat with any party member, false otherwise.
+     */
+    value: function (unit) {
+      if (!unit.inCombat() || !unit.target) {
+        return false;
+      }
+      return this.members.find(member =>
+        !member.guid.equals(me.guid) &&
+        member.guid.equals(unit.target.guid)
+      );
+    }
+  }
 });
 
 export default true;
