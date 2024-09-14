@@ -16,6 +16,7 @@ class General {
     { type: "checkbox", uid: "AttackOOC", text: "Enable Attack Out of Combat", default: false },
     { type: "checkbox", uid: "AutoTargetSwitch", text: "Enable Automatic Target Switching", default: false },
     { type: "combobox", uid: "TargetPriority", text: "Target Priority", options: ["Closest", "Lowest Health", "Highest Health"], default: "Closest" },
+    { type: "slider", uid: "TargetSwitchDelay", text: "Target Switch Delay (ms)", default: 1000, min: 100, max: 5000 },
   ];
 
   static tabName = "General";
