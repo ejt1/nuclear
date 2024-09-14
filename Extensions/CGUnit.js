@@ -80,35 +80,51 @@ Object.defineProperties(wow.CGUnit.prototype, {
   /**
    * Estimate the time to death for this unit based on its current health percentage and the elapsed time.
    *
-   * @returns {number} The estimated time to death in seconds, or a large number (9999) if the time cannot be determined.
+   * @returns {number | undefined} The estimated time to death in seconds, or undefined if the time cannot be determined.
    */
   timeToDeath: {
     value: function () {
-      if (!this._ttdHistory) {
-        this._ttdHistory = {};
-      }
-
-      const uid = this.guid.low;
       const t = wow.frameTime;
       const curhp = this.pctHealth;
 
-      if (this._ttdHistory[uid]) {
-        const o = this._ttdHistory[uid];
-        const hpdiff = o.inithp - curhp;
-        const tdiff = t - o.inittime;
-
-        const hps = hpdiff / (tdiff / 1000); // Health per second
-
-        if (hps > 0) {
-          o.ttd = curhp / hps;
-        }
-
-        return o.ttd;
-      } else {
-        this._ttdHistory[uid] = {inittime: t, inithp: curhp, ttd: 9999};
+      // Initialize an array to store the last 10 frames if not already initialized
+      if (!this._ttdHistory) {
+        this._ttdHistory = new Array();
       }
 
-      return 9999;
+      // Add the current frame's data to the history
+      this._ttdHistory.push({ time: t, health: curhp });
+
+      // Keep only the last 300 ticks
+      if (this._ttdHistory.length > 300) {
+        this._ttdHistory.shift();
+      }
+
+      // Ensure we have enough data points to calculate TTD
+      if (this._ttdHistory.length < 60) {
+        return undefined;
+      }
+
+      // Calculate the average health per second (HPS) over the stored frames
+      let totalHealthDiff = 0;
+      let totalTimeDiff = 0;
+
+      for (let i = 1; i < this._ttdHistory.length; i++) {
+        const prevFrame = this._ttdHistory[i - 1];
+        const currFrame = this._ttdHistory[i];
+        totalHealthDiff += prevFrame.health - currFrame.health;
+        totalTimeDiff += currFrame.time - prevFrame.time;
+      }
+
+      // Calculate HPS
+      const hps = totalHealthDiff / (totalTimeDiff / 1000); // Convert ms to seconds
+
+      if (hps > 0) {
+        // Calculate and return the TTD based on the average HPS
+        return curhp / hps;
+      }
+
+      return undefined; // Return undefined if TTD cannot be calculated
     }
   },
 
@@ -616,6 +632,14 @@ Object.defineProperties(wow.CGUnit.prototype, {
         }
       }
       return false;
+    }
+  },
+
+  isWithinMeleeRange: {
+    /** @this {wow.CGUnit} */
+    value: function (target) {
+      const meleeSpell = new wow.Spell(184367);
+      return meleeSpell.inRange(target);
     }
   }
 });

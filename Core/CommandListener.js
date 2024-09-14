@@ -37,7 +37,7 @@ class CommandListener extends wow.EventListener {
 
   handleQueueCommand(args) {
     if (args.length < 2) {
-      console.info('Invalid queue command. Usage: queue [target|focus|me] [spell name]');
+      wow.Chat.addMessage('Invalid queue command. Usage: queue [target|focus|me] [spell name]');
       return;
     }
     const target = args[0];
