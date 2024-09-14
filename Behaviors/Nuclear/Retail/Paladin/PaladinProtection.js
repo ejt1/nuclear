@@ -8,34 +8,59 @@ import { MovementFlags } from "@/Enums/Flags";
 import { DispelPriority } from "@/Data/Dispels";
 import { WoWDispelType } from "@/Enums/Auras";
 import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
+import { defaultHealTargeting as heal } from "@/Targeting/HealTargeting";
 
 const auras = {
-    consecration: 188370,
+  consecration: 188370,
+  shininglight: 327510,
+  avengingwrath: 31884
 }
 
 export class PaladinProtectionnBehavior extends Behavior {
-    name = "Protection Paladin";
-    context = BehaviorContext.Any;
-    specialization = Specialization.Paladin.Protection;
-    version = wow.GameVersion.Retail;
+  name = "Protection Paladin";
+  context = BehaviorContext.Any;
+  specialization = Specialization.Paladin.Protection;
+  version = wow.GameVersion.Retail;
 
-    build() {
-        return new bt.Decorator(
-            ret => !spell.isGlobalCooldown(),
-            new bt.Selector(
-                common.waitForNotMounted(),
-                common.waitForCastOrChannel(),
-                common.waitForTarget(),
-                spell.interrupt("Rebuke"),
-                spell.cast("Flash of Light", req => me.pctHealth < 80),
-                spell.cast("Consecration", req => !me.isMoving() && !me.hasAura(auras.consecration)),
-                spell.cast("Avenger's Shield", on => combat.targets.find(unit => unit.isCastingOrChanneling && unit.isInterruptible)),
-                spell.cast("Shield of the Righteous"),
-                spell.cast("Hammer of Wrath", on => combat.targets.find(unit => unit.pctHealth < 20), { skipUsableCheck: true }),
-                spell.cast("Avenger's Shield"),
-                spell.cast("Judgment"),
-                spell.cast("Crusader Strike"),
-            )
-        );
-    }
+  build() {
+    return new bt.Selector(
+      spell.interrupt("Rebuke"),
+      spell.cast("Shield of the Righteous", req => combat.targets.some(unit => me.isWithinMeleeRange(unit) && me.isFacing(unit, 30))),
+      spell.cast("Hand of Reckoning", on => combat.targets.find(unit => unit.inCombat && unit.target && !unit.isTanking())),
+      spell.cast("Auto Attack", on => combat.bestTarget),
+      new bt.Decorator(
+        ret => !spell.isGlobalCooldown(),
+        new bt.Selector(
+          common.waitForNotMounted(),
+          common.waitForCastOrChannel(),
+          spell.cast("Consecration", () => {
+            const consecrationAura = me.auras.find(aura => aura.spellId === auras.consecration);
+            const auraExpiring = !consecrationAura || (consecrationAura.remaining < 1500 && consecrationAura.remaining !== 0);
+            const targetInRange = combat.targets.some(unit => me.isWithinMeleeRange(unit) || unit.distanceTo(me) < 14);
+            return auraExpiring && targetInRange;
+          }),
+          spell.cast("Word of Glory", on => heal.friends.All.find(unit => unit.pctHealth < 70), req => me.hasAura(auras.shininglight)),
+          spell.cast("Blessing of Freedom", on => heal.friends.All.some(unit => unit.isStunned() || unit.isRooted())),
+          common.waitForTarget(),
+          common.waitForFacing(),
+          spell.cast("Avenger's Shield", on => combat.targets
+            .filter(unit => unit.isCastingOrChanneling && unit.isInterruptible && me.isFacing(unit))
+            .sort((a, b) => b.distanceTo(me) - a.distanceTo(me))[0]),
+          spell.cast("Hammer of Wrath",
+            on => combat.targets.find(unit =>
+              (unit.pctHealth < 20 || me.hasAura(auras.avengingwrath)) &&
+              me.isFacing(unit)
+            ),
+            { skipUsableCheck: true }
+          ),
+          spell.cast("Avenger's Shield", on => combat.targets.find(unit => me.isFacing(unit) && !unit.isTanking())),
+          spell.cast("Judgment", on => combat.targets.find(unit => me.isFacing(unit) && !unit.isTanking())),
+          spell.cast("Judgment", on => combat.bestTarget),
+          spell.cast("Avenger's Shield", on => combat.bestTarget),
+          spell.cast("Blessed Hammer", req => combat.targets.some(unit => me.isWithinMeleeRange(unit))),
+          spell.cast("Consecration", req => combat.targets.some(unit => me.isWithinMeleeRange(unit))),
+        )
+      )
+    );
+  }
 }

@@ -17,3 +17,12 @@ export const WoWDispelType = {
   All: 7,
   Enrage: 9
 };
+
+export const HealImmune = {
+  Insanity : 57512,
+  BigBoyICC: 70405,
+  SpiritFormHoly: 27827,
+
+  // PVP
+  Cyclone: 33786
+}
