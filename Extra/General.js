@@ -29,9 +29,13 @@ class General {
     ]);
   }
 
+  static lastAutoTargetTime = 0;
+
   static general() {
-    if (Settings.AutoTargetSwitch && combat.bestTarget?.guid !== wow.GameUI.targetGuid) {
+    const currentTime = wow.frameTime;
+    if (Settings.AutoTargetSwitch && combat.bestTarget && currentTime - this.lastAutoTargetTime > 200) {
       wow.GameUI.setTarget(combat.bestTarget);
+      this.lastAutoTargetTime = currentTime;
     }
     if (Settings.HealthstonePercentage > 0) {
       if (me.pctHealth <= Settings.HealthstonePercentage) {
