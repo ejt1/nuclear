@@ -33,11 +33,9 @@ class Spell extends wow.EventListener {
           this._lastSuccessfulCastTimes.set(spellId, wow.frameTime);
 
           // Check if there's a queued spell before removing it
-          if (CommandListener.hasQueuedSpells()) {
-            const queuedSpell = CommandListener.getNextQueuedSpell();
-            if (queuedSpell && queuedSpell.spellId === spellId) {
-              CommandListener.removeSpellFromQueue(spellId);
-            }
+          const queuedSpell = CommandListener.getNextQueuedSpell();
+          if (queuedSpell && queuedSpell.spellId === spellId) {
+            CommandListener.removeSpellFromQueue(spellId);
           }
         }
       }
@@ -80,58 +78,38 @@ class Spell extends wow.EventListener {
 
     sequence.addChild(new bt.Action(() => {
       // Check if there's a queued spell
-      if (CommandListener.hasQueuedSpells()) {
-        const queuedSpell = CommandListener.getNextQueuedSpell();
-        if (queuedSpell) {
-          // Get the spell object
-          const spell = this.getSpell(queuedSpell.spellName);
+      const queuedSpell = CommandListener.getNextQueuedSpell();
+      if (queuedSpell) {
+        const spell = this.getSpell(queuedSpell.spellName);
+        const target = CommandListener.targetFunctions[queuedSpell.target]();
 
-          // Determine the target
-          let target;
-          switch (queuedSpell.target) {
-            case 'target':
-              target = me.targetUnit;
-              break;
-            case 'focus':
-              target = me.focusTarget;
-              break;
-            case 'me':
-              target = me;
-              break;
-          }
+        if (!target) {
+          console.info(`Target ${queuedSpell.target} not found. Removing from queue.`);
+          CommandListener.removeSpellFromQueue(queuedSpell.spellId);
+          return bt.Status.Failure;
+        }
 
-          // Add check for casting or channeling
-          if (me.isCastingOrChanneling) {
-            return bt.Status.Failure;
-          }
+        if (me.isCastingOrChanneling) {
+          return bt.Status.Failure;
+        }
 
-          // Check if the spell is off cooldown and in range
-          if (spell && spell.cooldown.ready && this.inRange(spell, target)) {
-            // Proceed with casting the queued spell
-            spellToCast = queuedSpell.spellName;
-            this._currentTarget = target;
-            // Attempt to cast the queued spell
-            if (this.castPrimitive(spell, target)) {
-              return bt.Status.Success;
-            } else {
-              CommandListener.addSpellToQueue(queuedSpell);
-              return bt.Status.Failure;
-            }
-          } else {
-            // Spell is on cooldown or out of range, keep it in the queue
-            CommandListener.addSpellToQueue(queuedSpell);
-            return bt.Status.Failure;
+        if (spell && spell.cooldown.ready && this.inRange(spell, target)) {
+          spellToCast = queuedSpell.spellName;
+          this._currentTarget = target;
+          if (this.castPrimitive(spell, target)) {
+            return bt.Status.Success;
           }
         }
+        return bt.Status.Failure;
       }
 
-      // If no queued spell or queued spell couldn't be cast, proceed with normal targeting
+      // If no queued spell, proceed with normal targeting
       this._currentTarget = me.targetUnit;
       return bt.Status.Success;
     }));
 
     // Only add the rest of the sequence if it wasn't a queued spell
-    if (!CommandListener.hasQueuedSpells()) {
+    if (!CommandListener.getNextQueuedSpell()) {
       for (const arg of rest) {
         if (typeof arg === 'function') {
           sequence.addChild(new bt.Action(() => {
@@ -562,18 +540,16 @@ class Spell extends wow.EventListener {
   }
 
   canCastAfterDelay(spell) {
-    // Only apply delay for spells with cast time > 0
-    if (spell.castTime > 0) {
-      const lastSuccessfulCastTime = this._lastSuccessfulCastTimes.get(spell.id);
-      if (!lastSuccessfulCastTime) return true;
-
-      const currentTime = wow.frameTime;
-      const timeSinceLastCast = currentTime - lastSuccessfulCastTime;
-      return timeSinceLastCast >= Settings.SpellCastDelay;
+    if (spell.castTime === 0) {
+      return true;
     }
 
-    // For instant cast spells, always return true
-    return true;
+    const lastSuccessfulCastTime = this._lastSuccessfulCastTimes.get(spell.id);
+    if (!lastSuccessfulCastTime) return true;
+
+    const currentTime = wow.frameTime;
+    const timeSinceLastCast = currentTime - lastSuccessfulCastTime;
+    return timeSinceLastCast >= Settings.SpellCastDelay;
   }
 }
 
