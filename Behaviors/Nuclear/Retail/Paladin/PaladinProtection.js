@@ -40,6 +40,15 @@ export class PaladinProtectionnBehavior extends Behavior {
           }),
           spell.cast("Word of Glory", on => heal.friends.All.find(unit => unit.pctHealth < 70), req => me.hasAura(auras.shininglight)),
           spell.cast("Lay on Hands", on => heal.friends.All.find(unit => unit.pctHealth < 20)),
+          spell.cast("Blessing of Protection", on => heal.friends.All.find(unit =>
+            unit.pctHealth < 50 &&
+            unit.guid !== me.guid &&
+            combat.targets.some(enemy =>
+              enemy.targetUnit &&
+              enemy.targetUnit.guid === unit.guid &&
+              enemy.isWithinMeleeRange(unit)
+            )
+          )),
           spell.cast("Blessing of Freedom", on => heal.friends.All.some(unit => unit.isStunned() || unit.isRooted())),
           spell.cast("Avenger's Shield", on => combat.targets
             .filter(unit => unit.isCastingOrChanneling && unit.isInterruptible && me.isFacing(unit))
