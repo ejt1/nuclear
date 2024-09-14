@@ -5,18 +5,16 @@ import { defaultCombatTargeting as combat } from '@/Targeting/CombatTargeting';
 
 class General {
   static options = [
-    { header: "Interrupt Settings" },
-    { type: "combobox", uid: "InterruptMode", text: "Interrupt Mode", options: ["None", "Everything", "List"], default: "None" },
-    { type: "slider", uid: "InterruptPercentage", text: "Interrupt Percentage", default: 50, min: 1, max: 100 },
-    { header: "Dispel Settings" },
-    { type: "combobox", uid: "DispelMode", text: "Dispel Mode", options: ["None", "Everything", "List"], default: "None" },
-    { header: "Healthstone Settings" },
-    { type: "slider", uid: "HealthstonePercentage", text: "Healthstone Usage Percentage", default: 0, min: 0, max: 100 },
-    { header: "Combat Behavior Settings" },
-    { type: "checkbox", uid: "AttackOOC", text: "Enable Attack Out of Combat", default: false },
-    { type: "checkbox", uid: "AutoTargetSwitch", text: "Enable Automatic Target Switching", default: false },
-    { type: "combobox", uid: "TargetPriority", text: "Target Priority", options: ["Closest", "Lowest Health", "Highest Health"], default: "Closest" },
-    { type: "slider", uid: "TargetSwitchDelay", text: "Target Switch Delay (ms)", default: 1000, min: 100, max: 5000 },
+    { type: "checkbox", uid: "AutoInterrupt", text: "Auto Interrupt", default: false },
+    { type: "slider", uid: "InterruptPercentage", text: "Interrupt Percentage", min: 0, max: 100, default: 70 },
+    { type: "dropdown", uid: "InterruptMode", text: "Interrupt Mode", options: ["None", "Everything", "List"], default: "None" },
+    { type: "checkbox", uid: "AutoDispel", text: "Auto Dispel", default: false },
+    { type: "dropdown", uid: "DispelMode", text: "Dispel Mode", options: ["None", "Everything", "List"], default: "None" },
+    { type: "checkbox", uid: "UseHealthstone", text: "Use Healthstone", default: false },
+    { type: "slider", uid: "HealthstonePercentage", text: "Healthstone Percentage", min: 0, max: 100, default: 30 },
+    { type: "checkbox", uid: "AutoTargetSwitch", text: "Auto Target Switch", default: false },
+    { type: "slider", uid: "TargetSwitchDelay", text: "Target Switch Delay (ms)", min: 0, max: 5000, default: 1000 },
+    { type: "slider", uid: "SpellCastDelay", text: "Spell Cast Delay (ms)", min: 0, max: 1000, default: 0 }
   ];
 
   static tabName = "General";
@@ -26,7 +24,8 @@ class General {
       { header: "Interrupt Settings", collapsible: true, options: this.options.slice(0, 3) },
       { header: "Dispel Settings", collapsible: true, options: this.options.slice(3, 5) },
       { header: "Healthstone Settings", collapsible: true, options: this.options.slice(5, 7) },
-      { header: "Combat Behavior Settings", collapsible: true, options: this.options.slice(7) },
+      { header: "Combat Behavior Settings", collapsible: true, options: this.options.slice(7, 9) },
+      { header: "Spell Cast Settings", collapsible: true, options: this.options.slice(9) },
     ]);
   }
 

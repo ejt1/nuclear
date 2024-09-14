@@ -79,19 +79,19 @@ class CommandListener extends wow.EventListener {
       return;
     }
 
-    const added = this.addSpellToQueue({ target, spellName });
+    const added = this.addSpellToQueue({ target, spellName, spellId: spell.id });
     if (added) {
-      console.info(`Queued spell: ${spellName} on ${target}`);
+      console.info(`Queued spell: ${spellName} (ID: ${spell.id}) on ${target}`);
       // Attempt to cast the spell immediately
       this.processQueuedSpell();
     } else {
       this.processQueuedSpell();
-      console.info(`Spell ${spellName} is already in the queue. Ignoring duplicate.`);
+      console.info(`Spell ${spellName} (ID: ${spell.id}) is already in the queue. Ignoring duplicate.`);
     }
   }
 
   addSpellToQueue(spellInfo) {
-    const existingSpellIndex = this.spellQueue.findIndex(spell => spell.spellName === spellInfo.spellName);
+    const existingSpellIndex = this.spellQueue.findIndex(spell => spell.spellId === spellInfo.spellId);
     if (existingSpellIndex !== -1) {
       return false;
     }
@@ -106,7 +106,7 @@ class CommandListener extends wow.EventListener {
     const currentTime = wow.frameTime;
     while (this.spellQueue.length > 0) {
       const nextSpell = this.spellQueue[0];
-      if (currentTime - nextSpell.timestamp > 2000) {
+      if (currentTime - nextSpell.timestamp > 4000) {
         this.spellQueue.shift();
         console.info(`Removed expired queued spell: ${nextSpell.spellName}`);
       } else {
@@ -142,15 +142,13 @@ class CommandListener extends wow.EventListener {
         }
 
         const result = Spell.cast(spellInfo.spellName, targetFunction).tick();
-
-        if (result === bt.Status.Failure) {
-          console.info(`Failed to cast ${spellInfo.spellName} on ${spellInfo.target}. Keeping in queue.`);
-        } else {
-          console.info(`Successfully cast ${spellInfo.spellName} on ${spellInfo.target}`);
-          this.spellQueue.shift(); // Remove the spell from the queue after successful cast
-        }
       }
     }
+  }
+
+  removeSpellFromQueue(spellId) {
+    this.spellQueue = this.spellQueue.filter(spell => spell.spellId !== spellId);
+    console.info(`Removed spell from queue: ID ${spellId}`);
   }
 }
 
