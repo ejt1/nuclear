@@ -66,9 +66,15 @@ class CommandListener extends wow.EventListener {
       return;
     }
 
+    // Check if the spell is known
+    const spell = Spell.getSpell(spellName);
+    if (!spell || !spell.isKnown) {
+      console.info(`Spell ${spellName} is not known. Cannot queue.`);
+      return;
+    }
+
     // Check if the spell is on cooldown
-    const cooldown = Spell.getCooldown(spellName);
-    if (cooldown && cooldown.timeleft > 2000) {
+    if (spell.cooldown && spell.cooldown.timeleft > 2000) {
       console.info(`Spell ${spellName} is on cooldown. Cannot queue.`);
       return;
     }

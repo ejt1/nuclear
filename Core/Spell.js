@@ -257,6 +257,7 @@ class Spell {
       return spell;
     }
 
+
     // If the spell wasn't found, search through the player's spellbook
     const playerSpells = wow.SpellBook.playerSpells;
     for (const playerSpell of playerSpells) {
@@ -268,7 +269,7 @@ class Spell {
       // Check if the constructed spell matches the original name or ID provided
       if (
         (typeof spellNameOrId === 'number' && (constructedSpell.id === spellNameOrId || constructedSpell.overrideId === spellNameOrId)) ||
-        (typeof spellNameOrId === 'string' && constructedSpell.name === spellNameOrId)
+        (typeof spellNameOrId === 'string' && constructedSpell.name.toLowerCase() === spellNameOrId.toLowerCase())
       ) {
         return playerSpell;
       }
