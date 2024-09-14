@@ -46,6 +46,33 @@ class CommandListener extends wow.EventListener {
       console.info('Invalid target. Use "target", "focus", or "me".');
       return;
     }
+
+    // Check if the target exists
+    let targetExists = false;
+    switch (target) {
+      case 'me':
+        targetExists = true;
+        break;
+      case 'focus':
+        targetExists = me.focusTarget != null;
+        break;
+      case 'target':
+        targetExists = me.targetUnit != null;
+        break;
+    }
+
+    if (!targetExists) {
+      console.info(`${target.charAt(0).toUpperCase() + target.slice(1)} does not exist. Cannot queue spell.`);
+      return;
+    }
+
+    // Check if the spell is on cooldown
+    const cooldown = Spell.getCooldown(spellName);
+    if (cooldown && cooldown.timeleft > 2000) {
+      console.info(`Spell ${spellName} is on cooldown. Cannot queue.`);
+      return;
+    }
+
     const added = this.addSpellToQueue({ target, spellName });
     if (added) {
       console.info(`Queued spell: ${spellName} on ${target}`);

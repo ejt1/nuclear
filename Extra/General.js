@@ -1,6 +1,7 @@
 import Common from '@/Core/Common';
 import ObjectManager, { me } from '@/Core/ObjectManager';
 import Settings from '@/Core/Settings';
+import { defaultCombatTargeting as combat } from '@/Targeting/CombatTargeting';
 
 class General {
   static options = [
@@ -13,7 +14,9 @@ class General {
     { type: "slider", uid: "HealthstonePercentage", text: "Healthstone Usage Percentage", default: 0, min: 0, max: 100 },
     { header: "Combat Behavior Settings" },
     { type: "checkbox", uid: "AttackOOC", text: "Enable Attack Out of Combat", default: false },
+    { type: "checkbox", uid: "AutoTargetSwitch", text: "Enable Automatic Target Switching", default: false },
     { type: "combobox", uid: "TargetPriority", text: "Target Priority", options: ["Closest", "Lowest Health", "Highest Health"], default: "Closest" },
+    { type: "slider", uid: "TargetSwitchDelay", text: "Target Switch Delay (ms)", default: 1000, min: 100, max: 5000 },
   ];
 
   static tabName = "General";
@@ -27,7 +30,14 @@ class General {
     ]);
   }
 
+  static lastAutoTargetTime = 0;
+
   static general() {
+    const currentTime = wow.frameTime;
+    if (Settings.AutoTargetSwitch && combat.bestTarget && currentTime - this.lastAutoTargetTime > Settings.TargetSwitchDelay) {
+      wow.GameUI.setTarget(combat.bestTarget);
+      this.lastAutoTargetTime = currentTime;
+    }
     if (Settings.HealthstonePercentage > 0) {
       if (me.pctHealth <= Settings.HealthstonePercentage) {
         Common.useItemByName("Healthstone")

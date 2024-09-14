@@ -27,7 +27,6 @@ export class PaladinProtectionnBehavior extends Behavior {
       spell.interrupt("Rebuke"),
       spell.cast("Shield of the Righteous", req => combat.targets.some(unit => me.isWithinMeleeRange(unit) && me.isFacing(unit, 30))),
       spell.cast("Hand of Reckoning", on => combat.targets.find(unit => unit.inCombat && unit.target && !unit.isTanking())),
-      spell.cast("Auto Attack", on => combat.bestTarget),
       new bt.Decorator(
         ret => !spell.isGlobalCooldown(),
         new bt.Selector(
