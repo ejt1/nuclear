@@ -53,38 +53,49 @@ class Spell {
       if (CommandListener.hasQueuedSpells()) {
         const queuedSpell = CommandListener.getNextQueuedSpell();
         if (queuedSpell) {
-          // Override the current spell and target with the queued one
-          spellToCast = queuedSpell.spellName;
+          // Get the spell object
+          const spell = Spell.getSpell(queuedSpell.spellName);
+
+          // Determine the target
+          let target;
           switch (queuedSpell.target) {
             case 'target':
-              Spell._currentTarget = me.targetUnit;
+              target = me.targetUnit;
               break;
             case 'focus':
-              Spell._currentTarget = me.focusTarget;
-              if (!Spell._currentTarget) {
-                console.info("Focus target does not exist. Cancelling queue.");
-                return bt.Status.Failure;
-              }
+              target = me.focusTarget;
               break;
             case 'me':
-              Spell._currentTarget = me;
+              target = me;
               break;
           }
-          console.info(`Attempting to cast queued spell: ${spellToCast} on ${queuedSpell.target}`);
 
-          // Attempt to cast the queued spell immediately
-          const castResult = Spell.castEx(spellToCast, options).tick();
-          if (castResult === bt.Status.Success) {
-            console.info(`Successfully cast queued spell: ${spellToCast}`);
-            return bt.Status.Success;
+          // Check if the spell is off cooldown and in range
+          if (spell && spell.cooldown.ready && Spell.inRange(spell, target)) {
+            // Proceed with casting the queued spell
+            spellToCast = queuedSpell.spellName;
+            Spell._currentTarget = target;
+
+            console.info(`Attempting to cast queued spell: ${spellToCast} on ${queuedSpell.target}`);
+
+            // Attempt to cast the queued spell
+            if (Spell.castPrimitive(spell, target)) {
+              console.info(`Successfully cast queued spell: ${spellToCast}`);
+              return bt.Status.Success;
+            } else {
+              console.info(`Failed to cast queued spell: ${spellToCast}. Adding back to queue.`);
+              CommandListener.addSpellToQueue(queuedSpell);
+              return bt.Status.Failure;
+            }
           } else {
-            console.info(`Failed to cast queued spell: ${spellToCast}. Adding back to queue.`);
+            // Spell is on cooldown or out of range, keep it in the queue
             CommandListener.addSpellToQueue(queuedSpell);
             return bt.Status.Failure;
           }
         }
       }
 
+      // If no queued spell or queued spell couldn't be cast, proceed with normal targeting
       Spell._currentTarget = me.targetUnit;
       return bt.Status.Success;
     }));
