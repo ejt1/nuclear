@@ -1,6 +1,7 @@
-import objMgr, { me } from "@/Core/ObjectManager";
+import objMgr, {me} from "@/Core/ObjectManager";
 import Common from "@/Core/Common";
-import { MovementFlags, TraceLineHitFlags, UnitFlags, UnitStandStateType } from "@/Enums/Flags";
+import {MovementFlags, TraceLineHitFlags, UnitFlags, UnitStandStateType} from "@/Enums/Flags";
+import {HealImmune} from "@/Enums/Auras";
 
 const originalTargetGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'target').get;
 const originalAurasGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'auras').get;
@@ -104,7 +105,7 @@ Object.defineProperties(wow.CGUnit.prototype, {
 
         return o.ttd;
       } else {
-        this._ttdHistory[uid] = { inittime: t, inithp: curhp, ttd: 9999 };
+        this._ttdHistory[uid] = {inittime: t, inithp: curhp, ttd: 9999};
       }
 
       return 9999;
@@ -334,7 +335,9 @@ Object.defineProperties(wow.CGUnit.prototype, {
       }
       return party.members.find(member => {
         const partyUnit = objMgr.findObject(member.guid);
-        if (!partyUnit) { return false; }
+        if (!partyUnit) {
+          return false;
+        }
         return partyUnit.inCombatWith(this);
       }) !== undefined;
     }
@@ -533,8 +536,8 @@ Object.defineProperties(wow.CGUnit.prototype, {
         return false;
       }
       // Adjust positions to account for the display height of both units
-      const from = { ...this.position, z: this.position.z + this.displayHeight };
-      const to = { ...target.position, z: target.position.z + target.displayHeight };
+      const from = {...this.position, z: this.position.z + this.displayHeight * 0.7};
+      const to = {...target.position, z: target.position.z + target.displayHeight * 0.7};
 
       // Define the flags for line of sight checking
       const flags = TraceLineHitFlags.SPELL_LINE_OF_SIGHT;
@@ -597,7 +600,22 @@ Object.defineProperties(wow.CGUnit.prototype, {
      * @returns {boolean} - Returns true if the unit is immune, false otherwise
      */
     value: function () {
-      return (this.unitFlags & UnitFlags.UNK31) !== 0 || (this.unitFlags & UnitFlags.ImmuneToPC) !== 0;
+      return (this.unitFlags & UnitFlags.UNK31) !== 0 || (this.unitFlags & UnitFlags.IMMUNE_TO_PC) !== 0;
+    }
+  },
+
+  isHealImmune: {
+    /**
+     * Check if the unit is immune to healing.
+     * @returns {boolean} - Returns true if the unit has any aura that indicates healing immunity, otherwise false.
+     */
+    value: function () {
+      for (const immune of Object.values(HealImmune)) {
+        if (this.hasAura(immune)) {
+          return true;
+        }
+      }
+      return false;
     }
   }
 });

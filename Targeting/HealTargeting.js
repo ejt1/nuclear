@@ -101,10 +101,14 @@ class HealTargeting extends Targeting {
       if (u.deadOrGhost || u.health <= 1) return false;
       if (me.distanceTo(u) > 40) return false;
       if (!me.withinLineOfSight(u)) return false;
-      // if (u.isHealImmune()) return false; // TODO
+      if (u.isHealImmune()) return false;
 
       return true;
     });
+  }
+
+  isHealImmune() {
+    return false;
   }
 
   inclusionFilter() {
