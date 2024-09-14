@@ -641,6 +641,18 @@ Object.defineProperties(wow.CGUnit.prototype, {
       const meleeSpell = new wow.Spell(184367);
       return meleeSpell.inRange(target);
     }
+  },
+
+  isWithinMeleeRange: {
+    /**
+     * Check if the target is within melee range of this unit.
+     * @param {wow.CGUnit} target - The target unit to check.
+     * @returns {boolean} - Returns true if the target is within melee range, false otherwise.
+     */
+    value: function (target) {
+      const meleeSpell = new wow.Spell(184367);
+      return meleeSpell.inRange(target);
+    }
   }
 });
 

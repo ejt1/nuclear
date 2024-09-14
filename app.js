@@ -26,6 +26,8 @@ nuclear.initialize().then(() => {
       return;
     }
 
+
+
     perfMgr.begin("total");
     objMgr.tick();
     nuclear.tick();

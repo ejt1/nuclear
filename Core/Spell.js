@@ -11,6 +11,9 @@ class Spell {
   /** @type {{get: function(): (wow.CGUnit|undefined)}} */
   static _currentTarget;
 
+  /** @type {Map<number, number>} */
+  static _lastCastTimes = new Map();
+
   /**
    * Constructs and returns a sequence of actions for casting a spell.
    *
@@ -138,6 +141,12 @@ class Spell {
           return bt.Status.Failure;
         }
 
+        const currentTime = wow.frameTime;
+        const lastCastTime = Spell._lastCastTimes.get(spell.id);
+        if (lastCastTime && currentTime - lastCastTime < 200) {
+          return bt.Status.Failure;
+        }
+
         if (!Spell.canCast(spell, target, options)) {
           return bt.Status.Failure;
         }
@@ -145,6 +154,7 @@ class Spell {
           return bt.Status.Failure;
         }
 
+        Spell._lastCastTimes.set(spell.id, currentTime);
         return bt.Status.Success;
       }),
 
