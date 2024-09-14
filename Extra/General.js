@@ -12,6 +12,7 @@ class General {
     // Combat Behavior Settings
     { type: "checkbox", uid: "AttackOOC", text: "Attack Out of Combat", default: false },
     { type: "checkbox", uid: "AutoTargetSwitch", text: "Auto Target Switch", default: false },
+    { type: "checkbox", uid: "RenderBestTargetCircle", text: "Render Best Target Circle", default: false },
     { type: "slider", uid: "TargetSwitchDelay", text: "Target Switch Delay (ms)", min: 0, max: 5000, default: 1000 },
     { type: "combobox", uid: "TargetPriority", text: "Target Priority", options: ["Closest", "Lowest Health", "Highest Health"], default: "Closest" },
     // Spell Cast Settings
@@ -30,11 +31,11 @@ class General {
 
   static renderOptions(renderFunction) {
     renderFunction([
-      { header: "Combat Behavior", options: this.options.slice(0, 4) },
-      { header: "Spell Casting", options: this.options.slice(4, 6) },
-      { header: "Interrupt", options: this.options.slice(6, 9) },
-      { header: "Dispel", options: this.options.slice(9, 11) },
-      { header: "Healthstone", options: this.options.slice(11) },
+      { header: "Combat Behavior", options: this.options.slice(0, 5) },
+      { header: "Spell Casting", options: this.options.slice(5, 7) },
+      { header: "Interrupt", options: this.options.slice(7, 10) },
+      { header: "Dispel", options: this.options.slice(10, 12) },
+      { header: "Healthstone", options: this.options.slice(12) },
     ]);
   }
 

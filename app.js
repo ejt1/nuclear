@@ -10,6 +10,7 @@ import Radar from './Extra/Radar';
 import Autolooter from './Extra/Autolooter';
 import AntiAFK from './Extra/AntiAFK';
 import General from './Extra/General';
+import commandListener from './Core/CommandListener';
 
 let pauseCore = false;
 
@@ -26,13 +27,12 @@ nuclear.initialize().then(() => {
       return;
     }
 
-
-
     perfMgr.begin("total");
     objMgr.tick();
     nuclear.tick();
     me && extraModules.forEach(module => module.tick());
     dbgWindow.tick();
+    commandListener.renderQueuedSpells();
     nuclearWindow.tick();
     perfMgr.end("total");
     perfMgr.render();

@@ -107,10 +107,6 @@ class HealTargeting extends Targeting {
     });
   }
 
-  isHealImmune() {
-    return false;
-  }
-
   inclusionFilter() {
     // Placeholder for additional inclusion logic if needed
   }

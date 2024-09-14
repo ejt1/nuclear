@@ -38,8 +38,9 @@ class Nuclear extends wow.EventListener {
     if (me) {
       console.info('Rebuilding behaviors');
 
-      // Rebuild rootBehavior before updating Heal
-      this.rootBehavior = this.builder.build(wow.SpecializationInfo.activeSpecializationId, BehaviorContext.Normal);
+      const { root, settings } = this.builder.build(wow.SpecializationInfo.activeSpecializationId, BehaviorContext.Normal);
+      this.rootBehavior = root;
+      this.behaviorSettings = settings;
       availableBehaviors = this.builder.behaviors;
       defaultHealTargeting?.reset();
     }

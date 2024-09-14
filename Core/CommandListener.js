@@ -2,6 +2,7 @@ import { defaultCombatTargeting as Combat } from '@/Targeting/CombatTargeting';
 import Spell from './Spell';
 import { me } from './ObjectManager';
 import Settings from './Settings';
+import colors from '@/Enums/Colors';
 
 class CommandListener extends wow.EventListener {
   constructor() {
@@ -114,6 +115,27 @@ class CommandListener extends wow.EventListener {
     this.spellQueue = this.spellQueue.filter(spell => spell.spellId !== spellId);
     console.info(`Removed spell from queue: ID ${spellId}`);
   }
+
+  renderQueuedSpells() {
+    if (this.spellQueue.length === 0) return;
+
+    const drawList = imgui.getBackgroundDrawList();
+    if (!drawList) return;
+
+    const viewport = imgui.getMainViewport();
+    const pos = {
+      x: viewport.workPos.x + viewport.workSize.x * 0.25,
+      y: viewport.workPos.y + viewport.workSize.y / 2
+    };
+
+    let text = "Queued Spells:\n";
+    this.spellQueue.forEach((spell, index) => {
+      text += `${index + 1}. ${spell.spellName} on ${spell.target}\n`;
+    });
+
+    drawList.addText(text, pos, colors.yellow);
+  }
 }
 
-export default new CommandListener();
+const commandListener = new CommandListener();
+export default commandListener;
