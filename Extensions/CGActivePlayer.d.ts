@@ -7,5 +7,6 @@ declare namespace wow {
     getFriends(distance?: number): Array<CGUnit>;
     getEnemies(distance: number): Array<CGUnit>;
     getReadyRunes(): number;
+    pet: CGUnit | undefined;
   }
 }

@@ -110,8 +110,12 @@ export default class BehaviorBuilder {
   }
 
   collectBehaviorSettings(behavior) {
-    if (behavior.constructor.settings && Array.isArray(behavior.constructor.settings)) {
-      return behavior.constructor.settings;
+    try {
+      if (behavior.constructor.settings && Array.isArray(behavior.constructor.settings)) {
+        return behavior.constructor.settings;
+      }
+    } catch (error) {
+      console.error(`Error collecting behavior settings: ${error.message}`);
     }
     return [];
   }
