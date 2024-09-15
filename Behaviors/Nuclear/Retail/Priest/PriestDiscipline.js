@@ -204,6 +204,3 @@ export class PriestDiscipline extends Behavior {
 
 }
 
-export default PriestDiscipline;
-
-
