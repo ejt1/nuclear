@@ -19,7 +19,8 @@ export class HunterBeastMasteryBehavior extends Behavior {
     return new bt.Selector(
       common.waitForNotMounted(),
       common.waitForCastOrChannel(),
-      spell.cast("Call Pet 1", on => me, req => !me.pet),
+      spell.cast("Call Pet 1", on => me, req => !Pet.current),
+      spell.cast("Revive Pet", on => me, req => !Pet.isAlive()),
       Pet.follow(req => !me.target),
       common.waitForTarget(),
       Pet.attack(on => me.target),
