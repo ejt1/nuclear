@@ -416,7 +416,7 @@ class Spell extends wow.EventListener {
           if (shouldInterrupt && spell.cast(target)) {
             const spellId = target.isChanneling ? target.currentChannel : target.currentCast;
             const interruptTime = target.isChanneling ? `${channelTime.toFixed(2)}ms` : `${castPctRemain.toFixed(2)}%`;
-            console.info(`Interrupted ${spellId} being ${target.isChanneling ? 'channeled' : 'cast'} by: ${target.unsafeName} after ${interruptTime}`);
+            console.info(`Interrupted ${spellId} using ${spell.name} being ${target.isChanneling ? 'channeled' : 'cast'} by: ${target.unsafeName} after ${interruptTime}`);
             return bt.Status.Success;
           }
         }
