@@ -14,7 +14,8 @@ import Settings from "@/Core/Settings";
 const auras = {
   consecration: 188370,
   shininglight: 327510,
-  avengingwrath: 31884
+  avengingwrath: 31884,
+  judgment: 197277
 }
 
 export class PaladinProtectionBehavior extends Behavior {
@@ -73,7 +74,12 @@ export class PaladinProtectionBehavior extends Behavior {
           ),
           spell.cast("Avenger's Shield", on => combat.targets.find(unit => me.isFacing(unit) && !unit.isTanking())),
           spell.cast("Judgment", on => combat.targets.find(unit => me.isFacing(unit) && !unit.isTanking())),
-          spell.cast("Judgment", on => combat.bestTarget),
+          spell.cast("Judgment", on => {
+            if (combat.bestTarget && !combat.bestTarget.hasAura(auras.judgment)) {
+              return combat.bestTarget;
+            }
+            return combat.targets.find(target => !target.hasAura(auras.judgment));
+          }),
           spell.cast("Avenger's Shield", on => combat.bestTarget),
           spell.cast("Blessed Hammer", req => combat.targets.find(unit => me.isWithinMeleeRange(unit))),
           spell.cast("Consecration", req => combat.targets.find(unit => me.isWithinMeleeRange(unit))),
