@@ -14,7 +14,8 @@ import Settings from "@/Core/Settings";
 const auras = {
   consecration: 188370,
   shininglight: 327510,
-  avengingwrath: 31884
+  avengingwrath: 31884,
+  judgment: 197277
 }
 
 export class PaladinProtectionBehavior extends Behavior {
@@ -23,7 +24,8 @@ export class PaladinProtectionBehavior extends Behavior {
   specialization = Specialization.Paladin.Protection;
   version = wow.GameVersion.Retail;
   static settings = [
-    { type: "slider", uid: "WordOfGloryPercent", text: "Word of Glory Percent", min: 0, max: 100, default: 70 }
+    { type: "slider", uid: "ProtectionPaladinWoGPercent", text: "Word of Glory Percent", min: 0, max: 100, default: 70 },
+    { type: "slider", uid: "ProtectionPaladinArdentADPercent", text: "Ardent Defender Percent", min: 0, max: 100, default: 25 }
   ];
 
   build() {
@@ -32,17 +34,23 @@ export class PaladinProtectionBehavior extends Behavior {
       spell.cast("Shield of the Righteous", req => combat.targets.find(unit => me.isWithinMeleeRange(unit) && me.isFacing(unit, 30))),
       spell.cast("Hand of Reckoning", on => combat.targets.find(unit => unit.inCombat && unit.target && !unit.isTanking())),
       new bt.Decorator(
+        common.waitForTarget(),
+        common.ensureAutoAttack()
+      ),
+      new bt.Decorator(
         ret => !spell.isGlobalCooldown(),
         new bt.Selector(
           common.waitForNotMounted(),
           common.waitForCastOrChannel(),
+          spell.cast("Ardent Defender", req => me.pctHealth < Settings.ProtectionPaladinArdentADPercent && combat.targets.find(unit => unit.isTanking())),
+          spell.cast("Devotion Aura", req => !me.hasAura("Devotion Aura")),
           spell.cast("Consecration", () => {
             const consecrationAura = me.auras.find(aura => aura.spellId === auras.consecration);
             const auraExpiring = !consecrationAura || (consecrationAura.remaining < 1500 && consecrationAura.remaining !== 0);
             const targetInRange = combat.targets.find(unit => me.isWithinMeleeRange(unit) || unit.distanceTo(me) < 14);
             return auraExpiring && targetInRange;
           }),
-          spell.cast("Word of Glory", on => heal.friends.All.find(unit => unit.pctHealth < Settings.WordOfGloryPercent), req => me.hasAura(auras.shininglight)),
+          spell.cast("Word of Glory", on => heal.friends.All.find(unit => unit.pctHealth < Settings.ProtectionPaladinWoGPercent), req => me.hasAura(auras.shininglight)),
           spell.cast("Lay on Hands", on => heal.friends.All.find(unit => unit.pctHealth < 20)),
           spell.cast("Blessing of Protection", on => heal.friends.All.find(unit =>
             unit.pctHealth < 50 &&
@@ -66,7 +74,12 @@ export class PaladinProtectionBehavior extends Behavior {
           ),
           spell.cast("Avenger's Shield", on => combat.targets.find(unit => me.isFacing(unit) && !unit.isTanking())),
           spell.cast("Judgment", on => combat.targets.find(unit => me.isFacing(unit) && !unit.isTanking())),
-          spell.cast("Judgment", on => combat.bestTarget),
+          spell.cast("Judgment", on => {
+            if (combat.bestTarget && !combat.bestTarget.hasAura(auras.judgment)) {
+              return combat.bestTarget;
+            }
+            return combat.targets.find(target => !target.hasAura(auras.judgment));
+          }),
           spell.cast("Avenger's Shield", on => combat.bestTarget),
           spell.cast("Blessed Hammer", req => combat.targets.find(unit => me.isWithinMeleeRange(unit))),
           spell.cast("Consecration", req => combat.targets.find(unit => me.isWithinMeleeRange(unit))),

@@ -95,31 +95,22 @@ class CombatTargeting extends Targeting {
 
     const targetPos = this.bestTarget.position;
     const radius = this.bestTarget.boundingRadius;
-    const segments = 16;
+    const segments = 32; // Increased for smoother circle
     const points = [];
 
     const twoPi = 2 * Math.PI;
     const angleIncrement = twoPi / segments;
-    const zOffset = 5;
-
-    const from = new Vector3(0, 0, targetPos.z + zOffset);
-    const to = new Vector3(0, 0, targetPos.z - zOffset);
 
     for (let i = 0; i <= segments; i++) {
       const angle = i * angleIncrement;
       const x = targetPos.x + radius * Math.cos(angle);
       const y = targetPos.y + radius * Math.sin(angle);
+      const z = targetPos.z; // Use target's z-position for a flat circle
 
-      from.x = to.x = x;
-      from.y = to.y = y;
-
-      const result = wow.World.traceLine(from, to, TraceLineHitFlags.COLLISION);
-
-      if (result.hit) {
-        const screenPos = wow.WorldFrame.getScreenCoordinates(result.wp);
-        if (screenPos) {
-          points.push(screenPos);
-        }
+      const worldPos = new Vector3(x, y, z);
+      const screenPos = wow.WorldFrame.getScreenCoordinates(worldPos);
+      if (screenPos) {
+        points.push(screenPos);
       }
     }
 

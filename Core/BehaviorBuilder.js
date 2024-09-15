@@ -112,7 +112,13 @@ export default class BehaviorBuilder {
   collectBehaviorSettings(behavior) {
     try {
       if (behavior.constructor.settings && Array.isArray(behavior.constructor.settings)) {
-        return behavior.constructor.settings;
+        const settings = behavior.constructor.settings;
+        settings.forEach(setting => {
+          if (Settings[setting.uid] === undefined) {
+            Settings[setting.uid] = setting.default;
+          }
+        });
+        return settings;
       }
     } catch (error) {
       console.error(`Error collecting behavior settings: ${error.message}`);

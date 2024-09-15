@@ -45,12 +45,25 @@ class Autolooter {
   }
 
   static shouldLoot() {
-    return Settings.ExtraAutoloot &&
-      (Settings.ExtraBreakStealth || !this.isInStealth()) &&
-      !me.isMoving() &&
-      !me.isCastingOrChanneling &&
-      !me.isMounted &&
-      (Settings.ExtraIgnoreEnemies || !me.inCombat || combat.targets.find(unit => unit.distanceTo(me) <= 8 || me.isWithinMeleeRange(unit)) === undefined );
+    if (!Settings.ExtraAutoloot) return false;
+    if (!Settings.ExtraBreakStealth && this.isInStealth()) return false;
+    if (me.isMoving() || me.isCastingOrChanneling || me.isMounted) return false;
+
+    if (Settings.ExtraIgnoreEnemies) return true;
+
+    if (!me.inCombat) return true;
+
+    if (!combat.targets || combat.targets.length === 0) return true;
+
+    return !combat.targets.some(unit => {
+      if (!unit || !unit.exists) return false;
+      try {
+        return unit.distanceTo(me) <= 8 || me.isWithinMeleeRange(unit);
+      } catch (error) {
+        console.debug(`Error checking distance for unit: ${error.message}`);
+        return false;
+      }
+    });
   }
 
   static autoloot() {
