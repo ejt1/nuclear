@@ -1,3 +1,5 @@
+import objMgr, { me } from "@/Core/ObjectManager";
+
 const ARENA_PERIODIC_AURA = 74410;
 const ARENA_PREPARATION = [32727, 32728];
 const CHALLENGERS_BURDEN = 206151;
@@ -127,7 +129,17 @@ Object.defineProperties(wow.CGActivePlayer.prototype, {
 
       return readyRuneCount;
     }
-  }
+  },
+
+  pet: {
+    /**
+     * Get the first pet from the player's pet info.
+     * @returns {wow.CGUnit | undefined} - Returns the first pet or undefined if no pets.
+     */
+    get: function () {
+      return wow.PetInfo.pets[0]?.toUnit() ?? undefined;
+    }
+  },
 });
 
 export default true;

@@ -124,8 +124,8 @@ class CommandListener extends wow.EventListener {
 
     const viewport = imgui.getMainViewport();
     const pos = {
-      x: viewport.workPos.x + viewport.workSize.x * 0.25,
-      y: viewport.workPos.y + viewport.workSize.y / 2
+      x: viewport.workPos.x + viewport.workSize.x * 0.35,
+      y: viewport.workPos.y + viewport.workSize.y * 0.20
     };
 
     let text = "Queued Spells:\n";
@@ -133,7 +133,7 @@ class CommandListener extends wow.EventListener {
       text += `${index + 1}. ${spell.spellName} on ${spell.target}\n`;
     });
 
-    drawList.addText(text, pos, colors.yellow);
+    drawList.addText(text, pos, colors.green);
   }
 }
 
