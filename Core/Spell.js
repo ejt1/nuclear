@@ -93,7 +93,8 @@ class Spell extends wow.EventListener {
           return bt.Status.Failure;
         }
 
-        if (spell && spell.cooldown.ready && this.inRange(spell, target)) {
+        // Use only canCast check, which includes range check
+        if (spell && this.canCast(spell, target, options)) {
           spellToCast = queuedSpell.spellName;
           this._currentTarget = target;
           if (this.castPrimitive(spell, target)) {

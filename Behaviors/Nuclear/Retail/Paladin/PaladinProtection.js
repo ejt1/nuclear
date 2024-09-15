@@ -31,7 +31,10 @@ export class PaladinProtectionBehavior extends Behavior {
   build() {
     return new bt.Selector(
       spell.interrupt("Rebuke"),
-      spell.cast("Shield of the Righteous", req => combat.targets.find(unit => me.isWithinMeleeRange(unit) && me.isFacing(unit, 30))),
+      spell.cast("Shield of the Righteous", () => {
+        const shieldSpell = spell.getSpell("Shield of the Righteous");
+        return combat.targets.find(unit => shieldSpell.inRange(unit) && me.isFacing(unit, 30));
+      }),
       spell.cast("Hand of Reckoning", on => combat.targets.find(unit => unit.inCombat && unit.target && !unit.isTanking())),
       new bt.Decorator(
         common.waitForTarget(),
@@ -44,6 +47,12 @@ export class PaladinProtectionBehavior extends Behavior {
           common.waitForCastOrChannel(),
           spell.cast("Ardent Defender", req => me.pctHealth < Settings.ProtectionPaladinArdentADPercent && combat.targets.find(unit => unit.isTanking())),
           spell.cast("Devotion Aura", req => !me.hasAura("Devotion Aura")),
+          spell.cast("Divine Toll", () => {
+            const interruptibleCasters = combat.targets.filter(unit =>
+              unit.isCastingOrChanneling && unit.isInterruptible
+            );
+            return interruptibleCasters.length > 2;
+          }),
           spell.cast("Consecration", () => {
             const consecrationAura = me.auras.find(aura => aura.spellId === auras.consecration);
             const auraExpiring = !consecrationAura || (consecrationAura.remaining < 1500 && consecrationAura.remaining !== 0);
