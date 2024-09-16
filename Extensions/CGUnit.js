@@ -369,6 +369,16 @@ Object.defineProperties(wow.CGUnit.prototype, {
     }
   },
 
+  isSlowed: {
+    /**
+     * Check if the unit is slowed based on its ground speed.
+     * @returns {boolean} - Returns true if the unit's ground speed is less than 7.
+     */
+    value: function () {
+      return this.movementInfo.groundSpeed < 7;
+    }
+  },
+
   isRooted: {
     /**
      * Check if the unit is rooted based on movement flags.

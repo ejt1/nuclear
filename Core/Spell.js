@@ -30,12 +30,14 @@ class Spell extends wow.EventListener {
       if (eventData.eventType === 6) { // SPELL_CAST_SUCCESS
         if (eventData.source.guid.equals(me.guid)) {
           const spellId = eventData.args[0];
-          this._lastSuccessfulCastTimes.set(spellId, wow.frameTime);
+          const castSpell = new wow.Spell(spellId);
+          const spellName = castSpell.name.toLowerCase();
+          this._lastSuccessfulCastTimes.set(spellName, wow.frameTime);
 
           // Check if there's a queued spell before removing it
           const queuedSpell = CommandListener.getNextQueuedSpell();
-          if (queuedSpell && queuedSpell.spellId === spellId) {
-            CommandListener.removeSpellFromQueue(spellId);
+          if (queuedSpell && queuedSpell.spellName === spellName) {
+            CommandListener.removeSpellFromQueue(spellName);
           }
         }
       }

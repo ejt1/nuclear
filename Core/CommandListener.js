@@ -111,9 +111,9 @@ class CommandListener extends wow.EventListener {
     }
   }
 
-  removeSpellFromQueue(spellId) {
-    this.spellQueue = this.spellQueue.filter(spell => spell.spellId !== spellId);
-    console.info(`Removed spell from queue: ID ${spellId}`);
+  removeSpellFromQueue(spellName) {
+    this.spellQueue = this.spellQueue.filter(spell => spell.spellName !== spellName);
+    console.info(`Removed spell from queue: ${spellName}`);
   }
 
   renderQueuedSpells() {
