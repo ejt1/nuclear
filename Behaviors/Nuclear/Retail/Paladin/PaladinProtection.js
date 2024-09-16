@@ -15,7 +15,8 @@ const auras = {
   consecration: 188370,
   shininglight: 327510,
   avengingwrath: 31884,
-  judgment: 197277
+  judgment: 197277,
+  holybulwark: 432496,
 }
 
 export class PaladinProtectionBehavior extends Behavior {
@@ -47,12 +48,15 @@ export class PaladinProtectionBehavior extends Behavior {
           common.waitForCastOrChannel(),
           spell.cast("Ardent Defender", req => me.pctHealth < Settings.ProtectionPaladinArdentADPercent && combat.targets.find(unit => unit.isTanking())),
           spell.cast("Devotion Aura", req => !me.hasAura("Devotion Aura")),
-          spell.cast("Divine Toll", () => {
-            const interruptibleCasters = combat.targets.filter(unit =>
+          new bt.Decorator(
+            req => combat.targets.filter(unit =>
               unit.isCastingOrChanneling && unit.isInterruptible
-            );
-            return interruptibleCasters.length > 2;
-          }),
+            ).length > 2,
+            new bt.Sequence(
+              spell.cast("Sentinel"),
+              spell.cast("Divine Toll")
+            )
+          ),
           spell.cast("Consecration", () => {
             const consecrationAura = me.auras.find(aura => aura.spellId === auras.consecration);
             const auraExpiring = !consecrationAura || (consecrationAura.remaining < 1500 && consecrationAura.remaining !== 0);
@@ -70,7 +74,7 @@ export class PaladinProtectionBehavior extends Behavior {
               enemy.isWithinMeleeRange(unit)
             )
           )),
-          spell.cast("Blessing of Freedom", on => heal.friends.All.find(unit => unit.isStunned() || unit.isRooted())),
+          spell.cast("Blessing of Freedom", on => heal.friends.All.find(unit => unit.isRooted() || unit.isSlowed())),
           spell.cast("Avenger's Shield", on => combat.targets
             .filter(unit => unit.isCastingOrChanneling && unit.isInterruptible && me.isFacing(unit))
             .sort((a, b) => b.distanceTo(me) - a.distanceTo(me))[0]),
@@ -82,6 +86,7 @@ export class PaladinProtectionBehavior extends Behavior {
             { skipUsableCheck: true }
           ),
           spell.cast("Avenger's Shield", on => combat.targets.find(unit => me.isFacing(unit) && !unit.isTanking())),
+          spell.cast("Holy Bulwark", req => !me.hasAura(auras.holybulwark) && combat.getAverageTimeToDeath() > 10),
           spell.cast("Judgment", on => combat.targets.find(unit => me.isFacing(unit) && !unit.isTanking())),
           spell.cast("Judgment", on => {
             if (combat.bestTarget && !combat.bestTarget.hasAura(auras.judgment)) {

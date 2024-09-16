@@ -148,6 +148,29 @@ class CombatTargeting extends Targeting {
   get bestTarget() {
     return this.calculateBestTarget();
   }
+
+  getAverageTimeToDeath() {
+    if (this.targets.length === 0) {
+      return 0;
+    }
+
+    let totalTimeToDeath = 0;
+    let validTargets = 0;
+
+    for (const target of this.targets) {
+      const ttd = target.timeToDeath();
+      if (ttd !== undefined) {
+        totalTimeToDeath += ttd;
+        validTargets++;
+      }
+    }
+
+    if (validTargets === 0) {
+      return 0;
+    }
+
+    return totalTimeToDeath / validTargets;
+  }
 }
 
 export const defaultCombatTargeting = new CombatTargeting();
