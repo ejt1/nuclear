@@ -3,5 +3,6 @@ declare namespace wow {
     getGroupUnits(): Array<CGUnit>;
     getPartyMemberByGuid(guid: Guid): PartyMember | undefined;
     getTankUnits(): Array<CGUnit>;
+    isUnitInCombatWithParty(unit: CGUnit): boolean;
   }
 }

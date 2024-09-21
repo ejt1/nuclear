@@ -245,7 +245,7 @@ class Radar {
       const canvas = imgui.getBackgroundDrawList();
       const mePos = wow.WorldFrame.getScreenCoordinates(me.position);
       const closestPos = wow.WorldFrame.getScreenCoordinates(closestTrackedObject.position);
-      if (closestPos.x !== -1) {
+      if (closestPos && closestPos.x !== -1) {
         canvas.addLine(mePos, closestPos, objectColors.default, 2);
       }
     }

@@ -103,43 +103,51 @@ class NuclearWindow {
 
   renderOptions(options) {
     options.forEach(option => {
-      const settingValue = settings[option.uid];
-      if (!this.state[option.uid]) {
-        this.state[option.uid] = new imgui.MutableVariable(settingValue !== undefined ? settingValue : option.default);
-      }
-      if (option.type === "checkbox") {
-        this.state[option.uid].value = settingValue !== undefined ? settingValue : option.default;
-        imgui.pushStyleColor(imgui.Col.Text, this.state[option.uid].value ? this.colors.enabledColor : this.colors.disabledColor);
-        if (imgui.checkbox(option.text, this.state[option.uid])) {
-          settings[option.uid] = this.state[option.uid].value;
+      if (option.header) {
+        imgui.text(option.header);
+        imgui.separator();
+        if (option.options) {
+          this.renderOptions(option.options);
         }
-        imgui.popStyleColor();
-      } else if (option.type === "slider") {
-        this.state[option.uid].value = settingValue !== undefined ? settingValue : option.default;
-        if (imgui.sliderInt(option.text, this.state[option.uid], option.min, option.max)) {
-          settings[option.uid] = this.state[option.uid].value;
+      } else {
+        const settingValue = settings[option.uid];
+        if (!this.state[option.uid]) {
+          this.state[option.uid] = new imgui.MutableVariable(settingValue !== undefined ? settingValue : option.default);
         }
-      } else if (option.type === "combobox") {
-        this.state[option.uid].value = settingValue !== undefined ? settingValue : option.default;
-        if (imgui.beginCombo(option.text, this.state[option.uid].value)) {
-          option.options.forEach(item => {
-            const isSelected = (item === this.state[option.uid].value);
-            if (imgui.selectable(item, isSelected)) {
-              const oldValue = this.state[option.uid].value;
-              this.state[option.uid].value = item;
-              settings[option.uid] = item;
-              if (option.uid === "profileSelector" && oldValue !== item) {
-                const specializationId = wow.SpecializationInfo.activeSpecializationId;
-                const profileKey = `profile${specializationId}`;
-                settings[profileKey] = item;
-                nuclear.rebuild();  // Call rebuild after changing the profile
+        if (option.type === "checkbox") {
+          this.state[option.uid].value = settingValue !== undefined ? settingValue : option.default;
+          imgui.pushStyleColor(imgui.Col.Text, this.state[option.uid].value ? this.colors.enabledColor : this.colors.disabledColor);
+          if (imgui.checkbox(option.text, this.state[option.uid])) {
+            settings[option.uid] = this.state[option.uid].value;
+          }
+          imgui.popStyleColor();
+        } else if (option.type === "slider") {
+          this.state[option.uid].value = settingValue !== undefined ? settingValue : option.default;
+          if (imgui.sliderInt(option.text, this.state[option.uid], option.min, option.max)) {
+            settings[option.uid] = this.state[option.uid].value;
+          }
+        } else if (option.type === "combobox") {
+          this.state[option.uid].value = settingValue !== undefined ? settingValue : option.default;
+          if (imgui.beginCombo(option.text, this.state[option.uid].value)) {
+            option.options.forEach(item => {
+              const isSelected = (item === this.state[option.uid].value);
+              if (imgui.selectable(item, isSelected)) {
+                const oldValue = this.state[option.uid].value;
+                this.state[option.uid].value = item;
+                settings[option.uid] = item;
+                if (option.uid === "profileSelector" && oldValue !== item) {
+                  const specializationId = wow.SpecializationInfo.activeSpecializationId;
+                  const profileKey = `profile${specializationId}`;
+                  settings[profileKey] = item;
+                  nuclear.rebuild();  // Call rebuild after changing the profile
+                }
               }
-            }
-            if (isSelected) {
-              imgui.setItemDefaultFocus();
-            }
-          });
-          imgui.endCombo();
+              if (isSelected) {
+                imgui.setItemDefaultFocus();
+              }
+            });
+            imgui.endCombo();
+          }
         }
       }
     });

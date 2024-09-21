@@ -32,5 +32,8 @@ declare namespace wow {
     isTanking(): boolean;
     withinLineOfSight(target: CGUnit): boolean;
     isImmune(): boolean;
+    isHealImmune(): boolean;
+    isWithinMeleeRange(target: CGUnit): boolean;
+    isSlowed(): boolean;
   }
 }

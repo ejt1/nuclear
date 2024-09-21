@@ -18,12 +18,15 @@ export class MageFireBehavior extends Behavior {
       ret => !spell.isGlobalCooldown(),
       new bt.Selector(
         common.waitForNotMounted(),
-        common.waitForTarget(),
-        common.waitForCastOrChannel(),
-        common.waitForFacing(),
         spell.cast("Blazing Barrier", req => combat.targets.find(unit => me.distanceTo(unit) < 8)),
-        spell.cast("Fire Blast"),
+        common.waitForTarget(),
+        common.waitForFacing(),
+        spell.cast("Fire Blast", req => me.hasAura("Heating Up")),
+        common.waitForCastOrChannel(),
+        spell.cast("Pyroblast", req => me.hasAura("Hot Streak!")),
+        spell.cast("Phoenix Flames", req => me.hasAura("Heating Up")),
         spell.cast("Fireball"),
+        spell.cast("Scorch", { skipMovingCheck: true }),
       )
     );
   }

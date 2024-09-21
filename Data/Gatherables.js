@@ -317,15 +317,18 @@ const treasures = {
   218772: "treasure", // Golden Treasure
   376587: "treasure", // Expedition Scout's Pack
   // The War Within
+  223560: "treasure", // Skyriding Glyph
   // Delve treasures
   478443: "treasure", // Mislaid Curiosity
-  // Disturbed Earth
   422531: "treasure", // Disturbed Earth
   419696: "treasure", // Waxy Lump
   446495: "treasure", // Pile of Refuse
   452706: "treasure", // Deep lost Satchel
   452696: "treasure", // Machine Speaker's Reliquary
   452697: "treasure", // Etched Machine Speaker's Reliquary
+  444798: "treasure", // Arathi treasure hoard
+  444802: "treasure", // Kobyss ritual cache
+  444866: "treasure", // Overflowing Kobyss ritual cache
 };
 
 export default { herb: herbs, ore: ores, treasure: treasures };

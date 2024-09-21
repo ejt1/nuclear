@@ -1,6 +1,7 @@
 import objMgr, { me } from "@/Core/ObjectManager";
 import Common from "@/Core/Common";
 import { MovementFlags, TraceLineHitFlags, UnitFlags, UnitStandStateType } from "@/Enums/Flags";
+import { HealImmune } from "@/Enums/Auras";
 
 const originalTargetGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'target').get;
 const originalAurasGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'auras').get;
@@ -79,35 +80,51 @@ Object.defineProperties(wow.CGUnit.prototype, {
   /**
    * Estimate the time to death for this unit based on its current health percentage and the elapsed time.
    *
-   * @returns {number} The estimated time to death in seconds, or a large number (9999) if the time cannot be determined.
+   * @returns {number | undefined} The estimated time to death in seconds, or undefined if the time cannot be determined.
    */
   timeToDeath: {
     value: function () {
-      if (!this._ttdHistory) {
-        this._ttdHistory = {};
-      }
-
-      const uid = this.guid.low;
       const t = wow.frameTime;
       const curhp = this.pctHealth;
 
-      if (this._ttdHistory[uid]) {
-        const o = this._ttdHistory[uid];
-        const hpdiff = o.inithp - curhp;
-        const tdiff = t - o.inittime;
-
-        const hps = hpdiff / (tdiff / 1000); // Health per second
-
-        if (hps > 0) {
-          o.ttd = curhp / hps;
-        }
-
-        return o.ttd;
-      } else {
-        this._ttdHistory[uid] = { inittime: t, inithp: curhp, ttd: 9999 };
+      // Initialize an array to store the last 10 frames if not already initialized
+      if (!this._ttdHistory) {
+        this._ttdHistory = new Array();
       }
 
-      return 9999;
+      // Add the current frame's data to the history
+      this._ttdHistory.push({ time: t, health: curhp });
+
+      // Keep only the last 300 ticks
+      if (this._ttdHistory.length > 300) {
+        this._ttdHistory.shift();
+      }
+
+      // Ensure we have enough data points to calculate TTD
+      if (this._ttdHistory.length < 60) {
+        return undefined;
+      }
+
+      // Calculate the average health per second (HPS) over the stored frames
+      let totalHealthDiff = 0;
+      let totalTimeDiff = 0;
+
+      for (let i = 1; i < this._ttdHistory.length; i++) {
+        const prevFrame = this._ttdHistory[i - 1];
+        const currFrame = this._ttdHistory[i];
+        totalHealthDiff += prevFrame.health - currFrame.health;
+        totalTimeDiff += currFrame.time - prevFrame.time;
+      }
+
+      // Calculate HPS
+      const hps = totalHealthDiff / (totalTimeDiff / 1000); // Convert ms to seconds
+
+      if (hps > 0) {
+        // Calculate and return the TTD based on the average HPS
+        return curhp / hps;
+      }
+
+      return undefined; // Return undefined if TTD cannot be calculated
     }
   },
 
@@ -322,24 +339,6 @@ Object.defineProperties(wow.CGUnit.prototype, {
     }
   },
 
-  /** @this {wow.CGUnit} */
-  inCombatWithParty: {
-    get: function () {
-      if (!this.inCombat) {
-        return false;
-      }
-      const party = wow.Party.currentParty;
-      if (!party) {
-        return this.inCombatWithMe;
-      }
-      return party.members.find(member => {
-        const partyUnit = objMgr.findObject(member.guid);
-        if (!partyUnit) { return false; }
-        return partyUnit.inCombatWith(this);
-      }) !== undefined;
-    }
-  },
-
   isSitting: {
     /**
      * Check if the unit is sitting based on animTier.
@@ -367,6 +366,16 @@ Object.defineProperties(wow.CGUnit.prototype, {
      */
     value: function () {
       return (this.unitFlags & UnitFlags.STUNNED) !== 0;
+    }
+  },
+
+  isSlowed: {
+    /**
+     * Check if the unit is slowed based on its ground speed.
+     * @returns {boolean} - Returns true if the unit's ground speed is less than 7.
+     */
+    value: function () {
+      return this.movementInfo.groundSpeed < 7;
     }
   },
 
@@ -533,8 +542,8 @@ Object.defineProperties(wow.CGUnit.prototype, {
         return false;
       }
       // Adjust positions to account for the display height of both units
-      const from = { ...this.position, z: this.position.z + this.displayHeight };
-      const to = { ...target.position, z: target.position.z + target.displayHeight };
+      const from = { ...this.position, z: this.position.z + this.displayHeight * 0.7 };
+      const to = { ...target.position, z: target.position.z + target.displayHeight * 0.7 };
 
       // Define the flags for line of sight checking
       const flags = TraceLineHitFlags.SPELL_LINE_OF_SIGHT;
@@ -597,9 +606,37 @@ Object.defineProperties(wow.CGUnit.prototype, {
      * @returns {boolean} - Returns true if the unit is immune, false otherwise
      */
     value: function () {
-      return (this.unitFlags & UnitFlags.UNK31) !== 0 || (this.unitFlags & UnitFlags.ImmuneToPC) !== 0;
+      return (this.unitFlags & UnitFlags.UNK31) !== 0 || (this.unitFlags & UnitFlags.IMMUNE_TO_PC) !== 0;
     }
-  }
+  },
+
+  isHealImmune: {
+    /**
+     * Check if the unit is immune to healing.
+     * @returns {boolean} - Returns true if the unit has any aura that indicates healing immunity, otherwise false.
+     */
+    value: function () {
+      for (const immune of Object.values(HealImmune)) {
+        if (this.hasAura(immune)) {
+          return true;
+        }
+      }
+      return false;
+    }
+  },
+
+  isWithinMeleeRange: {
+    /**
+     * Check if the target is within melee range of this unit.
+     * @this {wow.CGUnit}
+     * @param {wow.CGUnit} target - The target unit to check range against.
+     * @returns {boolean} - Returns true if the target is within melee range, false otherwise.
+     */
+    value: function (target) {
+      const meleeSpell = new wow.Spell(184367);
+      return meleeSpell.inRange(target);
+    }
+  },
 });
 
 export default true;

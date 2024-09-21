@@ -6,7 +6,6 @@ import spell from "@/Core/Spell";
 import { me } from "@/Core/ObjectManager";
 import { PowerType } from "@/Enums/PowerType";
 import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
-import { drawNgonAroundTarget } from '@/Extra/DrawingUtils';
 
 export class WarriorArmsNewBehavior extends Behavior {
   context = BehaviorContext.Any;
@@ -14,20 +13,15 @@ export class WarriorArmsNewBehavior extends Behavior {
   version = wow.GameVersion.Retail;
   name = "Jmr SimC Warrior Arms";
 
-  constructor() {
-    super();
-    this.lastDrawTime = 0;
-    this.drawInterval = 1; // Draw every 100ms
-  }
-
   build() {
     return new bt.Selector(
-      new bt.Action(() => {
-        this.drawTargetNgon();
-        return bt.Status.Running;
-      }),
       common.waitForNotMounted(),
-      common.waitForTarget(),
+      new bt.Action(() => {
+        if (this.getCurrentTarget() === null) {
+          return bt.Status.Success;
+        }
+        return bt.Status.Failure;
+      }),
       common.waitForCastOrChannel(),
       spell.cast("Battle Shout", () => !me.hasAura("Battle Shout")),
       spell.cast("Rallying Cry", () => me.pctHealth < 30),
@@ -36,12 +30,12 @@ export class WarriorArmsNewBehavior extends Behavior {
       spell.interrupt("Pummel", false),
       spell.interrupt("Storm Bolt", false),
       new bt.Decorator(
-        () => me.isWithinMeleeRange(me.target) && this.shouldUseCooldowns() && me.hasVisibleAura("Avatar"),
+        () => this.shouldUseCooldowns() && me.hasVisibleAura("Avatar"),
         this.useTrinkets(),
         new bt.Action(() => bt.Status.Success)
       ),
       new bt.Decorator(
-        () => me.isWithinMeleeRange(me.target) && this.shouldUseCooldowns() && me.hasVisibleAura("Avatar"),
+        () => this.shouldUseCooldowns() && me.hasVisibleAura("Avatar"),
         this.useRacials(),
         new bt.Action(() => bt.Status.Success)
       ),
@@ -107,10 +101,10 @@ export class WarriorArmsNewBehavior extends Behavior {
 
   colossusAoe() {
     return new bt.Selector(
-      // actions.colossus_aoe=Whirlwind,if=buff.collateral_damage.up&buff.merciless_bonegrinder.up
-      spell.cast("Whirlwind", on => this.getCurrentTarget(), req => (me.hasAura("Sweeping Strikes") || me.hasAura("Collateral Damage")) && me.hasAura("Merciless Bonegrinder")),
+      // actions.colossus_aoe=cleave,if=buff.collateral_damage.up&buff.merciless_bonegrinder.up
+      spell.cast("Cleave", on => this.getCurrentTarget(), req => (me.hasAura("Sweeping Strikes") || me.hasAura("Collateral Damage")) && me.hasAura("Merciless Bonegrinder")),
       // actions.colossus_aoe+=/thunder_clap,if=!dot.rend.remains
-      spell.cast("Thunder Clap", on => this.getCurrentTarget(), req => !this.getCurrentTarget().hasAuraByMe("Rend")),
+      spell.cast("Thunder Clap", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 4),
       // actions.colossus_aoe+=/thunderous_roar
       spell.cast("Thunderous Roar"),
       // actions.colossus_aoe+=/avatar
@@ -129,8 +123,8 @@ export class WarriorArmsNewBehavior extends Behavior {
       spell.cast("Champion's Spear", on => this.getCurrentTarget(), req => this.shouldUseCooldowns()),
       // actions.colossus_aoe+=/colossus_smash
       spell.cast("Colossus Smash"),
-      // actions.colossus_aoe+=/Whirlwind
-      spell.cast("Whirlwind", on => this.getCurrentTarget()),
+      // actions.colossus_aoe+=/cleave
+      spell.cast("Cleave", on => this.getCurrentTarget()),
       // actions.colossus_aoe+=/demolish,if=buff.sweeping_strikes.up
       spell.cast("Demolish", on => this.getCurrentTarget(), req => me.hasAura("Sweeping Strikes")),
       // actions.colossus_aoe+=/bladestorm,if=talent.unhinged
@@ -161,7 +155,7 @@ export class WarriorArmsNewBehavior extends Behavior {
       // actions.colossus_execute=sweeping_strikes,if=active_enemies=2
       spell.cast("Sweeping Strikes", on => this.getCurrentTarget(), req => this.getEnemiesInRange(8) === 2),
       // actions.colossus_execute+=/rend,if=dot.rend.remains<=gcd&!talent.bloodletting
-      spell.cast("Rend", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 1500 && !this.hasTalent("Bloodletting")),
+      spell.cast("Rend", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 4 && !this.hasTalent("Bloodletting")),
       // actions.colossus_execute+=/thunderous_roar
       spell.cast("Thunderous Roar"),
       // actions.colossus_execute+=/champions_spear
@@ -177,7 +171,7 @@ export class WarriorArmsNewBehavior extends Behavior {
       // actions.colossus_execute+=/demolish,if=debuff.colossus_smash.up
       spell.cast("Demolish", on => this.getCurrentTarget(), req => this.getCurrentTarget().hasAuraByMe("Colossus Smash")),
       // actions.colossus_execute+=/mortal_strike,if=debuff.executioners_precision.stack=2&!dot.ravager.remains&(buff.lethal_blows.stack=2|!set_bonus.tww1_4pc)
-      spell.cast("Mortal Strike", on => this.getCurrentTarget(), req => this.getDebuffStacks("Executioner's Precision") === 2 && !this.getCurrentTarget().hasAuraByMe("Ravager") && (this.getAuraStacks("Lethal Blows") === 2) || !me.hasAura("453637")),
+      spell.cast("Mortal Strike", on => this.getCurrentTarget(), req => this.getDebuffStacks("Executioners Precision") === 2 && !this.getCurrentTarget().hasAuraByMe("Ravager") && (this.getAuraStacks("Lethal Blows") === 2) || !me.hasAura("453637")),
       // actions.colossus_execute+=/execute,if=rage>=40
       spell.cast("Execute", on => this.getCurrentTarget(), req => me.powerByType(PowerType.Rage) >= 40),
       // actions.colossus_execute+=/skullsplitter
@@ -198,7 +192,7 @@ export class WarriorArmsNewBehavior extends Behavior {
       // actions.colossus_sweep=sweeping_strikes
       spell.cast("Sweeping Strikes"),
       // actions.colossus_sweep+=/rend,if=dot.rend.remains<=gcd&buff.sweeping_strikes.up
-      spell.cast("Rend", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 1500 && me.hasAura("Sweeping Strikes")),
+      spell.cast("Rend", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 4 && me.hasAura("Sweeping Strikes")),
       // actions.colossus_sweep+=/thunderous_roar
       spell.cast("Thunderous Roar"),
       // actions.colossus_sweep+=/champions_spear
@@ -224,26 +218,28 @@ export class WarriorArmsNewBehavior extends Behavior {
       // actions.colossus_sweep+=/demolish,if=buff.avatar.up|debuff.colossus_smash.up&cooldown.avatar.remains>=35
       spell.cast("Demolish", on => this.getCurrentTarget(), req => me.hasAura("Avatar") || this.getCurrentTarget().hasAuraByMe("Colossus Smash") && spell.getCooldown("Avatar").timeleft >= 35),
       // actions.colossus_sweep+=/execute,if=buff.recklessness_warlords_torment.up|buff.sweeping_strikes.up
-      spell.cast("Execute", on => this.getCurrentTarget(), req => me.hasAura("Recklessness") || me.hasAura("Sweeping Strikes")),
+      spell.cast("Execute", on => this.getCurrentTarget(), req => me.hasAura("Recklessness Warlords Torment") || me.hasAura("Sweeping Strikes")),
       // actions.colossus_sweep+=/overpower,if=charges=2|buff.sweeping_strikes.up
       spell.cast("Overpower", on => this.getCurrentTarget(), req => spell.getCharges("Overpower") === 2 || me.hasAura("Sweeping Strikes")),
       // actions.colossus_sweep+=/execute
       spell.cast("Execute", on => this.getCurrentTarget()),
       // actions.colossus_sweep+=/thunder_clap,if=dot.rend.remains<=8&buff.sweeping_strikes.down
-      spell.cast("Thunder Clap", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 8000 && !me.hasAura("Sweeping Strikes")),
+      spell.cast("Thunder Clap", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 8 && !me.hasAura("Sweeping Strikes")),
       // actions.colossus_sweep+=/rend,if=dot.rend.remains<=5
-      spell.cast("Rend", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 5000),
-      // actions.colossus_sweep+=/Whirlwind,if=talent.fervor_of_battle
+      spell.cast("Rend", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 5),
+      // actions.colossus_sweep+=/cleave,if=talent.fervor_of_battle
+      spell.cast("Cleave", on => this.getCurrentTarget(), req => this.hasTalent("Fervor of Battle")),
+      // actions.colossus_sweep+=/whirlwind,if=talent.fervor_of_battle
       spell.cast("Whirlwind", on => this.getCurrentTarget(), req => this.hasTalent("Fervor of Battle")),
       // actions.colossus_sweep+=/slam
-      spell.cast("Slam", on => this.getCurrentTarget(), req => !me.hasAura("Fervor of Battle")),
+      spell.cast("Slam", on => this.getCurrentTarget()),
     );
   }
 
   colossusSt() {
     return new bt.Selector(
       // actions.colossus_st=rend,if=dot.rend.remains<=gcd
-      spell.cast("Rend", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 1500),
+      spell.cast("Rend", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 4),
       // actions.colossus_st+=/thunderous_roar
       spell.cast("Thunderous Roar"),
       // actions.colossus_st+=/champions_spear
@@ -269,7 +265,7 @@ export class WarriorArmsNewBehavior extends Behavior {
       // actions.colossus_st+=/overpower
       spell.cast("Overpower", on => this.getCurrentTarget()),
       // actions.colossus_st+=/rend,if=dot.rend.remains<=gcd*5
-      spell.cast("Rend", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 5000),
+      spell.cast("Rend", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 5),
       // actions.colossus_st+=/slam
       spell.cast("Slam", on => this.getCurrentTarget()),
     );
@@ -278,7 +274,7 @@ export class WarriorArmsNewBehavior extends Behavior {
   slayerAoe() {
     return new bt.Selector(
       // actions.slayer_aoe=thunder_clap,if=!dot.rend.remains
-      spell.cast("Thunder Clap", on => this.getCurrentTarget(), req => !this.getCurrentTarget().hasAuraByMe("Rend")),
+      spell.cast("Thunder Clap", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 4),
       // actions.slayer_aoe+=/sweeping_strikes
       spell.cast("Sweeping Strikes"),
       // actions.slayer_aoe+=/thunderous_roar
@@ -291,8 +287,8 @@ export class WarriorArmsNewBehavior extends Behavior {
       spell.cast("Warbreaker"),
       // actions.slayer_aoe+=/colossus_smash
       spell.cast("Colossus Smash"),
-      // actions.slayer_aoe+=/Whirlwind
-      spell.cast("Whirlwind", on => this.getCurrentTarget()),
+      // actions.slayer_aoe+=/cleave
+      spell.cast("Cleave", on => this.getCurrentTarget()),
       // actions.slayer_aoe+=/overpower,if=buff.sweeping_strikes.up
       spell.cast("Overpower", on => this.getCurrentTarget(), req => me.hasAura("Sweeping Strikes")),
       // actions.slayer_aoe+=/execute,if=buff.sudden_death.up&buff.imminent_demise.stack<3
@@ -302,9 +298,9 @@ export class WarriorArmsNewBehavior extends Behavior {
       // actions.slayer_aoe+=/skullsplitter,if=buff.sweeping_strikes.up
       spell.cast("Skullsplitter", on => this.getCurrentTarget(), req => me.hasAura("Sweeping Strikes")),
       // actions.slayer_aoe+=/execute,if=buff.sweeping_strikes.up&debuff.executioners_precision.stack<2
-      spell.cast("Execute", on => this.getCurrentTarget(), req => me.hasAura("Sweeping Strikes") && this.getDebuffStacks("Executioner's Precision") < 2),
+      spell.cast("Execute", on => this.getCurrentTarget(), req => me.hasAura("Sweeping Strikes") && this.getDebuffStacks("Executioners Precision") < 2),
       // actions.slayer_aoe+=/mortal_strike,if=buff.sweeping_strikes.up&debuff.executioners_precision.stack=2
-      spell.cast("Mortal Strike", on => this.getCurrentTarget(), req => me.hasAura("Sweeping Strikes") && this.getDebuffStacks("Executioner's Precision") === 2),
+      spell.cast("Mortal Strike", on => this.getCurrentTarget(), req => me.hasAura("Sweeping Strikes") && this.getDebuffStacks("Executioners Precision") === 2),
       // actions.slayer_aoe+=/execute,if=debuff.marked_for_execution.up
       spell.cast("Execute", on => this.getCurrentTarget(), req => this.getDebuffStacks("Marked for Execution") === 3),
       // actions.slayer_aoe+=/mortal_strike,if=buff.sweeping_strikes.up
@@ -330,12 +326,12 @@ export class WarriorArmsNewBehavior extends Behavior {
     );
   }
 
-slayerExecute() {
+  slayerExecute() {
     return new bt.Selector(
       // actions.slayer_execute=sweeping_strikes,if=active_enemies=2
       spell.cast("Sweeping Strikes", on => this.getCurrentTarget(), req => this.getEnemiesInRange(8) === 2),
       // actions.slayer_execute+=/rend,if=dot.rend.remains<=gcd&!talent.bloodletting
-      spell.cast("Rend", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 1500 && !this.hasTalent("Bloodletting")),
+      spell.cast("Rend", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 4 && !this.hasTalent("Bloodletting")),
       // actions.slayer_execute+=/thunderous_roar
       spell.cast("Thunderous Roar"),
       // actions.slayer_execute+=/champions_spear
@@ -347,11 +343,11 @@ slayerExecute() {
       // actions.slayer_execute+=/colossus_smash
       spell.cast("Colossus Smash"),
       // actions.slayer_execute+=/execute,if=buff.juggernaut.remains<=gcd
-      spell.cast("Execute", on => this.getCurrentTarget(), req => this.getAuraRemainingTime("Juggernaut") <= 1500),
+      spell.cast("Execute", on => this.getCurrentTarget(), req => this.getAuraRemainingTime("Juggernaut") <= 1.5),
       // actions.slayer_execute+=/bladestorm,if=debuff.executioners_precision.stack=2&debuff.colossus_smash.remains>4|debuff.executioners_precision.stack=2&cooldown.colossus_smash.remains>15|!talent.executioners_precision
-      spell.cast("Bladestorm", on => this.getCurrentTarget(), req => this.getDebuffStacks("Executioner's Precision") === 2 && this.getDebuffRemainingTime("Colossus Smash") > 4000 || this.getDebuffStacks("Executioner's Precision") === 2 && spell.getCooldown("Colossus Smash").timeleft > 1.5 || !this.hasTalent("Executioner's Precision")),
+      spell.cast("Bladestorm", on => this.getCurrentTarget(), req => this.getDebuffStacks("Executioners Precision") === 2 && this.getDebuffRemainingTime("Colossus Smash") > 4 || this.getDebuffStacks("Executioners Precision") === 2 && spell.getCooldown("Colossus Smash").timeleft > 15 || !this.hasTalent("Executioners Precision")),
       // actions.slayer_execute+=/mortal_strike,if=debuff.executioners_precision.stack=2&(buff.lethal_blows.stack=2|!set_bonus.tww1_4pc)
-      spell.cast("Mortal Strike", on => this.getCurrentTarget(), req => this.getDebuffStacks("Executioner's Precision") === 2 && (this.getAuraStacks("Lethal Blows") === 2) || !me.hasAura("453637")),
+      spell.cast("Mortal Strike", on => this.getCurrentTarget(), req => this.getDebuffStacks("Executioners Precision") === 2 && (this.getAuraStacks("Lethal Blows") === 2) || !me.hasAura("453637")),
       // actions.slayer_execute+=/skullsplitter,if=rage<85
       spell.cast("Skullsplitter", on => this.getCurrentTarget(), req => me.powerByType(PowerType.Rage) < 85),
       // actions.slayer_execute+=/overpower,if=buff.opportunist.up&rage<80&buff.martial_prowess.stack<2
@@ -361,7 +357,7 @@ slayerExecute() {
       // actions.slayer_execute+=/overpower
       spell.cast("Overpower", on => this.getCurrentTarget()),
       // actions.slayer_execute+=/mortal_strike,if=!talent.executioners_precision
-      spell.cast("Mortal Strike", on => this.getCurrentTarget(), req => !this.hasTalent("Executioner's Precision")),
+      spell.cast("Mortal Strike", on => this.getCurrentTarget(), req => !this.hasTalent("Executioners Precision")),
       // actions.slayer_execute+=/storm_bolt,if=buff.bladestorm.up
       spell.cast("Storm Bolt", on => this.getCurrentTarget(), req => me.hasAura("Bladestorm"))
     );
@@ -374,7 +370,7 @@ slayerExecute() {
       // actions.slayer_sweep+=/sweeping_strikes
       spell.cast("Sweeping Strikes"),
       // actions.slayer_sweep+=/rend,if=dot.rend.remains<=gcd
-      spell.cast("Rend", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 1500),
+      spell.cast("Rend", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 4),
       // actions.slayer_sweep+=/champions_spear
       spell.cast("Champion's Spear", on => this.getCurrentTarget(), req => this.shouldUseCooldowns()),
       // actions.slayer_sweep+=/avatar
@@ -393,18 +389,20 @@ slayerExecute() {
       spell.cast("Overpower", on => this.getCurrentTarget(), req => this.hasTalent("Dreadnaught") || me.hasAura("Opportunist")),
       // actions.slayer_sweep+=/mortal_strike
       spell.cast("Mortal Strike", on => this.getCurrentTarget()),
-      // actions.slayer_sweep+=/Whirlwind,if=talent.fervor_of_battle
-      spell.cast("Whirlwind", on => this.getCurrentTarget(), req => this.hasTalent("Fervor of Battle")),
+      // actions.slayer_sweep+=/cleave,if=talent.fervor_of_battle
+      spell.cast("Cleave", on => this.getCurrentTarget(), req => this.hasTalent("Fervor of Battle")),
       // actions.slayer_sweep+=/execute
       spell.cast("Execute", on => this.getCurrentTarget()),
       // actions.slayer_sweep+=/overpower
       spell.cast("Overpower", on => this.getCurrentTarget()),
       // actions.slayer_sweep+=/thunder_clap,if=dot.rend.remains<=8&buff.sweeping_strikes.down
-      spell.cast("Thunder Clap", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 8000 && !me.hasAura("Sweeping Strikes")),
+      spell.cast("Thunder Clap", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 8 && !me.hasAura("Sweeping Strikes")),
       // actions.slayer_sweep+=/rend,if=dot.rend.remains<=5
-      spell.cast("Rend", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 5000),
+      spell.cast("Rend", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 5),
       // actions.slayer_sweep+=/whirlwind,if=talent.fervor_of_battle
       spell.cast("Whirlwind", on => this.getCurrentTarget(), req => this.hasTalent("Fervor of Battle")),
+      // actions.slayer_sweep+=/slam
+      spell.cast("Slam"),
       // actions.slayer_sweep+=/storm_bolt,if=buff.bladestorm.up
       spell.cast("Storm Bolt", on => this.getCurrentTarget(), req => me.hasAura("Bladestorm"))
     );
@@ -413,7 +411,7 @@ slayerExecute() {
   slayerSt() {
     return new bt.Selector(
       // actions.slayer_st=rend,if=dot.rend.remains<=gcd
-      spell.cast("Rend", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 1500),
+      spell.cast("Rend", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 4),
       // actions.slayer_st+=/thunderous_roar
       spell.cast("Thunderous Roar"),
       // actions.slayer_st+=/champions_spear
@@ -439,9 +437,9 @@ slayerExecute() {
       // actions.slayer_st+=/overpower
       spell.cast("Overpower", on => this.getCurrentTarget()),
       // actions.slayer_st+=/rend,if=dot.rend.remains<=gcd*5
-      spell.cast("Rend", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 5000),
-      // actions.slayer_st+=/Whirlwind,if=buff.martial_prowess.down
-      spell.cast("Whirlwind", on => this.getCurrentTarget(), req => !me.hasAura("Martial Prowess")),
+      spell.cast("Rend", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 5),
+      // actions.slayer_st+=/cleave,if=buff.martial_prowess.down
+      spell.cast("Cleave", on => this.getCurrentTarget(), req => !me.hasAura("Martial Prowess")),
       // actions.slayer_st+=/slam
       spell.cast("Slam"),
       // actions.slayer_st+=/storm_bolt,if=buff.bladestorm.up
@@ -449,39 +447,13 @@ slayerExecute() {
     );
   }
 
-  update() {
-    const result = super.update();
-    this.drawTargetNgon();
-    return result;
-  }
-
-  drawTargetNgon() {
-    const currentTime = Date.now();
-    if (currentTime - this.lastDrawTime >= this.drawInterval) {
-      const target = this.getCurrentTarget();
-      if (target && !target.dead && target.health > 0) {
-        const boundingRadius = target.boundingRadius || 1;
-        const interactionRadius = boundingRadius; // 5 yards added to bounding radius
-        drawNgonAroundTarget(target, interactionRadius);
-      }
-      this.lastDrawTime = currentTime;
-    }
-  }
-
   getCurrentTarget() {
-    let target;
-  
-    // Check if current target is valid and alive
-    if (me.targetUnit && !me.targetUnit.dead && me.targetUnit.health > 0 && me.targetUnit.distanceTo(me) <= 10) {
-      target = me.targetUnit;
-    } else {
-      // Find the closest living enemy
-      target = combat.targets
-        .filter(unit => !unit.dead && unit.health > 0 && unit.distanceTo(me) <= 10 && me.isFacing(unit) && me.inCombatWith(unit))
-        .sort((a, b) => a.distanceTo(me) - b.distanceTo(me))[0] || me.targetUnit;
+    const targetPredicate = unit => common.validTarget(unit) && me.isWithinMeleeRange(unit) && me.isFacing(unit);
+    const target = me.target;
+    if (target !== null && targetPredicate(target)) {
+      return target;
     }
-  
-    return target;
+    return combat.targets.find(targetPredicate) || null;
   }
 
   getEnemiesInRange(range) {
@@ -490,37 +462,29 @@ slayerExecute() {
 
   shouldUseCooldowns() {
     const target = this.getCurrentTarget();
-    return target?.timeToDeath() > 15 && !me.hasAura("Smothering Shadows");
+    return target.timeToDeath() > 15 && !me.hasAura("Smothering Shadows");
   }
 
   getAuraRemainingTime(auraName) {
     const aura = me.getAura(auraName);
-    const remaining = aura ? aura.remaining : 0;
-    console.debug(`Aura ${auraName} remaining time: ${remaining}ms`);
-    return remaining;
+    return aura ? aura.remaining : 0;
   }
-  
+
   getDebuffRemainingTime(debuffName) {
     const target = this.getCurrentTarget();
     const debuff = target ? target.getAura(debuffName) : null;
-    const remaining = debuff ? debuff.remaining : 0;
-    console.debug(`Debuff ${debuffName} remaining time: ${remaining}ms`);
-    return remaining;
+    return debuff ? debuff.remaining : 0;
   }
-  
+
   getDebuffStacks(debuffName) {
     const target = this.getCurrentTarget();
     const debuff = target ? target.getAura(debuffName) : null;
-    const stacks = debuff ? debuff.stacks : 0;
-    console.debug(`Debuff ${debuffName} stacks: ${stacks}`);
-    return stacks;
+    return debuff ? debuff.stacks : 0;
   }
-  
+
   getAuraStacks(auraName) {
     const aura = me.getAura(auraName);
-    const stacks = aura ? aura.stacks : 0;
-    console.debug(`Aura ${auraName} stacks: ${stacks}`);
-    return stacks;
+    return aura ? aura.stacks : 0;
   }
 
   hasTalent(talentName) {
@@ -530,7 +494,7 @@ slayerExecute() {
   isExecutePhase() {
     const target = this.getCurrentTarget();
     if (target && target.distanceTo(me) <= 8) {
-    return (this.hasTalent("Massacre") && target.pctHealth < 35) || target.pctHealth < 20;
+      return (this.hasTalent("Massacre") && target.pctHealth < 35) || target.pctHealth < 20;
     }
   }
 

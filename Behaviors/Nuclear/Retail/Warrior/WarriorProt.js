@@ -16,9 +16,6 @@ export class WarriorProtectionBehavior extends Behavior {
       common.waitForNotMounted(),
       common.waitForTarget(),
       common.waitForCastOrChannel(),
-      spell.cast("Battle Shout", () => !me.hasAura("Battle Shout")),
-      spell.cast("Rallying Cry", () => me.pctHealth < 30),
-      spell.cast("Victory Rush", () => me.pctHealth < 70),
       new bt.Decorator(
         () => Boolean(me.isWithinMeleeRange(me.target)),
         new bt.Selector(
@@ -82,8 +79,8 @@ export class WarriorProtectionBehavior extends Behavior {
   genericRotation() {
     return new bt.Selector(
       spell.cast("Thunder Blast", () => Boolean(me.getAuraStacks("Thunder Blast") === 2 && me.getAuraStacks("Burst of Power") <= 1 && me.hasAura("Avatar") && me.hasAura("Unstoppable Force"))),
-      spell.cast("Shield Slam", () => Boolean(me.getAuraStacks("Burst of Power") === 2 && me.getAuraStacks("Thunder Blast") <= 1 || me.hasAura("Violent Outburst") || me.powerByType(PowerType.Rage) <= 70 && !me.hasAura("Lightning Strikes"))),
-      spell.cast("Execute", () => Boolean(me.powerByType(PowerType.Rage) >= 70 || me.powerByType(PowerType.Rage) >= 40 && spell.getCooldown("Shield Slam").remaining && !me.hasAura("Lightning Strikes") || me.powerByType(PowerType.Rage) >= 50 && spell.getCooldown("Shield Slam").remaining || me.hasAura("Sudden Death") && me.hasAura("Sudden Death"))),
+      spell.cast("Shield Slam", () => Boolean(me.getAuraStacks("Burst of Power") === 2 && me.getAuraStacks("Thunder Blast") <= 1 || me.hasAura("Violent Outburst") || me.powerByType(PowerType.Rage) <= 70 && me.hasAura("Demolish"))),
+      spell.cast("Execute", () => Boolean(me.powerByType(PowerType.Rage) >= 70 || me.powerByType(PowerType.Rage) >= 40 && spell.getCooldown("Shield Slam").remaining && me.hasAura("Demolish") || me.powerByType(PowerType.Rage) >= 50 && spell.getCooldown("Shield Slam").remaining || me.hasAura("Sudden Death") && me.hasAura("Sudden Death"))),
       spell.cast("Shield Slam"),
       spell.cast("Thunder Blast", () => Boolean(this.getAuraRemainingTime("Rend") <= 2 && !me.hasAura("Violent Outburst"))),
       spell.cast("Thunder Blast"),
