@@ -76,7 +76,7 @@ export class ShamanRestorationBehavior extends Behavior {
             )
           ),
           new bt.Decorator(
-            () => !this.isHealingNeeded() && (me.inCombat() || this.getTank() && this.getTank().inCombat()),
+            () => (me.inCombat() || this.getTank() && this.getTank().inCombat()),
             new bt.Selector(
               this.damageRotation()
             )
@@ -88,7 +88,7 @@ export class ShamanRestorationBehavior extends Behavior {
   
   isHealingNeeded() {
     const lowestHealth = this.getLowestHealthPercentage();
-    return lowestHealth <= 100 || 
+    return lowestHealth <= 90 || 
            lowestHealth < Settings.RestoShamanEmergencyHealingThreshold ||
            lowestHealth < Settings.RestoShamanAncestralGuidanceThreshold ||
            lowestHealth < Settings.RestoShamanAscendanceThreshold ||
@@ -142,8 +142,6 @@ export class ShamanRestorationBehavior extends Behavior {
           })
         )
       ),
-
-      // cast healing rain on tank if they are in combat and i have aura Surging Totem
       spell.cast("Healing Rain", on => this.getLowestHealthAlly(), req => {
         const tank = this.getTank();
         return tank && tank.inCombat() && me.hasAura("Surging Totem");
@@ -169,11 +167,18 @@ export class ShamanRestorationBehavior extends Behavior {
         return lowestHealthAlly && lowestHealthAlly.pctHealth < Settings.RestoShamanHealingWaveThreshold;
       }),
       spell.cast("Wellspring", on => this.getLowestHealthAlly()),
-      // spell.cast("Downpour", on => this.getBestDownpourTarget(), req => {
-      //   const target = this.getBestHealingRainTarget();
-      //   const currentTarget = this.getCurrentTarget();
-      //   return target && currentTarget && target.pctHealth < 90 && target.distanceTo(currentTarget) <= 10;
-      // })
+      spell.cast("Downpour", on => this.getBestDownpourTarget(), req => {
+        const healingRainTotem = this.getTotemByName("Healing Rain");
+        const surgingTotem = this.getTotemByName("Surging Totem");
+        
+        const checkDamagedAlliesAroundTotem = (totem) => {
+          if (!totem) return false;
+          const alliesNearTotem = this.getAlliesInRange(totem, 11);
+          return alliesNearTotem.some(ally => ally.pctHealth < 90);
+        };
+      
+        return checkDamagedAlliesAroundTotem(healingRainTotem) || checkDamagedAlliesAroundTotem(surgingTotem);
+      })
     );
   }
 
@@ -186,7 +191,7 @@ export class ShamanRestorationBehavior extends Behavior {
         new bt.Selector(
           spell.cast("Healing Rain", on => this.getCurrentTarget(), req => {
             const target = this.getCurrentTarget();
-            return target && me.getAttackableUnitsAroundUnitCount(target, 10) >= 3 && me.hasAura("Acid Rain");
+            return target && this.getAttackableUnitsAroundUnit(target, 10) >= 3 && me.hasAura("Acid Rain");
           }),
           new bt.Action(() => {
             this.lastHealingRainCast = wow.frameTime;
@@ -196,7 +201,7 @@ export class ShamanRestorationBehavior extends Behavior {
       ),
       spell.cast("Chain Lightning", on => this.getCurrentTarget(), req => {
         const target = this.getCurrentTarget();
-        return target && me.getAttackableUnitsAroundUnitCount(target, 10) >= 3;
+        return target && this.getAttackableUnitsAroundUnit(target, 10) >= 3;
       }),
       spell.cast("Lava Burst", on => this.getLavaBurstTarget(), req => this.getLavaBurstTarget() !== null),
       spell.cast("Lightning Bolt", on => this.getCurrentTarget())
@@ -359,6 +364,12 @@ export class ShamanRestorationBehavior extends Behavior {
     return units.find(unit => unit && !unit.hasAuraByMe("Flame Shock") && me.isFacing(unit) && me.canAttack(unit)) || null;
   }
 
+  getAttackableUnitsAroundUnit(unit, range) {
+    if (!unit) return 0;
+    const units = me.getUnitsAround(range);
+    return units.filter(u => u && u.distanceTo(unit) <= range && me.canAttack(u)).length;
+  }
+
   getLavaBurstTarget() {
     if (me.target && me.targetUnit && me.targetUnit.hasAuraByMe("Flame Shock")) {
       return me.target;
@@ -404,6 +415,26 @@ export class ShamanRestorationBehavior extends Behavior {
   }
 
   getBestDownpourTarget() {
-    return this.getBestHealingRainTarget(); // Using the same logic as Healing Rain for now
+    const healingRainTotem = this.getTotemByName("Healing Rain");
+    const surgingTotem = this.getTotemByName("Surging Totem");
+    
+    const findBestTargetAroundTotem = (totem) => {
+      if (!totem) return null;
+      const alliesNearTotem = this.getAlliesInRange(totem, 11);
+      return alliesNearTotem.reduce((best, current) => {
+        if (current.pctHealth < 90 && (!best || current.pctHealth < best.pctHealth)) {
+          return current;
+        }
+        return best;
+      }, null);
+    };
+  
+    const targetNearHealingRain = findBestTargetAroundTotem(healingRainTotem);
+    const targetNearSurgingTotem = findBestTargetAroundTotem(surgingTotem);
+  
+    // Return the target with lower health, or null if no valid targets
+    return (targetNearHealingRain && targetNearSurgingTotem) 
+      ? (targetNearHealingRain.pctHealth < targetNearSurgingTotem.pctHealth ? targetNearHealingRain : targetNearSurgingTotem)
+      : (targetNearHealingRain || targetNearSurgingTotem);
   }
 }
