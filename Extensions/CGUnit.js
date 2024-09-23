@@ -77,6 +77,22 @@ Object.defineProperties(wow.CGUnit.prototype, {
     }
   },
 
+  effectiveHealthPercent: {
+    /** @this {wow.CGUnit} */
+    get: function () {
+      if (this.health <= 1) {
+        return this.health;
+      }
+      let effectiveHealth = this.health;
+      this.healPredictions.forEach(prediction => {
+        effectiveHealth += prediction.amount;
+      });
+      //effectiveHealth += this.totalAbsorb;
+      effectiveHealth -= this.totalHealAbsorb;
+      return (effectiveHealth * 100.0) / this.maxHealth;
+    }
+  },
+
   /**
    * Estimate the time to death for this unit based on its current health percentage and the elapsed time.
    *
@@ -101,7 +117,7 @@ Object.defineProperties(wow.CGUnit.prototype, {
       }
 
       // Ensure we have enough data points to calculate TTD
-      if (this._ttdHistory.length < 60) {
+      if (this._ttdHistory.length < 300) {
         return undefined;
       }
 
