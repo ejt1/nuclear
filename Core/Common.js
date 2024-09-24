@@ -116,7 +116,7 @@ class Common {
    */
   static useItemByName(name, target = undefined) {
     const item = this.getItemByName(name);
-    
+
     if (!item) {
       console.debug(`Item "${name}" not found.`);
       return false;
@@ -161,11 +161,11 @@ class Common {
 
     // Iterate over all objects in ObjectManager
     objMgr.objects.forEach((obj) => {
-      if (obj instanceof wow.CGItem && 
-          obj.name === name && 
-          obj.owner && obj.containedIn &&
-          obj.owner.equals(obj.containedIn) &&
-          obj.owner.equals(me.guid)) {
+      if (obj instanceof wow.CGItem &&
+        obj.name === name &&
+        obj.owner && obj.containedIn &&
+        obj.owner.equals(obj.containedIn) &&
+        obj.owner.equals(me.guid)) {
         foundItem = obj; // Set the found item
       }
     });
@@ -184,38 +184,37 @@ class Common {
   static useEquippedItemByName(name, targetSelector = () => undefined) {
     return new bt.Action(() => {
       const item = this.getEquippedItemByName(name);
-      
-      if (!item) {
+
+      if (!item || item === null) {
         //console.debug(`Equipped item "${name}" not found.`);
         return bt.Status.Failure;
       }
-  
+
       if (!item.useSpell) {
         //console.debug(`Equipped item "${name}" is not usable.`);
         return bt.Status.Failure;
       }
-  
+
       // Check the cooldown of the item's use spell
-      const itemSpell = spell.getSpell(item.useSpell);
-      if (!itemSpell.cooldown.ready) {
+      if (!item.cooldown.ready) {
         //console.debug(`Equipped item "${name}" is on cooldown.`);
         return bt.Status.Failure;
       }
-  
+
       // Check if the item has charges (if applicable)
       if (item.enchantment && item.enchantment.charges === 0) {
         //console.debug(`Equipped item "${name}" has no charges left.`);
         return bt.Status.Failure;
       }
-  
+
       // Check if the item has expired (if applicable)
       if (item.expiration !== 0 && item.expiration <= wow.frameTime) {
         //console.debug(`Equipped item "${name}" has expired.`);
         return bt.Status.Failure;
       }
-  
+
       const target = targetSelector();
-  
+
       // Range check
       if (target && target instanceof wow.CGUnit) {
         const range = itemSpell.range(target);
@@ -224,7 +223,7 @@ class Common {
           return bt.Status.Failure;
         }
       }
-  
+
       // Attempt to use the item
       const success = item.use(target);
       if (success) {

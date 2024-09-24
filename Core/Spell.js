@@ -518,9 +518,9 @@ class Spell extends wow.EventListener {
    * @param {number | string} spellNameOrId - The name or ID of the spell.
    * @returns {number} - The charges
    */
-  getCharges(spellNameOrId) {
-    const spell = this.getSpell(spellNameOrId);
-    return spell.charges.charges
+  static getCharges(spellNameOrId) {
+    const spell = Spell.getSpell(spellNameOrId);
+    return spell?.charges.charges
   }
 
   /**

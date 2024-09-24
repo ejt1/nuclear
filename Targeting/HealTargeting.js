@@ -8,7 +8,7 @@ import PartyMember from "@/Extensions/PartyMember";
 class HealTargeting extends Targeting {
   constructor() {
     super();
-    /** @type {Array<{ u: wow.CGUnit, priority: number}>} */
+    /** @type {Array<wow.CGUnit}>} */
     this.priorityList = new Array(); // Treating this as an array consistently
     this.friends = {
       /** @type {Array<wow.CGUnit>} */
@@ -32,10 +32,10 @@ class HealTargeting extends Targeting {
   getPriorityTarget() {
     if (this.priorityList.length > 0) {
       // Filter out targets with healthPct greater than 0
-      const validTargets = this.priorityList.filter(entry => entry.predictedHealthPercent > 0);
+      const validTargets = this.priorityList.filter(entry => entry.effectiveHealthPercent > 0);
 
       // Sort valid targets by healthPct in ascending order
-      validTargets.sort((a, b) => a.predictedHealthPercent - b.predictedHealthPercent);
+      validTargets.sort((a, b) => a.effectiveHealthPercent - b.effectiveHealthPercent);
 
       // Return the unit with the lowest healthPct, or undefined if no valid targets exist
       return validTargets.length > 0 ? validTargets[0] : undefined;
@@ -60,6 +60,7 @@ class HealTargeting extends Targeting {
       Healers: new Array(),
       All: new Array()
     };
+    /** @type {wow.CGUnit} */
     this.healTargets = new Array();
     this.afflicted = new Array();
   }
@@ -99,6 +100,7 @@ class HealTargeting extends Targeting {
 
       if (me.canAttack(u)) return false;
       if (u.deadOrGhost || u.health <= 1) return false;
+      if (u.hasVisibleAura("Spirit of Redemption")) return false;
       if (me.distanceTo(u) > 40) return false;
       if (!me.withinLineOfSight(u)) return false;
       if (u.isHealImmune()) return false;
@@ -161,7 +163,7 @@ class HealTargeting extends Targeting {
         }
       }
 
-      priority += (100 - u.predictedHealthPercent); // Higher priority for lower health
+      priority += (100 - u.effectiveHealthPercent); // Higher priority for lower health
       priority -= ((100 - me.pctPower) * (manaMulti / 100)); // Lower priority based on mana
 
       if (priority > 0 || u.inCombat()) {
