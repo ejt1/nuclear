@@ -73,6 +73,7 @@ export class PriestDiscipline extends Behavior {
       spell.cast("Penance", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 65),
       spell.cast("Flash Heal", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 55),
       spell.dispel("Purify", true, DispelPriority.Medium, true, WoWDispelType.Magic),
+      spell.dispel("Dispel Magic", false, DispelPriority.Medium, true, WoWDispelType.Magic),
     );
   }
 
@@ -190,11 +191,11 @@ export class PriestDiscipline extends Behavior {
   }
 
   shouldCastRadiance(charges) {
-    const healTarget = h.getPriorityTarget()
+    const healTarget = h.getPriorityTarget();
     if (!healTarget) {
       return false;
     }
-    return healTarget.pctHealth < 55 && spell.getCharges("Power Word: Radiance") === charges
+    return healTarget.pctHealth < 59 && spell.getCharges("Power Word: Radiance") === charges;
   }
 
   // todo - probably move this somewhere useful rather than here?
