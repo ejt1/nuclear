@@ -1,10 +1,10 @@
 import * as bt from './BehaviorTree';
-import {me} from './ObjectManager';
-import {losExclude} from "../Data/Exclusions";
-import {DispelPriority, dispels} from "../Data/Dispels";
-import {interrupts} from '@/Data/Interrupts';
+import { me } from './ObjectManager';
+import { losExclude } from "../Data/Exclusions";
+import { DispelPriority, dispels } from "../Data/Dispels";
+import { interrupts } from '@/Data/Interrupts';
 import Settings from './Settings';
-import {defaultHealTargeting as Heal} from '@/Targeting/HealTargeting';
+import { defaultHealTargeting as Heal } from '@/Targeting/HealTargeting';
 import CommandListener from './CommandListener';
 
 class Spell extends wow.EventListener {
