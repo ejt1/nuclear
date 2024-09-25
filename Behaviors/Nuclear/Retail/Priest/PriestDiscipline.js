@@ -8,7 +8,6 @@ import {defaultHealTargeting as h} from "@/Targeting/HealTargeting";
 import {DispelPriority} from "@/Data/Dispels"
 import {WoWDispelType} from "@/Enums/Auras";
 import spellBlacklist from "@/Data/PVPData";
-import Spell from "@/Core/Spell";
 
 const auras = {
   painSuppression: 33206,
