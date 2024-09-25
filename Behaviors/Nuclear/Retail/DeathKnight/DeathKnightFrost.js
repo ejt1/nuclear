@@ -47,13 +47,15 @@ export class DeathKnightFrostBehavior extends Behavior {
               spell.cast("Empower Rune Weapon", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && me.getReadyRunes() < 5),
             )
           ),
-          spell.cast("Soul Reaper", on => me.target, ret => me.target.pctHealth < 40),
+          spell.cast("Soul Reaper", on => me.target, ret => me.target.pctHealth < 40 && me.getReadyRunes() > 2),
           spell.cast("Remorseless Winter", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
           this.multiTargetRotation(),
           spell.cast("Rune Strike", ret => me.hasAura(auras.killingMachine)),
-          spell.cast("Frost Strike", ret => me.targetUnit?.getAura(auras.razorice)?.stacks === 5 || me.getReadyRunes() < 2),
-          spell.cast("Howling Blast", ret => me.hasAura(auras.rime)),
+          // only applies if you have the shattering frost talent
+          // spell.cast("Frost Strike", ret => me.targetUnit?.getAura(auras.razorice)?.stacks === 5 || me.getReadyRunes() < 2),
+          spell.cast("Glacial Advance", ret => me.targetUnit?.getAura(auras.razorice)?.stacks < 5 || me.getReadyRunes() < 2),
           spell.cast("Frost Strike", ret => me.power > 45),
+          spell.cast("Howling Blast", ret => me.hasAura(auras.rime)),
           spell.cast("Chains of Ice", on => me.targetUnit, ret => {
             const coldHeart = me.getAura(auras.coldHeart);
             return !!(coldHeart && coldHeart.stacks === 20);

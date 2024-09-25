@@ -1,10 +1,10 @@
 import * as bt from './BehaviorTree';
-import objMgr, { me } from './ObjectManager';
-import { losExclude } from "../Data/Exclusions";
-import { DispelPriority, dispels } from "../Data/Dispels";
-import { interrupts } from '@/Data/Interrupts';
+import {me} from './ObjectManager';
+import {losExclude} from "../Data/Exclusions";
+import {DispelPriority, dispels} from "../Data/Dispels";
+import {interrupts} from '@/Data/Interrupts';
 import Settings from './Settings';
-import { defaultHealTargeting as Heal } from '@/Targeting/HealTargeting';
+import {defaultHealTargeting as Heal} from '@/Targeting/HealTargeting';
 import CommandListener from './CommandListener';
 
 class Spell extends wow.EventListener {
@@ -14,6 +14,7 @@ class Spell extends wow.EventListener {
     this._lastCastTimes = new Map();
     this._lastSuccessfulCastTimes = new Map();
   }
+
   /** @type {{get: function(): (wow.CGUnit|undefined)}} */
   _currentTarget;
 
@@ -75,7 +76,7 @@ class Spell extends wow.EventListener {
 
     // Check if the last argument is an options object
     if (typeof rest[rest.length - 1] === 'object') {
-      options = { ...options, ...rest.pop() };
+      options = {...options, ...rest.pop()};
     }
 
     sequence.addChild(new bt.Action(() => {
@@ -246,14 +247,14 @@ class Spell extends wow.EventListener {
   }
 
   /**
- * Helper function to retrieve a spell by ID or name.
- * This function first tries to retrieve the spell directly by ID or name. If not found,
- * it then iterates through the player's spellbook and constructs spells using their
- * override ID to check for matches.
- *
- * @param {number | string} spellNameOrId - The spell ID or name.
- * @returns {wow.Spell | null} - The spell object, or null if not found.
- */
+   * Helper function to retrieve a spell by ID or name.
+   * This function first tries to retrieve the spell directly by ID or name. If not found,
+   * it then iterates through the player's spellbook and constructs spells using their
+   * override ID to check for matches.
+   *
+   * @param {number | string} spellNameOrId - The spell ID or name.
+   * @returns {wow.Spell | null} - The spell object, or null if not found.
+   */
   getSpell(spellNameOrId) {
     let spell;
 
@@ -344,18 +345,18 @@ class Spell extends wow.EventListener {
   }
 
   /**
-  * Attempts to interrupt a casting or channeling spell on nearby enemies or players.
-  *
-  * This method checks for units around the player within the interrupt spell's range.
-  * It attempts to interrupt spells based on the configured interrupt mode and percentage.
-  * For cast spells, it uses the configured interrupt percentage.
-  * For channeled spells, it checks if the channel time is greater than a randomized value
-  * between 300 and 1100 milliseconds (700 ± 400).
-  *
-  * @param {number | string} spellNameOrId - The ID or name of the interrupt spell to cast.
-  * @param {boolean} [interruptPlayersOnly=false] - If set to true, only player units will be interrupted.
-  * @returns {bt.Sequence} - A behavior tree sequence that handles the interrupt logic.
-  */
+   * Attempts to interrupt a casting or channeling spell on nearby enemies or players.
+   *
+   * This method checks for units around the player within the interrupt spell's range.
+   * It attempts to interrupt spells based on the configured interrupt mode and percentage.
+   * For cast spells, it uses the configured interrupt percentage.
+   * For channeled spells, it checks if the channel time is greater than a randomized value
+   * between 300 and 1100 milliseconds (700 ± 400).
+   *
+   * @param {number | string} spellNameOrId - The ID or name of the interrupt spell to cast.
+   * @param {boolean} [interruptPlayersOnly=false] - If set to true, only player units will be interrupted.
+   * @returns {bt.Sequence} - A behavior tree sequence that handles the interrupt logic.
+   */
   interrupt(spellNameOrId, interruptPlayersOnly = false) {
     return new bt.Sequence(
       new bt.Action(() => {
@@ -429,14 +430,14 @@ class Spell extends wow.EventListener {
   }
 
   /**
-    * Dispel a debuff or buff from units, depending on if we are dispelling friends or enemies.
-    * @param {number | string} spellNameOrId - The spell ID or name.
-    * @param {boolean} friends - If true, dispel friendly units. If false, dispel enemies (for purge/soothe).
-    * @param {number} priority - The priority level for dispel. Defaults to DispelPriority.Low if not provided.
-    * @param {boolean} playersOnly - dispel only players - used for purge.
-    * @param {...number} types - The types of dispel we can use, e.g., Magic, Curse, Disease, Poison.
-    * @returns {bt.Status} - Whether a dispel was cast.
-    */
+   * Dispel a debuff or buff from units, depending on if we are dispelling friends or enemies.
+   * @param {number | string} spellNameOrId - The spell ID or name.
+   * @param {boolean} friends - If true, dispel friendly units. If false, dispel enemies (for purge/soothe).
+   * @param {number} priority - The priority level for dispel. Defaults to DispelPriority.Low if not provided.
+   * @param {boolean} playersOnly - dispel only players - used for purge.
+   * @param {...number} types - The types of dispel we can use, e.g., Magic, Curse, Disease, Poison.
+   * @returns {bt.Status} - Whether a dispel was cast.
+   */
   dispel(spellNameOrId, friends, priority = DispelPriority.Low, playersOnly = false, ...types) {
     return new bt.Sequence(
       new bt.Action(() => {
@@ -485,7 +486,7 @@ class Spell extends wow.EventListener {
               }
 
               // Try to cast the dispel if it's been long enough and meets the dispel criteria
-              if (shouldDispel && durationPassed > 777 && spell.cast(unit)) {
+              if (shouldDispel && durationPassed > 777 && me.withinLineOfSight(unit) && spell.cast(unit)) {
                 console.info(`Cast dispel on ${unit.unsafeName} to remove ${aura.name} with priority ${dispelPriority}`);
                 return bt.Status.Success;
               }
@@ -518,9 +519,9 @@ class Spell extends wow.EventListener {
    * @param {number | string} spellNameOrId - The name or ID of the spell.
    * @returns {number} - The charges
    */
-  static getCharges(spellNameOrId) {
-    const spell = Spell.getSpell(spellNameOrId);
-    return spell?.charges.charges
+  getCharges(spellNameOrId) {
+    const spell = this.getSpell(spellNameOrId);
+    return spell.charges.charges
   }
 
   /**

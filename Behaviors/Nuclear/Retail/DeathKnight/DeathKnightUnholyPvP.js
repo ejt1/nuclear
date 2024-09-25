@@ -1,10 +1,11 @@
-import { Behavior, BehaviorContext } from "@/Core/Behavior";
+import {Behavior, BehaviorContext} from "@/Core/Behavior";
 import * as bt from '@/Core/BehaviorTree';
 import spell from "@/Core/Spell";
-import { me } from "@/Core/ObjectManager";
-import { defaultCombatTargeting as Combat } from "@/Targeting/CombatTargeting";
+import {me} from "@/Core/ObjectManager";
+import {defaultCombatTargeting as Combat} from "@/Targeting/CombatTargeting";
 import Specialization from "@/Enums/Specialization";
 import common from "@/Core/Common";
+import Pet from "@/Core/Pet";
 
 const auras = {
   darkSuccor: 101568,
@@ -22,26 +23,29 @@ export class DeathKnightUnholy extends Behavior {
   version = wow.GameVersion.Retail;
 
   build() {
-    return new bt.Decorator(
-      ret => !spell.isGlobalCooldown(),
-      new bt.Selector(
-        common.waitForNotWaitingForArenaToStart(),
-        common.waitForNotSitting(),
-        common.waitForNotMounted(),
-        common.waitForCastOrChannel(),
-        spell.interrupt("Mind Freeze", true),
-        spell.interrupt("Leap", true),
-        common.waitForTarget(),
-        spell.cast("Claw"),
-        common.waitForFacing(),
-        spell.cast("Death Strike", ret => me.pctHealth < 95 && me.hasAura(auras.darkSuccor)),
-        spell.cast("Death Strike", ret => me.pctHealth < 45 && me.power > 55),
-        spell.interrupt("Gnaw", true),
-        new bt.Decorator(
-          ret => Combat.burstToggle,
-          this.burstDamage()
-        ),
-        this.sustainedDamage(),
+    return new bt.Selector(
+      spell.interrupt("Mind Freeze", true),
+      spell.interrupt("Leap", true),
+      spell.interrupt("Gnaw", true),
+      new bt.Decorator(
+        ret => !spell.isGlobalCooldown(),
+        new bt.Selector(
+          common.waitForNotWaitingForArenaToStart(),
+          common.waitForNotSitting(),
+          common.waitForNotMounted(),
+          common.waitForCastOrChannel(),
+          spell.cast("Raise Dead", on => me, req => !Pet.current),
+          common.waitForTarget(),
+          spell.cast("Claw"),
+          common.waitForFacing(),
+          spell.cast("Death Strike", ret => me.pctHealth < 95 && me.hasAura(auras.darkSuccor)),
+          spell.cast("Death Strike", ret => me.pctHealth < 45 && me.power > 55),
+          new bt.Decorator(
+            ret => Combat.burstToggle && me.target && me.isWithinMeleeRange(me.target),
+            this.burstDamage()
+          ),
+          this.sustainedDamage(),
+        )
       )
     );
   }
