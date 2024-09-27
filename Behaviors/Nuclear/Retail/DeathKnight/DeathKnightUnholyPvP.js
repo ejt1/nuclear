@@ -23,10 +23,6 @@ export class DeathKnightUnholy extends Behavior {
   version = wow.GameVersion.Retail;
 
   build() {
-    return new bt.Selector(
-      spell.interrupt("Mind Freeze", true),
-      spell.interrupt("Leap", true),
-      spell.interrupt("Gnaw", true),
       new bt.Decorator(
         ret => !spell.isGlobalCooldown(),
         new bt.Selector(
@@ -35,9 +31,12 @@ export class DeathKnightUnholy extends Behavior {
           common.waitForNotMounted(),
           common.waitForCastOrChannel(),
           spell.cast("Raise Dead", on => me, req => !Pet.current),
+          spell.interrupt("Leap", true),
           common.waitForTarget(),
           spell.cast("Claw"),
           common.waitForFacing(),
+          spell.interrupt("Mind Freeze", true),
+          spell.interrupt("Gnaw", true),
           spell.cast("Death Strike", ret => me.pctHealth < 95 && me.hasAura(auras.darkSuccor)),
           spell.cast("Death Strike", ret => me.pctHealth < 45 && me.power > 55),
           new bt.Decorator(
@@ -46,7 +45,6 @@ export class DeathKnightUnholy extends Behavior {
           ),
           this.sustainedDamage(),
         )
-      )
     );
   }
 

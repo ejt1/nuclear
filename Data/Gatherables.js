@@ -329,6 +329,7 @@ const treasures = {
   444798: "treasure", // Arathi treasure hoard
   444802: "treasure", // Kobyss ritual cache
   444866: "treasure", // Overflowing Kobyss ritual cache
+  446140: "treasure", // Missing scouts pack
 };
 
 export default { herb: herbs, ore: ores, treasure: treasures };
