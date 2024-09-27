@@ -24,9 +24,15 @@ export class DeathKnightUnholy extends Behavior {
 
   build() {
     return new bt.Selector(
-      spell.interrupt("Mind Freeze", true),
+      common.waitForNotSitting(),
+      common.waitForNotMounted(),
+      common.waitForCastOrChannel(),
+      common.waitForTarget(),
       spell.interrupt("Leap", true),
       spell.interrupt("Gnaw", true),
+      common.waitForFacing(),
+      spell.interrupt("Mind Freeze", true),
+      spell.cast("Claw"),
       new bt.Decorator(
         ret => !spell.isGlobalCooldown(),
         new bt.Selector(
@@ -35,9 +41,6 @@ export class DeathKnightUnholy extends Behavior {
           common.waitForNotMounted(),
           common.waitForCastOrChannel(),
           spell.cast("Raise Dead", on => me, req => !Pet.current),
-          common.waitForTarget(),
-          spell.cast("Claw"),
-          common.waitForFacing(),
           spell.cast("Death Strike", ret => me.pctHealth < 95 && me.hasAura(auras.darkSuccor)),
           spell.cast("Death Strike", ret => me.pctHealth < 45 && me.power > 55),
           new bt.Decorator(
