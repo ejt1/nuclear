@@ -318,6 +318,7 @@ const treasures = {
   376587: "treasure", // Expedition Scout's Pack
   // The War Within
   223560: "treasure", // Skyriding Glyph
+  241838: "treasure", // Disturbed Earth
   // Delve treasures
   478443: "treasure", // Mislaid Curiosity
   422531: "treasure", // Disturbed Earth
