@@ -86,7 +86,7 @@ export class PaladinProtectionBehavior extends Behavior {
             { skipUsableCheck: true }
           ),
           spell.cast("Avenger's Shield", on => combat.targets.find(unit => me.isFacing(unit) && !unit.isTanking())),
-          spell.cast("Holy Bulwark", req => !me.hasAura(auras.holybulwark) && combat.getAverageTimeToDeath() > 10),
+          spell.cast("Holy Bulwark", req => !me.hasAura(auras.holybulwark) && combat.burstToggle),
           spell.cast("Judgment", on => combat.targets.find(unit => me.isFacing(unit) && !unit.isTanking())),
           spell.cast("Judgment", on => {
             if (combat.bestTarget && !combat.bestTarget.hasAura(auras.judgment)) {

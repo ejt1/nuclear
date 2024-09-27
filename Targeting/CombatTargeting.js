@@ -145,6 +145,9 @@ class CombatTargeting extends Targeting {
     }
   }
 
+  /**
+   * @returns {wow.CGUnit | null}
+   */
   get bestTarget() {
     return this.calculateBestTarget();
   }

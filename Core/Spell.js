@@ -543,17 +543,18 @@ class Spell extends wow.EventListener {
     }
   }
 
+  /**
+   * Checks if enough time has passed since the last successful cast to cast the spell again.
+   * @param {wow.Spell} spell - The spell to check.
+   * @returns {boolean} - Whether the spell can be cast after the delay.
+   */
   canCastAfterDelay(spell) {
-    if (spell.castTime === 0) {
-      return true;
-    }
+    if (spell.castTime === 0) return true;
 
-    const lastSuccessfulCastTime = this._lastSuccessfulCastTimes.get(spell.id);
-    if (!lastSuccessfulCastTime) return true;
+    const lastCastTime = this._lastSuccessfulCastTimes.get(spell.name.toLowerCase());
+    if (!lastCastTime) return true;
 
-    const currentTime = wow.frameTime;
-    const timeSinceLastCast = currentTime - lastSuccessfulCastTime;
-    return timeSinceLastCast >= Settings.SpellCastDelay;
+    return (wow.frameTime - lastCastTime) >= Settings.SpellCastDelay;
   }
 }
 
