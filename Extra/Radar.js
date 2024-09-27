@@ -188,7 +188,9 @@ class Radar {
       { filter: obj => obj instanceof wow.CGGameObject && Gatherables.herb[obj.entryId], type: 'herbs', track: "ExtraRadarTrackHerbs", draw: "ExtraRadarDrawLinesHerbs" },
       { filter: obj => obj instanceof wow.CGGameObject && Gatherables.ore[obj.entryId], type: 'ores', track: "ExtraRadarTrackOres", draw: "ExtraRadarDrawLinesOres" },
       {
-        filter: obj => obj instanceof wow.CGGameObject && Gatherables.treasure[obj.entryId],
+        filter: obj =>
+          (obj instanceof wow.CGGameObject && Gatherables.treasure[obj.entryId]) ||
+          (obj instanceof wow.CGUnit && Gatherables.treasure[obj.entryId]),
         type: 'treasures',
         track: "ExtraRadarTrackTreasures",
         draw: "ExtraRadarDrawLinesTreasures"
