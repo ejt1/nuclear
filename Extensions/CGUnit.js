@@ -2,7 +2,6 @@ import objMgr, { me } from "@/Core/ObjectManager";
 import Common from "@/Core/Common";
 import { MovementFlags, TraceLineHitFlags, UnitFlags, UnitStandStateType } from "@/Enums/Flags";
 import { HealImmune } from "@/Enums/Auras";
-import Settings from "@/Core/Settings";
 
 const originalTargetGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'target').get;
 const originalAurasGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'auras').get;
@@ -28,7 +27,6 @@ Object.defineProperties(wow.CGUnit.prototype, {
       if (this._cacheAuras === undefined || this._cacheAurasRefreshTime < wow.frameTime) {
         this._cacheAuras = originalAurasGetter.call(this);
         this._cacheAurasRefreshTime = wow.frameTime + cacheTimeMs;
-        this._cacheAurasRefreshTime = wow.frameTime + Settings.AuraCacheTimeMs;
       }
       return this._cacheAuras;
     }
@@ -39,7 +37,6 @@ Object.defineProperties(wow.CGUnit.prototype, {
       if (this._cacheVisibleAuras === undefined || this._cacheVisibleAurasRefreshTime < wow.frameTime) {
         this._cacheVisibleAuras = originalVisibleAurasGetter.call(this);
         this._cacheVisibleAurasRefreshTime = wow.frameTime + cacheTimeMs;
-        this._cacheVisibleAurasRefreshTime = wow.frameTime + Settings.AuraCacheTimeMs;
       }
       return this._cacheVisibleAuras;
     }
@@ -659,4 +656,3 @@ Object.defineProperties(wow.CGUnit.prototype, {
 });
 
 export default true;
-
