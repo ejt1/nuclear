@@ -74,14 +74,11 @@ class HealTargeting extends Targeting {
   }
 
   collectTargets() {
-    const units = me.getFriends();
+    // Directly assign the result of me.getFriends() to this.healTargets
+    this.healTargets = me.getFriends();
 
-    // Copying unit list to healTargets
-    units.forEach((u, k) => {
-      this.healTargets[k] = u;
-    });
-
-    if (!units.some(unit => unit.guid.equals(me.guid))) {
+    // Use find to avoid repeated searching
+    if (!this.healTargets.find(unit => unit.guid.equals(me.guid))) {
       this.healTargets.push(me);
     }
   }
@@ -116,9 +113,10 @@ class HealTargeting extends Targeting {
   weighFilter() {
     const manaMulti = 30;
     const target = me.targetUnit;
-
-    // Temporary array to store units along with their calculated priority
     const weightedUnits = [];
+
+    // Cache guid comparison result for efficiency
+    const isMe = (u) => me.guid.equals(u.guid);
 
     this.healTargets.forEach(u => {
       let priority = 0;
@@ -126,28 +124,26 @@ class HealTargeting extends Targeting {
       let isDPS = false;
       let isHeal = false;
 
-      let member = null;
-      if (me.guid.equals(u.guid)) {
-        priority += 5
-        member = me;
-      } else {
-        member = me.currentParty?.getPartyMemberByGuid(u.guid);
+      let member = isMe(u) ? me : me.currentParty?.getPartyMemberByGuid(u.guid);
+
+      // Skip if no valid member and not the player itself
+      if (!member && !isMe(u) && target !== u) return;
+
+      // If it's me, add extra priority
+      if (isMe(u)) {
+        priority += 10; // Combined two checks into one, 5+5
       }
 
-      if (!member && !me.guid.equals(u.guid) && target !== u) return;
-
-      if (me.guid.equals(u.guid)) {
-        priority += 5;
-      }
-
-      if (target && target === u) {
+      // Add extra priority for being the current target
+      if (target === u) {
         priority += 20;
       }
 
+      // Check for party member roles (Tank, Healer, DPS)
       if (member instanceof wow.PartyMember) {
         if (member.isTank()) {
           if (u.class !== ClassType.DeathKnight) {
-            priority += 20;
+            priority += 20; // Non-DK Tanks get more priority
           }
           isTank = true;
         }
@@ -163,14 +159,16 @@ class HealTargeting extends Targeting {
         }
       }
 
+      // Adjust priority based on health and mana
       priority += (100 - u.effectiveHealthPercent); // Higher priority for lower health
       priority -= ((100 - me.pctPower) * (manaMulti / 100)); // Lower priority based on mana
 
+      // Include units that have positive priority or are in combat
       if (priority > 0 || u.inCombat()) {
-        // Add the unit to weightedUnits with its calculated priority
-        weightedUnits.push({ unit: u, priority: priority });
+        weightedUnits.push({ unit: u, priority });
       }
 
+      // Add unit to appropriate friend categories (Tank, DPS, Healer)
       if (isTank) {
         this.friends.Tanks.push(u);
       } else if (isDPS) {
@@ -179,6 +177,7 @@ class HealTargeting extends Targeting {
         this.friends.Healers.push(u);
       }
 
+      // Add to the general 'All' friend list
       this.friends.All.push(u);
     });
 
@@ -192,4 +191,3 @@ class HealTargeting extends Targeting {
 
 // Export HealTargeting as a singleton instance
 export const defaultHealTargeting = new HealTargeting;
-export default HealTargeting;
