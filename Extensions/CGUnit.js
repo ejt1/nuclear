@@ -7,6 +7,7 @@ import Settings from "@/Core/Settings";
 const originalTargetGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'target').get;
 const originalAurasGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'auras').get;
 const originalVisibleAurasGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'visibleAuras').get;
+const cacheTimeMs = 500;
 
 Object.defineProperties(wow.CGUnit.prototype, {
   target: {
@@ -24,10 +25,10 @@ Object.defineProperties(wow.CGUnit.prototype, {
 
   auras: {
     get: function () {
-      const auraCacheTime = Settings.AuraCacheTimeMs !== undefined ? Settings.AuraCacheTimeMs : 500;
       if (this._cacheAuras === undefined || this._cacheAurasRefreshTime < wow.frameTime) {
         this._cacheAuras = originalAurasGetter.call(this);
-        this._cacheAurasRefreshTime = wow.frameTime + auraCacheTime;
+        this._cacheAurasRefreshTime = wow.frameTime + cacheTimeMs;
+        this._cacheAurasRefreshTime = wow.frameTime + Settings.AuraCacheTimeMs;
       }
       return this._cacheAuras;
     }
@@ -35,10 +36,10 @@ Object.defineProperties(wow.CGUnit.prototype, {
 
   visibleAuras: {
     get: function () {
-      const auraCacheTime = Settings.AuraCacheTimeMs !== undefined ? Settings.AuraCacheTimeMs : 500;
       if (this._cacheVisibleAuras === undefined || this._cacheVisibleAurasRefreshTime < wow.frameTime) {
         this._cacheVisibleAuras = originalVisibleAurasGetter.call(this);
-        this._cacheVisibleAurasRefreshTime = wow.frameTime + auraCacheTime;
+        this._cacheVisibleAurasRefreshTime = wow.frameTime + cacheTimeMs;
+        this._cacheVisibleAurasRefreshTime = wow.frameTime + Settings.AuraCacheTimeMs;
       }
       return this._cacheVisibleAuras;
     }
@@ -658,3 +659,4 @@ Object.defineProperties(wow.CGUnit.prototype, {
 });
 
 export default true;
+
