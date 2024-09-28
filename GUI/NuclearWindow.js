@@ -36,10 +36,6 @@ class NuclearWindow {
     }
 
     if (imgui.isKeyPressed(imgui.Key.Insert, false)) {
-      if (!this.initialized) {
-        this.initializeSettings();
-        this.initialized = true;
-      }
       this.show.value = !this.show.value;
     }
     if (this.show.value) {
@@ -48,6 +44,10 @@ class NuclearWindow {
   }
 
   initializeSettings() {
+    if (this.initialized) {
+      return;
+    }
+
     const unsetOptions = this.modules
       .flatMap(module => module.options)
       .filter(option => !option.header && settings[option.uid] === undefined);
@@ -58,6 +58,8 @@ class NuclearWindow {
       });
       settings.saveSettings();
     }
+
+    this.initialized = true;
   }
 
   render(open) {
