@@ -7,15 +7,15 @@ import { me } from "@/Core/ObjectManager";
 import Settings from "@/Core/Settings";
 import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 
+const auras = {
+  fingersoffrost: 44544,
+};
+
 export class FrostMageBehavior extends Behavior {
   name = "Frost Mageeer";
   context = BehaviorContext.Any;
   specialization = Specialization.Mage.Frost;
   version = wow.GameVersion.Retail;
-
-  auras = {
-
-  };
 
   static settings = [
     {
@@ -46,7 +46,10 @@ export class FrostMageBehavior extends Behavior {
           common.waitForTarget(),
           spell.cast("Arcane Explosion", on => me, req => combat.targets.filter(unit => me.distanceTo(unit) <= 10).length > 2),
           spell.cast("Polymorph", req => this.shouldCastPolymorph()),
-          spell.cast("Ice Lance", on => combat.bestTarget, req => spell.getTimeSinceLastCast("Frostbolt") < 500),
+          spell.cast("Ice Lance", on => combat.bestTarget, req => {
+            const fingersOfFrostStacks = me.getAuraStacks(auras.fingersoffrost);
+            return fingersOfFrostStacks === 2 || (fingersOfFrostStacks === 1 && spell.getTimeSinceLastCast("Frostbolt") < 1000);
+          }),
           spell.cast("Frostbolt", on => combat.bestTarget),
         )
       )
