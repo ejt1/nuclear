@@ -1,0 +1,83 @@
+import { Behavior, BehaviorContext } from "@/Core/Behavior";
+import * as bt from '@/Core/BehaviorTree';
+import Specialization from '@/Enums/Specialization';
+import common from '@/Core/Common';
+import spell from "@/Core/Spell";
+import { me } from "@/Core/ObjectManager";
+import Settings from "@/Core/Settings";
+import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
+
+export class FrostMageBehavior extends Behavior {
+  name = "Frost Mageeer";
+  context = BehaviorContext.Any;
+  specialization = Specialization.Mage.Frost;
+  version = wow.GameVersion.Retail;
+
+  static settings = [
+    {
+      header: "General",
+      options: [
+        { type: "checkbox", uid: "FrostMageArcaneIntellect", text: "Cast Arcane Intellect", default: true },
+        { type: "checkbox", uid: "FrostMageIceBarrier", text: "Cast Ice Barrier", default: true },
+      ]
+    },
+    {
+      header: "Utility",
+      options: [
+        { type: "checkbox", uid: "FrostMagePolymorph", text: "Polymorph non-target enemies", default: false },
+      ]
+    }
+  ];
+
+  build() {
+    return new bt.Decorator(
+      ret => !spell.isGlobalCooldown(),
+      new bt.Selector(
+        common.waitForNotMounted(),
+        common.waitForCastOrChannel(),
+        common.waitForTarget(),
+        spell.cast("Arcane Intellect", req => Settings.FrostMageArcaneIntellect && !me.hasVisibleAura("Arcane Intellect")),
+        spell.cast("Ice Barrier", req => this.shouldCastIceBarrier()),
+        spell.cast("Polymorph", req => this.shouldCastPolymorph()),
+        spell.cast("Frostbolt"),
+        spell.cast("Fire Blast", req => !me.isMoving()),
+      )
+    );
+  }
+
+  shouldCastIceBarrier() {
+    if (!Settings.FrostMageIceBarrier) {
+      return false;
+    }
+
+    if (me.hasVisibleAura("Ice Barrier")) {
+      return false;
+    }
+
+    // Cast Ice Barrier if we're in combat and below 90% health
+    if (me.inCombat && me.pctHealth < 90) {
+      return true;
+    }
+
+    // Cast Ice Barrier if there's an enemy targeting us
+    const enemyTargetingUs = combat.targets.find(unit => unit.isTanking());
+    if (enemyTargetingUs) {
+      return true;
+    }
+
+    return false;
+  }
+
+  shouldCastPolymorph() {
+    if (!Settings.FrostMagePolymorph) {
+      return false;
+    }
+
+    const polymorphTarget = combat.targets.find(unit =>
+      unit !== combat.bestTarget &&
+      !unit.hasAura("Polymorph")
+    );
+
+    return !!polymorphTarget;
+  }
+}

@@ -136,12 +136,15 @@ export default class BehaviorBuilder {
     return settings.reduce((acc, setting) => {
       if (setting.options) {
         // If the setting has options, it's a nested structure
-        return acc.concat(this.flattenSettings(setting.options));
+        return acc.concat({ header: setting.header }, this.flattenSettings(setting.options));
       } else if (setting.uid) {
         // If the setting has a uid, it's a regular setting
         return acc.concat(setting);
+      } else if (setting.header) {
+        // If the setting is a header, keep it
+        return acc.concat({ header: setting.header });
       }
-      // Ignore any other objects (like headers) that don't have uid or options
+      // Ignore any other objects that don't have uid or header
       return acc;
     }, []);
   }
