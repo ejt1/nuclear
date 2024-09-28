@@ -13,12 +13,16 @@ export class FrostMageBehavior extends Behavior {
   specialization = Specialization.Mage.Frost;
   version = wow.GameVersion.Retail;
 
+  auras = {
+
+  };
+
   static settings = [
     {
       header: "General",
       options: [
-        { type: "checkbox", uid: "FrostMageArcaneIntellect", text: "Cast Arcane Intellect", default: true },
-        { type: "checkbox", uid: "FrostMageIceBarrier", text: "Cast Ice Barrier", default: true },
+        { type: "checkbox", uid: "FrostMageArcaneIntellect", text: "Cast Arcane Intellect", default: false },
+        { type: "checkbox", uid: "FrostMageIceBarrier", text: "Cast Ice Barrier", default: false },
       ]
     },
     {
@@ -30,17 +34,21 @@ export class FrostMageBehavior extends Behavior {
   ];
 
   build() {
-    return new bt.Decorator(
-      ret => !spell.isGlobalCooldown(),
-      new bt.Selector(
-        common.waitForNotMounted(),
-        common.waitForCastOrChannel(),
-        common.waitForTarget(),
-        spell.cast("Arcane Intellect", req => Settings.FrostMageArcaneIntellect && !me.hasVisibleAura("Arcane Intellect")),
-        spell.cast("Ice Barrier", req => this.shouldCastIceBarrier()),
-        spell.cast("Polymorph", req => this.shouldCastPolymorph()),
-        spell.cast("Frostbolt"),
-        spell.cast("Fire Blast", req => !me.isMoving()),
+    return new bt.Selector(
+      common.waitForNotMounted(),
+      common.waitForCastOrChannel(),
+      spell.interrupt("Counterspell"),
+      new bt.Decorator(
+        ret => !spell.isGlobalCooldown(),
+        new bt.Selector(
+          spell.cast("Arcane Intellect", on => me, req => Settings.FrostMageArcaneIntellect && !me.hasVisibleAura("Arcane Intellect")),
+          spell.cast("Ice Barrier", on => me, req => this.shouldCastIceBarrier()),
+          common.waitForTarget(),
+          spell.cast("Arcane Explosion", on => me, req => combat.targets.filter(unit => me.distanceTo(unit) <= 10).length > 2),
+          spell.cast("Polymorph", req => this.shouldCastPolymorph()),
+          spell.cast("Ice Lance", on => combat.bestTarget, req => spell.getTimeSinceLastCast("Frostbolt") < 500),
+          spell.cast("Frostbolt", on => combat.bestTarget),
+        )
       )
     );
   }

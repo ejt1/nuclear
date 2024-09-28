@@ -34,6 +34,7 @@ class Spell extends wow.EventListener {
           const castSpell = new wow.Spell(spellId);
           const spellName = castSpell.name.toLowerCase();
           this._lastSuccessfulCastTimes.set(spellName, wow.frameTime);
+          this._lastCastTimes.set(spellId, wow.frameTime);
 
           // Check if there's a queued spell before removing it
           const queuedSpell = CommandListener.getNextQueuedSpell();
@@ -555,6 +556,26 @@ class Spell extends wow.EventListener {
     if (!lastCastTime) return true;
 
     return (wow.frameTime - lastCastTime) >= Settings.SpellCastDelay;
+  }
+
+  /**
+   * Gets the time since the last successful cast of a spell in milliseconds.
+   * @param {number | string} spellNameOrId - The name or ID of the spell.
+   * @returns {number} - The time since the last cast in milliseconds, or -1 if the spell hasn't been cast.
+   */
+  getTimeSinceLastCast(spellNameOrId) {
+    const spell = this.getSpell(spellNameOrId);
+    if (!spell) {
+      console.error(`Spell ${spellNameOrId} not found`);
+      return 9999999;
+    }
+
+    const lastCastTime = this._lastCastTimes.get(spell.id);
+    if (!lastCastTime) {
+      return 9999999; // Spell hasn't been cast yet
+    }
+
+    return wow.frameTime - lastCastTime;
   }
 }
 

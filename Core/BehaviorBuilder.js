@@ -119,8 +119,11 @@ export default class BehaviorBuilder {
         const flattenedSettings = this.flattenSettings(settings);
 
         flattenedSettings.forEach(setting => {
-          if (Settings[setting.uid] === undefined) {
-            Settings[setting.uid] = setting.default;
+          // Only process settings with a defined uid
+          if (setting.uid !== undefined) {
+            if (Settings[setting.uid] === undefined) {
+              Settings[setting.uid] = setting.default;
+            }
           }
         });
 
