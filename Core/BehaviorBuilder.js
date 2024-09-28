@@ -2,6 +2,7 @@ import { Behavior, BehaviorContext } from './Behavior';
 import Specialization from '../Enums/Specialization';
 import * as bt from './BehaviorTree';
 import Settings from "./Settings";
+import nuclearWindow from '../GUI/NuclearWindow';
 
 const kBehaviorPath = __rootDir + '/behaviors';
 
@@ -43,6 +44,8 @@ export default class BehaviorBuilder {
 
     console.debug(`Built ${behaviors.length} composites`);
     behaviors.forEach(v => root.addChild(v.build()));
+
+    nuclearWindow.initializeSettings();
 
     return { root, settings: behaviorSettings };
   }
@@ -113,16 +116,33 @@ export default class BehaviorBuilder {
     try {
       if (behavior.constructor.settings && Array.isArray(behavior.constructor.settings)) {
         const settings = behavior.constructor.settings;
-        settings.forEach(setting => {
+        const flattenedSettings = this.flattenSettings(settings);
+
+        flattenedSettings.forEach(setting => {
           if (Settings[setting.uid] === undefined) {
             Settings[setting.uid] = setting.default;
           }
         });
-        return settings;
+
+        return flattenedSettings;
       }
     } catch (error) {
       console.error(`Error collecting behavior settings: ${error.message}`);
     }
     return [];
+  }
+
+  flattenSettings(settings) {
+    return settings.reduce((acc, setting) => {
+      if (setting.options) {
+        // If the setting has options, it's a nested structure
+        return acc.concat(this.flattenSettings(setting.options));
+      } else if (setting.uid) {
+        // If the setting has a uid, it's a regular setting
+        return acc.concat(setting);
+      }
+      // Ignore any other objects (like headers) that don't have uid or options
+      return acc;
+    }, []);
   }
 }
