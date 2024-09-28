@@ -15,7 +15,8 @@ const auras = {
   deathAndDecay: 188290,
   icyTalons: 194879,
   unleashedFrenzy: 376907,
-  razorice: 51714
+  razorice: 51714,
+  frostFever: 55905
 }
 
 export class DeathKnightFrostBehavior extends Behavior {
@@ -51,16 +52,17 @@ export class DeathKnightFrostBehavior extends Behavior {
           spell.cast("Remorseless Winter", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
           this.multiTargetRotation(),
           spell.cast("Rune Strike", ret => me.hasAura(auras.killingMachine)),
+          spell.cast("Frost Strike", ret => me.targetUnit?.getAura(auras.razorice)?.stacks === 5 || me.getReadyRunes() < 2),
           // only applies if you have the shattering frost talent
-          // spell.cast("Frost Strike", ret => me.targetUnit?.getAura(auras.razorice)?.stacks === 5 || me.getReadyRunes() < 2),
-          spell.cast("Glacial Advance", ret => me.targetUnit?.getAura(auras.razorice)?.stacks < 5 || me.getReadyRunes() < 2),
-          spell.cast("Frost Strike", ret => me.power > 45),
+          spell.cast("Howling Blast", ret => me.targetUnit?.getAura(auras.frostFever)),
+          // non shattered frost build with glacial aaaaadvance
+          //spell.cast("Glacial Advance", ret => me.targetUnit?.getAura(auras.razorice)?.stacks < 5 || me.getReadyRunes() < 2),
           spell.cast("Howling Blast", ret => me.hasAura(auras.rime)),
+          spell.cast("Frost Strike", ret => me.power > 45),
           spell.cast("Chains of Ice", on => me.targetUnit, ret => {
             const coldHeart = me.getAura(auras.coldHeart);
             return !!(coldHeart && coldHeart.stacks === 20);
           }),
-          spell.cast("Rune Strike"),
           spell.cast("Horn of Winter", ret => me.targetUnit && me.power < 70 && me.getReadyRunes() <= 4),
         )
       )
