@@ -4,7 +4,8 @@ import { losExclude } from "../Data/Exclusions";
 import { DispelPriority, dispels } from "../Data/Dispels";
 import { interrupts } from '@/Data/Interrupts';
 import Settings from './Settings';
-import { defaultHealTargeting as Heal } from '@/Targeting/HealTargeting';
+import { defaultHealTargeting as heal } from '@/Targeting/HealTargeting';
+import { defaultCombatTargeting as combat } from '@/Targeting/CombatTargeting';
 import CommandListener from './CommandListener';
 
 class Spell extends wow.EventListener {
@@ -34,6 +35,7 @@ class Spell extends wow.EventListener {
           const castSpell = new wow.Spell(spellId);
           const spellName = castSpell.name.toLowerCase();
           this._lastSuccessfulCastTimes.set(spellName, wow.frameTime);
+          this._lastCastTimes.set(spellId, wow.frameTime);
 
           // Check if there's a queued spell before removing it
           const queuedSpell = CommandListener.getNextQueuedSpell();
@@ -369,7 +371,7 @@ class Spell extends wow.EventListener {
           return bt.Status.Failure;
         }
         const spellRange = spell.baseMaxRange;
-        const unitsAround = me.getUnitsAround(spellRange);
+        const unitsAround = combat.targets
         for (const target of unitsAround) {
           if (!(target instanceof wow.CGUnit)) {
             continue;
@@ -452,7 +454,7 @@ class Spell extends wow.EventListener {
         }
 
         // List to target, either friends or enemies
-        const list = friends ? Heal.priorityList : me.getEnemies(40);
+        const list = friends ? heal.priorityList : combat.targets;
         if (!list) {
           console.error("No list was provided for Dispel");
           return bt.Status.Failure;
@@ -555,6 +557,26 @@ class Spell extends wow.EventListener {
     if (!lastCastTime) return true;
 
     return (wow.frameTime - lastCastTime) >= Settings.SpellCastDelay;
+  }
+
+  /**
+   * Gets the time since the last successful cast of a spell in milliseconds.
+   * @param {number | string} spellNameOrId - The name or ID of the spell.
+   * @returns {number} - The time since the last cast in milliseconds, or 9999999 if the spell hasn't been cast.
+   */
+  getTimeSinceLastCast(spellNameOrId) {
+    const spell = this.getSpell(spellNameOrId);
+    if (!spell) {
+      console.error(`Spell ${spellNameOrId} not found`);
+      return 9999999;
+    }
+
+    const lastCastTime = this._lastCastTimes.get(spell.id);
+    if (!lastCastTime) {
+      return 9999999; // Spell hasn't been cast yet
+    }
+
+    return wow.frameTime - lastCastTime;
   }
 }
 

@@ -108,9 +108,6 @@ class NuclearWindow {
       if (option.header) {
         imgui.text(option.header);
         imgui.separator();
-        if (option.options) {
-          this.renderOptions(option.options);
-        }
       } else {
         const settingValue = settings[option.uid];
         if (!this.state[option.uid]) {
