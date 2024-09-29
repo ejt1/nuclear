@@ -6,10 +6,13 @@ import spell from "@/Core/Spell";
 import { me } from "@/Core/ObjectManager";
 import Settings from "@/Core/Settings";
 import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
+import { DispelPriority } from "@/Data/Dispels";
+import { WoWDispelType as DispelType } from "@/Enums/Auras";
 
 const auras = {
   fingersoffrost: 44544,
-  winterschill: 228358
+  winterschill: 228358,
+  frozen: 378760
 };
 
 export class FrostMageBehavior extends Behavior {
@@ -43,6 +46,7 @@ export class FrostMageBehavior extends Behavior {
         ret => !spell.isGlobalCooldown(),
         new bt.Selector(
           spell.cast("Arcane Intellect", on => me, req => Settings.FrostMageArcaneIntellect && !me.hasVisibleAura("Arcane Intellect")),
+          spell.dispel("Spellsteal", false, DispelPriority.Low, false, DispelType.Magic),
           spell.cast("Ice Barrier", on => me, req => this.shouldCastIceBarrier()),
           spell.cast("Arcane Explosion", on => me, req => combat.targets.filter(unit => me.distanceTo(unit) <= 10).length > 2),
           spell.cast("Polymorph", req => this.shouldCastPolymorph()),
@@ -55,7 +59,7 @@ export class FrostMageBehavior extends Behavior {
             }
             const fingersOfFrostStacks = me.getAuraStacks(auras.fingersoffrost);
             return fingersOfFrostStacks === 2 ||
-              (fingersOfFrostStacks === 1 && (spell.getTimeSinceLastCast("Frostbolt") < 1000 || me.isMoving()));
+              ((fingersOfFrostStacks === 1 || combat.bestTarget.hasAura(auras.frozen)) && (spell.getTimeSinceLastCast("Frostbolt") < 1000 || me.isMoving()));
           }),
           spell.cast("Flurry", on => combat.bestTarget, req => spell.getTimeSinceLastCast("Frostbolt") < 1000 && !combat.bestTarget.hasAura(auras.winterschill)),
           spell.cast("Frostbolt", on => combat.bestTarget),

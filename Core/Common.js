@@ -122,6 +122,10 @@ class Common {
       return false;
     }
 
+    if (!item.cooldown.ready) {
+      return false;
+    }
+
     if (!item.useSpell) {
       console.debug(`Item "${name}" is not usable.`);
       return false;
