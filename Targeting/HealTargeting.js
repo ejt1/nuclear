@@ -101,6 +101,7 @@ class HealTargeting extends Targeting {
       if (me.distanceTo(u) > 40) return false;
       if (!me.withinLineOfSight(u)) return false;
       if (u.isHealImmune()) return false;
+      if (!u.guid.equals(me.guid) && u.isHealImmuneAllButMe()) return false;
 
       return true;
     });

@@ -35,6 +35,7 @@ export class PriestDiscipline extends Behavior {
         common.waitForNotSitting(),
         common.waitForNotMounted(),
         common.waitForCastOrChannel(),
+        this.waitForNotJustCastPenitence(),
         this.healRotation(),
         this.applyAtonement(),
         common.waitForTarget(),
@@ -42,6 +43,16 @@ export class PriestDiscipline extends Behavior {
         this.damageRotation(),
       )
     );
+  }
+
+  waitForNotJustCastPenitence() {
+    return new bt.Action(() => {
+      let lastCastPenitence = spell.getTimeSinceLastCast("Ultimate Penitence");
+      if (lastCastPenitence < 400) {
+        return bt.Status.Success;
+      }
+      return bt.Status.Failure;
+    });
   }
 
   // Atonement Application
@@ -85,7 +96,6 @@ export class PriestDiscipline extends Behavior {
       spell.cast("Mindgames", on => me.targetUnit, ret => me.targetUnit?.pctHealth < 50),
       spell.cast("Penance", on => me.targetUnit, ret => me.hasAura(auras.powerOfTheDarkSide)),
       spell.cast("Mind Blast", on => me.targetUnit, ret => true),
-      spell.cast("Penance", ret => true),
       spell.cast("Smite", ret => true)
     );
   }

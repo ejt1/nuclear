@@ -24,5 +24,11 @@ export const HealImmune = {
   SpiritFormHoly: 27827,
 
   // PVP
-  Cyclone: 33786
+  Cyclone: 33786,
+
+}
+
+export const HealImmuneAllButMe = {
+  // PVP
+  ShadowyDuelRogue: 207736,
 }
