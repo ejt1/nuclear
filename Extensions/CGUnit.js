@@ -1,7 +1,7 @@
 import objMgr, { me } from "@/Core/ObjectManager";
 import Common from "@/Core/Common";
 import { MovementFlags, TraceLineHitFlags, UnitFlags, UnitStandStateType } from "@/Enums/Flags";
-import { HealImmune } from "@/Enums/Auras";
+import { HealImmune, HealImmuneAllButMe } from "@/Enums/Auras";
 import Settings from "@/Core/Settings";
 
 const originalTargetGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'target').get;
@@ -632,12 +632,17 @@ Object.defineProperties(wow.CGUnit.prototype, {
      * @returns {boolean} - Returns true if the unit has any aura that indicates healing immunity, otherwise false.
      */
     value: function () {
-      for (const immune of Object.values(HealImmune)) {
-        if (this.hasAura(immune)) {
-          return true;
-        }
-      }
-      return false;
+      return Object.values(HealImmune).some(immune => this.hasAura(immune));
+    }
+  },
+
+  isHealImmuneAllButMe: {
+    /**
+     * Check if the unit is immune to healing unless it is an aura I can heal myself in, for example Shadowy Duel with a rogue
+     * @returns {boolean} - Returns true if the unit has any aura that indicates healing immunity, otherwise false.
+     */
+    value: function () {
+      return Object.values(HealImmuneAllButMe).some(immune => this.hasAura(immune));
     }
   },
 
