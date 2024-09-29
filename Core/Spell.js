@@ -454,7 +454,7 @@ class Spell extends wow.EventListener {
         }
 
         // List to target, either friends or enemies
-        const list = friends ? heal.priorityList : me.getEnemies(40);
+        const list = friends ? heal.priorityList : combat.targets;
         if (!list) {
           console.error("No list was provided for Dispel");
           return bt.Status.Failure;
