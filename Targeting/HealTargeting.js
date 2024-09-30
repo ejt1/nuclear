@@ -4,20 +4,18 @@ import PerfMgr from "../Debug/PerfMgr";
 import { UnitFlags } from "../Enums/Flags";
 import ClassType from "../Enums/Specialization";
 import PartyMember from "@/Extensions/PartyMember";
+import { HealImmuneAllButMe } from "@/Enums/Auras";  // Import the HealImmune auras
 
 class HealTargeting extends Targeting {
   constructor() {
     super();
-    /** @type {Array<wow.CGUnit}>} */
+    /** @type {Array<wow.CGUnit>} */
     this.priorityList = new Array(); // Treating this as an array consistently
     this.friends = {
       /** @type {Array<wow.CGUnit>} */
       Tanks: new Array(),
-      /** @type {Array<wow.CGUnit>} */
       DPS: new Array(),
-      /** @type {Array<wow.CGUnit>} */
       Healers: new Array(),
-      /** @type {Array<wow.CGUnit>} */
       All: new Array()
     };
     /** @type {Array<wow.CGUnit>} */
@@ -40,6 +38,42 @@ class HealTargeting extends Targeting {
       // Return the unit with the lowest healthPct, or undefined if no valid targets exist
       return validTargets.length > 0 ? validTargets[0] : undefined;
     }
+    return undefined;
+  }
+
+  /**
+   * Returns the top priority target in the priority list for PVP, considering Shadowy Duel and sorting by timeToDeath first.
+   * If the player has the "Shadowy Duel" aura, they can only heal themselves.
+   * If the top priority target has "Shadowy Duel" and is not the player, it will find the next valid target.
+   * @returns {CGUnit | undefined} - The top priority heal target or undefined if no valid targets exist.
+   */
+  getPriorityPVPHealTarget() {
+    if (this.priorityList.length > 0) {
+      // Filter out targets with healthPct greater than 0 and apply Shadowy Duel logic
+      const validTargets = this.priorityList.filter(entry => {
+        // Skip targets with Shadowy Duel unless it's the player
+        if (entry.hasAura(HealImmuneAllButMe.ShadowyDuelRogue) && !entry.guid.equals(me.guid)) {
+          return false;
+        }
+        return entry.effectiveHealthPercent > 0;
+      });
+
+      // Sort valid targets by timeToDeath first, then by healthPct
+      validTargets.sort((a, b) => {
+        const timeToDeathA = a.timeToDeath()
+        const timeToDeathB = b.timeToDeath()
+
+        if (timeToDeathA !== timeToDeathB) {
+          return timeToDeathA - timeToDeathB;  // Sort by time to death (ascending)
+        }
+
+        // If timeToDeath is the same, sort by healthPct (ascending)
+        return a.effectiveHealthPercent - b.effectiveHealthPercent;
+      });
+
+      // Return the unit with the lowest timeToDeath or healthPct, or undefined if no valid targets exist
+      return validTargets.length > 0 ? validTargets[0] : undefined;
+    }
 
     return undefined;
   }
@@ -51,7 +85,7 @@ class HealTargeting extends Targeting {
   }
 
   reset() {
-    super.reset()
+    super.reset();
     // Resetting priority list and friends
     this.priorityList = new Array();
     this.friends = {
@@ -101,7 +135,6 @@ class HealTargeting extends Targeting {
       if (me.distanceTo(u) > 40) return false;
       if (!me.withinLineOfSight(u)) return false;
       if (u.isHealImmune()) return false;
-      if (!u.guid.equals(me.guid) && u.isHealImmuneAllButMe()) return false;
 
       return true;
     });

@@ -33,7 +33,6 @@ declare namespace wow {
     withinLineOfSight(target: CGUnit): boolean;
     isImmune(): boolean;
     isHealImmune(): boolean;
-    isHealImmuneButMe(): boolean;
     isWithinMeleeRange(target: CGUnit): boolean;
     isSlowed(): boolean;
   }

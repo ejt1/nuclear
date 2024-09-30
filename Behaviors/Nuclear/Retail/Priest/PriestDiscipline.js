@@ -65,24 +65,24 @@ export class PriestDiscipline extends Behavior {
   // Healing Rotation
   healRotation() {
     return new bt.Selector(
-      spell.cast("Power Word: Life", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 50),
+      spell.cast("Power Word: Life", on => h.getPriorityPVPHealTarget(), ret => h.getPriorityPVPHealTarget()?.pctHealth < 50),
       spell.cast("Desperate Prayer", on => me, ret => me.pctHealth < 40),
-      spell.cast("Pain Suppression", on => h.getPriorityTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(34)),
-      spell.cast("Rapture", on => h.getPriorityTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(42)),
-      spell.cast("Void Shift", on => h.getPriorityTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(24)),
+      spell.cast("Pain Suppression", on => h.getPriorityPVPHealTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(34)),
+      spell.cast("Rapture", on => h.getPriorityPVPHealTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(42)),
+      spell.cast("Void Shift", on => h.getPriorityPVPHealTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(24)),
       spell.cast("Mass Dispel", on => this.findMassDispelTarget(), ret => this.findMassDispelTarget() !== undefined),
-      spell.cast("Premonition", on => me, ret => this.shouldCastPremonition(h.getPriorityTarget())),
+      spell.cast("Premonition", on => me, ret => this.shouldCastPremonition(h.getPriorityPVPHealTarget())),
       spell.cast("Shadow Word: Death", on => this.findDeathThePolyTarget(), ret => this.findDeathThePolyTarget() !== undefined),
-      spell.cast("Power Word: Barrier", on => h.getPriorityTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(40)),
-      spell.cast("Power Word: Shield", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 89 && !this.hasShield(h.getPriorityTarget())),
-      spell.cast("Power Word: Radiance", on => h.getPriorityTarget(), ret => this.shouldCastRadiance(2)),
-      spell.cast("Flash Heal", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 85 && me.hasAura(auras.surgeOfLight)),
+      spell.cast("Power Word: Barrier", on => h.getPriorityPVPHealTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(40)),
+      spell.cast("Power Word: Shield", on => h.getPriorityPVPHealTarget(), ret => h.getPriorityPVPHealTarget()?.pctHealth < 89 && !this.hasShield(h.getPriorityPVPHealTarget())),
+      spell.cast("Power Word: Radiance", on => h.getPriorityPVPHealTarget(), ret => this.shouldCastRadiance(2)),
+      spell.cast("Flash Heal", on => h.getPriorityPVPHealTarget(), ret => h.getPriorityPVPHealTarget()?.pctHealth < 85 && me.hasAura(auras.surgeOfLight)),
       spell.dispel("Purify", true, DispelPriority.High, true, WoWDispelType.Magic),
       spell.dispel("Dispel Magic", false, DispelPriority.High, true, WoWDispelType.Magic),
-      spell.cast("Penance", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 69),
-      spell.cast("Power Word: Radiance", on => h.getPriorityTarget(), ret => this.shouldCastRadiance(1)),
-      spell.cast("Penance", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 65),
-      spell.cast("Flash Heal", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 55),
+      spell.cast("Penance", on => h.getPriorityPVPHealTarget(), ret => h.getPriorityPVPHealTarget()?.pctHealth < 69),
+      spell.cast("Power Word: Radiance", on => h.getPriorityPVPHealTarget(), ret => this.shouldCastRadiance(1)),
+      spell.cast("Penance", on => h.getPriorityPVPHealTarget(), ret => h.getPriorityPVPHealTarget()?.pctHealth < 65),
+      spell.cast("Flash Heal", on => h.getPriorityPVPHealTarget(), ret => h.getPriorityPVPHealTarget()?.pctHealth < 55),
       spell.dispel("Purify", true, DispelPriority.Medium, true, WoWDispelType.Magic),
       spell.dispel("Dispel Magic", false, DispelPriority.Medium, true, WoWDispelType.Magic),
     );
@@ -193,7 +193,7 @@ export class PriestDiscipline extends Behavior {
   }
 
   shouldCastWithHealthAndNotPainSupp(health) {
-    const healTarget = h.getPriorityTarget()
+    const healTarget = h.getPriorityPVPHealTarget()
     if (!healTarget) {
       return false;
     }
@@ -201,7 +201,7 @@ export class PriestDiscipline extends Behavior {
   }
 
   shouldCastRadiance(charges) {
-    const healTarget = h.getPriorityTarget();
+    const healTarget = h.getPriorityPVPHealTarget();
     if (!healTarget) {
       return false;
     }
