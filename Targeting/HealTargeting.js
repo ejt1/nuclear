@@ -42,7 +42,7 @@ class HealTargeting extends Targeting {
   }
 
   /**
-   * Returns the top priority target in the priority list for PVP, considering Shadowy Duel and sorting by timeToDeath first.
+   * Returns the top priority target in the priority list for PVP, considering Shadowy Duel and sorting by health percentage.
    * If the player has the "Shadowy Duel" aura, they can only heal themselves.
    * If the top priority target has "Shadowy Duel" and is not the player, it will find the next valid target.
    * @returns {CGUnit | undefined} - The top priority heal target or undefined if no valid targets exist.
@@ -58,20 +58,10 @@ class HealTargeting extends Targeting {
         return entry.effectiveHealthPercent > 0;
       });
 
-      // Sort valid targets by timeToDeath first, then by healthPct
-      validTargets.sort((a, b) => {
-        const timeToDeathA = a.timeToDeath()
-        const timeToDeathB = b.timeToDeath()
+      // Sort valid targets by healthPct in ascending order
+      validTargets.sort((a, b) => a.effectiveHealthPercent - b.effectiveHealthPercent);
 
-        if (timeToDeathA !== timeToDeathB) {
-          return timeToDeathA - timeToDeathB;  // Sort by time to death (ascending)
-        }
-
-        // If timeToDeath is the same, sort by healthPct (ascending)
-        return a.effectiveHealthPercent - b.effectiveHealthPercent;
-      });
-
-      // Return the unit with the lowest timeToDeath or healthPct, or undefined if no valid targets exist
+      // Return the unit with the lowest healthPct, or undefined if no valid targets exist
       return validTargets.length > 0 ? validTargets[0] : undefined;
     }
 
