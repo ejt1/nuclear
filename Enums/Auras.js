@@ -28,6 +28,10 @@ export const HealImmune = {
 
 }
 
+/**
+ * I don't know if there's going to be more than just this ability
+ * @type {{ShadowyDuelRogue: number}}
+ */
 export const HealImmuneAllButMe = {
   // PVP
   ShadowyDuelRogue: 207736,
