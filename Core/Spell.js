@@ -578,6 +578,16 @@ class Spell extends wow.EventListener {
 
     return wow.frameTime - lastCastTime;
   }
+
+  /**
+   * Checks if the spell with the given ID or name is known.
+   * @param {number | string} spellNameOrId - The spell ID or name.
+   * @returns {boolean} - Returns true if the spell is known, otherwise false.
+   */
+  isSpellKnown(spellNameOrId) {
+    const spell = this.getSpell(spellNameOrId);
+    return (spell && spell.isKnown) ? true : false;
+  }
 }
 
 export default new Spell();
