@@ -1,7 +1,7 @@
 import objMgr, { me } from "@/Core/ObjectManager";
 import Common from "@/Core/Common";
 import { MovementFlags, TraceLineHitFlags, UnitFlags, UnitStandStateType } from "@/Enums/Flags";
-import { HealImmune, HealImmuneAllButMe } from "@/Enums/Auras";
+import { HealImmune } from "@/Enums/Auras";
 import Settings from "@/Core/Settings";
 
 const originalTargetGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'target').get;

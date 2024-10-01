@@ -3,8 +3,7 @@ import { me } from "../Core/ObjectManager";
 import PerfMgr from "../Debug/PerfMgr";
 import { UnitFlags } from "../Enums/Flags";
 import ClassType from "../Enums/Specialization";
-import PartyMember from "@/Extensions/PartyMember";
-import { HealImmuneAllButMe } from "@/Enums/Auras";  // Import the HealImmune auras
+import { SpecialHealImmune } from "@/Enums/Auras";  // Import the HealImmune auras
 
 class HealTargeting extends Targeting {
   constructor() {
@@ -42,19 +41,30 @@ class HealTargeting extends Targeting {
   }
 
   /**
-   * Returns the top priority target in the priority list for PVP, considering Shadowy Duel and sorting by health percentage.
+   * Returns the top priority target in the priority list for PVP, considering Shadowy Duel, Smoke Bomb, and sorting by health percentage.
    * If the player has the "Shadowy Duel" aura, they can only heal themselves.
    * If the top priority target has "Shadowy Duel" and is not the player, it will find the next valid target.
+   * If the top priority target has "Smoke Bomb" as a debuff and the player is not inside the Smoke Bomb, it will find the next valid target.
    * @returns {CGUnit | undefined} - The top priority heal target or undefined if no valid targets exist.
    */
   getPriorityPVPHealTarget() {
     if (this.priorityList.length > 0) {
-      // Filter out targets with healthPct greater than 0 and apply Shadowy Duel logic
+      // Filter out targets with healthPct greater than 0 and apply Shadowy Duel and Smoke Bomb logic
       const validTargets = this.priorityList.filter(entry => {
         // Skip targets with Shadowy Duel unless it's the player
-        if (entry.hasAura(HealImmuneAllButMe.ShadowyDuelRogue) && !entry.guid.equals(me.guid)) {
+        if (entry.hasAura(SpecialHealImmune.ShadowyDuelRogue) && !entry.guid.equals(me.guid)) {
           return false;
         }
+
+        // Check if the target has the Smoke Bomb debuff
+        const targetSmokeBombAura = entry.getAura("Smoke Bomb");
+        const playerSmokeBombAura = me.getAura("Smoke Bomb");
+
+        // Skip targets with Smoke Bomb debuff unless the player also has the Smoke Bomb debuff
+        if (targetSmokeBombAura && targetSmokeBombAura.isDebuff() && (!playerSmokeBombAura || !playerSmokeBombAura.isDebuff())) {
+          return false;
+        }
+
         return entry.effectiveHealthPercent > 0;
       });
 
