@@ -16,7 +16,7 @@ const auras = {
   icyTalons: 194879,
   unleashedFrenzy: 376907,
   razorice: 51714,
-  frostFever: 55905,
+  frostFever: 55095,
   breathOfSindragosa: 152279,
 };
 
@@ -41,7 +41,7 @@ export class DeathKnightFrostBehavior extends Behavior {
           spell.cast("Death Strike", ret => me.pctHealth < 95 && me.hasAura(auras.darkSuccor)),
           spell.cast("Death Strike", ret => me.pctHealth < 65 && me.power > 35),
           spell.cast("Frost Strike", ret => this.checkFrostStrikeKeepUpBuffs()),
-          spell.cast("Howling Blast", ret => this.checkFrostFever()),
+          spell.cast("Howling Blast", on => me.target, ret => !me.target.hasAuraByMe(auras.frostFever)),
           new bt.Decorator(
             req => this.wantCooldowns() && this.doIKnowSindy() && (this.getSindyCooldown().ready || me.hasAura(auras.breathOfSindragosa)),
             new bt.Selector(
@@ -140,14 +140,5 @@ export class DeathKnightFrostBehavior extends Behavior {
     }
 
     return true; // Breath of Sindragosa is neither active nor ready, proceed with other abilities
-  }
-
-  checkFrostFever() {
-    if (me.targetUnit) {
-      if (me.targetUnit.hasAura(auras.frostFever)) {
-        return true;
-      }
-    }
-    return false;
   }
 }
