@@ -32,5 +32,4 @@ export const HealImmune = {
 export const SpecialHealImmune = {
   // PVP
   ShadowyDuelRogue: 207736,
-  SmokeBomb: 212182
 }
