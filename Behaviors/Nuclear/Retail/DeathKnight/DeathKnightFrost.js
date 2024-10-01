@@ -51,9 +51,9 @@ export class DeathKnightFrostBehavior extends Behavior {
             new bt.Selector(
               spell.cast("Abomination Limb", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
               spell.cast("Remorseless Winter", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
-              spell.cast("Rune Strike", ret => me.getReadyRunes() >= 2),
               spell.cast("Reaper's Mark", on => me.targetUnit, ret => spell.isSpellKnown("Reaper's Mark") && me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
               spell.cast("Pillar of Frost", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+              spell.cast("Rune Strike", ret => me.getReadyRunes() >= 2),
               spell.cast("Death and Decay", ret => !(me.hasAura(auras.deathAndDecay))),
               spell.cast("Breath of Sindragosa", ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && me.getReadyRunes() < 2 && me.power > 90),
             )
@@ -71,7 +71,7 @@ export class DeathKnightFrostBehavior extends Behavior {
           new bt.Decorator(
             () => this.isSindyActive(),
             new bt.Selector(
-              spell.cast("Empower Rune Weapon", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && me.getReadyRunes() < 3 && me.power < 70),
+              spell.cast("Empower Rune Weapon", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && me.power < 70),
               spell.cast("Remorseless Winter", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
               this.multiTargetRotation(),
               spell.cast("Rune Strike", ret => me.getAuraStacks(auras.killingMachine) > 1),
@@ -86,7 +86,7 @@ export class DeathKnightFrostBehavior extends Behavior {
 
           // Decorator for sindy rotation
           new bt.Decorator(
-            () => (!this.isSindyActive()) && this.getSindyCooldown().timeleft > 10000,
+            () => (!this.isSindyActive()) && (this.getSindyCooldown().timeleft > 5000 || !this.wantCooldowns()),
             new bt.Selector(
               spell.cast("Frost Strike", ret => this.checkFrostStrikeKeepUpBuffs()),
               spell.cast("Remorseless Winter", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
