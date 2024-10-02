@@ -2,7 +2,7 @@ import { Behavior, BehaviorContext } from "@/Core/Behavior";
 import * as bt from '@/Core/BehaviorTree';
 import Specialization from "@/Enums/Specialization";
 import common from '@/Core/Common';
-import spell from '@/Core/Spell'
+import spell from '@/Core/Spell';
 import { me } from "@/Core/ObjectManager";
 import { defaultCombatTargeting as Combat } from "@/Targeting/CombatTargeting";
 
@@ -16,8 +16,9 @@ const auras = {
   icyTalons: 194879,
   unleashedFrenzy: 376907,
   razorice: 51714,
-  frostFever: 55905
-}
+  frostFever: 55095,
+  breathOfSindragosa: 152279,
+};
 
 export class DeathKnightFrostBehavior extends Behavior {
   name = "Frost DK PVE";
@@ -34,43 +35,110 @@ export class DeathKnightFrostBehavior extends Behavior {
       common.waitForTarget(),
       common.waitForFacing(),
       common.ensureAutoAttack(),
+      spell.cast("Death Strike", ret => me.pctHealth < 95 && me.hasAura(auras.darkSuccor)),
+      spell.cast("Death Strike", ret => me.pctHealth < 65 && me.power > 35),
+      spell.cast("Frost Strike", ret => this.checkFrostStrikeKeepUpBuffs()),
+      spell.cast("Howling Blast", on => me.target, ret => !me.target.hasAuraByMe(auras.frostFever)),
+      // Decorator: Do I have Breath of Sindragosa?
+
       new bt.Decorator(
-        ret => !spell.isGlobalCooldown(),
+        () => this.doIKnowSindy(),
         new bt.Selector(
-          spell.cast("Death Strike", ret => me.pctHealth < 95 && me.hasAura(auras.darkSuccor)),
-          spell.cast("Death Strike", ret => me.pctHealth < 65 && me.power > 35),
-          spell.cast("Frost Strike", ret => this.checkFrostStrikeKeepUpBuffs()),
+          // Inside this, we will have two decorators: one for cooldowns and one for regular rotation
+          // Decorator for cooldowns/burst
           new bt.Decorator(
-            req => this.wantCooldowns(),
+            () => this.wantCooldowns() && this.getSindyCooldown().ready,
             new bt.Selector(
-              spell.cast("Pillar of Frost", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
               spell.cast("Abomination Limb", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
-              spell.cast("Empower Rune Weapon", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && me.getReadyRunes() < 5),
+              spell.cast("Remorseless Winter", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+              spell.cast("Reaper's Mark", on => me.targetUnit, ret => spell.isSpellKnown("Reaper's Mark") && me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+              spell.cast("Pillar of Frost", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+              spell.cast("Rune Strike", ret => me.getReadyRunes() >= 2),
+              spell.cast("Death and Decay", ret => !(me.hasAura(auras.deathAndDecay))),
+              spell.cast("Breath of Sindragosa", ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && me.getReadyRunes() < 2 && me.power > 90),
             )
           ),
-          spell.cast("Soul Reaper", on => me.target, ret => me.target.pctHealth < 40 && me.getReadyRunes() > 2),
+          // Decorator for pillar of frost and reaper's mark
+          new bt.Decorator(
+            () => this.wantCooldowns() && this.getSindyCooldown().timeleft > 45000,
+            new bt.Selector(
+              spell.cast("Reaper's Mark", on => me.targetUnit, ret => spell.isSpellKnown("Reaper's Mark") && me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+              spell.cast("Pillar of Frost", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+            )
+          ),
+
+          // Decorator for sindy rotation
+          new bt.Decorator(
+            () => this.isSindyActive(),
+            new bt.Selector(
+              spell.cast("Empower Rune Weapon", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && me.power < 70),
+              spell.cast("Remorseless Winter", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+              this.multiTargetRotation(),
+              spell.cast("Rune Strike", ret => me.getAuraStacks(auras.killingMachine) > 1),
+              spell.cast("Soul Reaper", on => me.target, ret => me.targetUnit.pctHealth < 35 && me.power > 50),
+              spell.cast("Howling Blast", ret => me.hasAura(auras.rime) && me.power > 60),
+              spell.cast("Rune Strike", ret => me.hasAura(auras.killingMachine) && me.power < 100),
+              spell.cast("Horn of Winter", ret => me.targetUnit && me.power < 70 && me.getReadyRunes() <= 4),
+              spell.cast("Death and Decay", ret => !(me.hasAura(auras.deathAndDecay))),
+              spell.cast("Abomination Limb", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+            )
+          ),
+
+          // Decorator for sindy rotation
+          new bt.Decorator(
+            () => (!this.isSindyActive()) && (this.getSindyCooldown().timeleft > 5000 || !this.wantCooldowns()),
+            new bt.Selector(
+              spell.cast("Frost Strike", ret => this.checkFrostStrikeKeepUpBuffs()),
+              spell.cast("Remorseless Winter", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+              this.multiTargetRotation(),
+              spell.cast("Soul Reaper", on => me.target, ret => me.targetUnit.pctHealth < 35),
+              spell.cast("Rune Strike", ret => me.getAuraStacks(auras.killingMachine) > 1),
+              spell.cast("Frost Strike", ret => me.hasAura(auras.killingMachine) && me.getReadyRunes() < 2),
+              spell.cast("Rune Strike", ret => me.hasAura(auras.killingMachine)),
+              spell.cast("Frost Strike", ret => me.power > 90),
+              spell.cast("Howling Blast", ret => me.hasAura(auras.rime)),
+              spell.cast("Rune Strike"),
+              spell.cast("Horn of Winter", ret => me.targetUnit && me.power < 70 && me.getReadyRunes() <= 4 && this.getSindyCooldown().timeleft > 30000),
+              spell.cast("Abomination Limb", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+            )
+          )
+        )
+      ),
+      // Decorator: Do I NOT have Breath of Sindragosa?
+      new bt.Decorator(
+        () => (!this.doIKnowSindy()),
+        new bt.Selector(
+          // Decorator for cooldowns/burst
+          new bt.Decorator(
+            () => this.wantCooldowns(),
+            new bt.Selector(
+              spell.cast("Abomination Limb", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+              spell.cast("Reaper's Mark", on => me.targetUnit, ret => spell.isSpellKnown("Reaper's Mark") && me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+              spell.cast("Pillar of Frost", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+              spell.cast("Empower Rune Weapon", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && me.getReadyRunes() < 3 && me.power < 70)
+            )
+          ),
+          spell.cast("Soul Reaper", on => me.target, ret => me.targetUnit.pctHealth < 40 && me.getReadyRunes() > 2),
           spell.cast("Remorseless Winter", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
           this.multiTargetRotation(),
           spell.cast("Rune Strike", ret => me.hasAura(auras.killingMachine)),
-          spell.cast("Frost Strike", ret => me.targetUnit?.getAura(auras.razorice)?.stacks === 5 || me.getReadyRunes() < 2),
-          // only applies if you have the shattering frost talent
-          spell.cast("Howling Blast", ret => me.targetUnit?.getAura(auras.frostFever)),
-          // non shattered frost build with glacial aaaaadvance
-          //spell.cast("Glacial Advance", ret => me.targetUnit?.getAura(auras.razorice)?.stacks < 5 || me.getReadyRunes() < 2),
+          spell.cast("Frost Strike", ret => spell.isSpellKnown('Shattered Frost') && me.targetUnit?.getAura(auras.razorice)?.stacks === 5 || me.getReadyRunes() < 2),
+          spell.cast("Glacial Advance", ret => (!spell.isSpellKnown('Shattered Frost')) && me.targetUnit?.getAura(auras.razorice)?.stacks < 5 || me.getReadyRunes() < 2),
           spell.cast("Howling Blast", ret => me.hasAura(auras.rime)),
           spell.cast("Frost Strike", ret => me.power > 45),
+          spell.cast("Rune Strike", ret => me.getReadyRunes() >= 2),
           spell.cast("Chains of Ice", on => me.targetUnit, ret => {
             const coldHeart = me.getAura(auras.coldHeart);
             return !!(coldHeart && coldHeart.stacks === 20);
           }),
-          spell.cast("Horn of Winter", ret => me.targetUnit && me.power < 70 && me.getReadyRunes() <= 4),
+          spell.cast("Horn of Winter", ret => me.targetUnit && me.power < 70 && me.getReadyRunes() <= 4)
         )
       )
     );
   }
 
   wantCooldowns() {
-    return me.isWithinMeleeRange(me.target) && me.target && Combat.burstToggle && me.getReadyRunes() > 2;
+    return me.isWithinMeleeRange(me.target) && me.target && Combat.burstToggle;
   }
 
   multiTargetRotation() {
@@ -89,5 +157,17 @@ export class DeathKnightFrostBehavior extends Behavior {
       }
     }
     return true;
+  }
+
+  doIKnowSindy() {
+    return spell.isSpellKnown("Breath of Sindragosa");
+  }
+
+  getSindyCooldown() {
+    return spell.getCooldown("Breath of Sindragosa");
+  }
+
+  isSindyActive() {
+    return me.hasAura(auras.breathOfSindragosa)
   }
 }
