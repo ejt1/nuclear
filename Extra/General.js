@@ -24,7 +24,6 @@ class General {
     { type: "slider", uid: "InterruptPercentage", text: "Interrupt Percentage", min: 0, max: 100, default: 70 },
     { type: "combobox", uid: "InterruptMode", text: "Interrupt Mode", options: ["None", "Everything", "List"], default: "None" },
     // Dispel Settings
-    { type: "checkbox", uid: "AutoDispel", text: "Auto Dispel", default: false },
     { type: "combobox", uid: "DispelMode", text: "Dispel Mode", options: ["None", "Everything", "List"], default: "None" },
     // Healthstone Settings
     { type: "slider", uid: "HealthstonePercentage", text: "Healthstone Percentage", min: 0, max: 100, default: 0 },
@@ -36,8 +35,8 @@ class General {
       { header: "Spell Casting", options: this.options.slice(5, 7) },
       { header: "Cache Settings", options: [this.options[7]] },
       { header: "Interrupt", options: this.options.slice(8, 10) },
-      { header: "Dispel", options: this.options.slice(10, 12) },
-      { header: "Healthstone", options: [this.options[12]] },
+      { header: "Dispel", options: [this.options[10]] },
+      { header: "Healthstone", options: [this.options[11]] },
     ]);
   }
 
