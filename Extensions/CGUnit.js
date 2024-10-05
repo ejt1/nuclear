@@ -635,19 +635,20 @@ Object.defineProperties(wow.CGUnit.prototype, {
       return Object.values(HealImmune).some(immune => this.hasAura(immune));
     }
   },
-
-  isWithinMeleeRange: {
     /**
-     * Check if the target is within melee range of this unit.
-     * @this {wow.CGUnit}
-     * @param {wow.CGUnit} target - The target unit to check range against.
-     * @returns {boolean} - Returns true if the target is within melee range, false otherwise.
-     */
-    value: function (target) {
-      const meleeSpell = new wow.Spell(184367);
-      return meleeSpell.inRange(target);
-    }
-  },
+  // isWithinMeleeRange: {
+
+  //    * Check if the target is within melee range of this unit.
+  //    * @this {wow.CGUnit}
+  //    * @param {wow.CGUnit} target - The target unit to check range against.
+  //    * @returns {boolean} - Returns true if the target is within melee range, false otherwise.
+  //    */
+  //   value: function (target) {
+  //     const meleeSpell = new wow.Spell(184367);
+  //     return meleeSpell.inRange(target);
+  //   }
+  // },
+
 });
 
 export default true;
