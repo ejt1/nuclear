@@ -89,10 +89,8 @@ export class PaladinProtectionBehavior extends Behavior {
           spell.cast("Holy Bulwark", req => !me.hasAura(auras.holybulwark) && combat.burstToggle),
           spell.cast("Judgment", on => combat.targets.find(unit => me.isFacing(unit) && !unit.isTanking())),
           spell.cast("Judgment", on => {
-            if (combat.bestTarget && !combat.bestTarget.hasAura(auras.judgment)) {
-              return combat.bestTarget;
-            }
-            return combat.targets.find(target => !target.hasAura(auras.judgment));
+            const target = combat.targets.find(target => !target.hasAura(auras.judgment));
+            return target || combat.bestTarget;
           }),
           spell.cast("Avenger's Shield", on => combat.bestTarget),
           spell.cast("Blessed Hammer", req => combat.targets.find(unit => me.isWithinMeleeRange(unit))),

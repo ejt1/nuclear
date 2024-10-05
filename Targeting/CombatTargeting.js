@@ -5,6 +5,7 @@ import colors from "@/Enums/Colors";
 import Settings from "@/Core/Settings";
 import { TraceLineHitFlags } from '@/Enums/Flags';
 import CGUnit from "@/Extensions/CGUnit";
+import Pet from "@/Core/Pet";
 
 class CombatTargeting extends Targeting {
   constructor() {
@@ -48,7 +49,14 @@ class CombatTargeting extends Targeting {
       if (unit.distanceTo(me) >= 40) { return false; }
       if (unit.isImmune()) { return false; }
       if (unit === me.target && Settings.AttackOOC) { return true; }
-      if (!unit.inCombatWithMe && !wow.Party.currentParty?.isUnitInCombatWithParty(unit)) { return false; }
+      if (!unit.inCombatWithMe && !wow.Party.currentParty?.isUnitInCombatWithParty(unit)) {
+        // Check if the unit is in combat with the player's pet
+        const pet = Pet.current;
+        if (pet && unit.inCombatWith(pet)) {
+          return true;
+        }
+        return false;
+      }
       return true;
     });
   }
@@ -173,6 +181,19 @@ class CombatTargeting extends Targeting {
     }
 
     return totalTimeToDeath / validTargets;
+  }
+
+  /**
+   * Gets the units around a specified unit within a given distance or melee range.
+   * @param {wow.CGUnit} unit - The central unit to check around.
+   * @param {number} distance - The maximum distance to consider.
+   * @returns {wow.CGUnit[]} An array of units within the specified distance or melee range of the given unit.
+   */
+  getUnitsAroundUnit(unit, distance) {
+    if (!unit) return [];
+    return this.targets.filter(target =>
+      target.distanceTo(unit) <= distance || unit.isWithinMeleeRange(target)
+    );
   }
 }
 
