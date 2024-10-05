@@ -55,7 +55,7 @@ export class DeathKnightFrostBehavior extends Behavior {
               spell.cast("Pillar of Frost", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
               spell.cast("Rune Strike", ret => me.getReadyRunes() >= 2),
               spell.cast("Death and Decay", ret => !(me.hasAura(auras.deathAndDecay))),
-              spell.cast("Breath of Sindragosa", ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && me.getReadyRunes() < 2 && me.power > 90),
+              spell.cast("Breath of Sindragosa", ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && ((me.getReadyRunes() < 2 && me.power > 90) || me.power > 110)),
             )
           ),
           // Decorator for pillar of frost and reaper's mark
@@ -72,7 +72,8 @@ export class DeathKnightFrostBehavior extends Behavior {
             () => this.isSindyActive(),
             new bt.Selector(
               spell.cast("Empower Rune Weapon", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && me.power < 70),
-              spell.cast("Remorseless Winter", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+              this.useTrinkets(),
+              spell.cast("Remorseless Winter", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && me.power > 70),
               this.multiTargetRotation(),
               spell.cast("Rune Strike", ret => me.getAuraStacks(auras.killingMachine) > 1),
               spell.cast("Soul Reaper", on => me.target, ret => me.targetUnit.pctHealth < 35 && me.power > 50),
@@ -81,12 +82,13 @@ export class DeathKnightFrostBehavior extends Behavior {
               spell.cast("Horn of Winter", ret => me.targetUnit && me.power < 70 && me.getReadyRunes() <= 4),
               spell.cast("Death and Decay", ret => !(me.hasAura(auras.deathAndDecay))),
               spell.cast("Abomination Limb", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+              spell.cast("Rune Strike", ret => me.power < 70),
             )
           ),
 
           // Decorator for sindy rotation
           new bt.Decorator(
-            () => (!this.isSindyActive()) && (this.getSindyCooldown().timeleft > 5000 || !this.wantCooldowns()),
+            () => (!this.isSindyActive()) && (this.getSindyCooldown().timeleft > 3000 || !this.wantCooldowns()),
             new bt.Selector(
               spell.cast("Frost Strike", ret => this.checkFrostStrikeKeepUpBuffs()),
               spell.cast("Remorseless Winter", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
@@ -167,7 +169,18 @@ export class DeathKnightFrostBehavior extends Behavior {
     return spell.getCooldown("Breath of Sindragosa");
   }
 
+  readyToSindy() {
+    const reapersMarkCDReadyOrNotNeeded = spell.isSpellKnown("Reaper's Mark") ? spell.getCooldown("Reaper's Mark").ready : true;
+    return spell.getCooldown("Breath of Sindragosa").ready && spell.getCooldown("Pillar of Frost").ready && reapersMarkCDReadyOrNotNeeded;
+  }
+
   isSindyActive() {
     return me.hasAura(auras.breathOfSindragosa)
+  }
+
+  useTrinkets() {
+    return new bt.Selector(
+      common.useEquippedItemByName("Mark of Khardros"),
+    );
   }
 }

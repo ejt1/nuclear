@@ -202,5 +202,6 @@ export const dispels = {
   118699: DispelPriority.High, // Warlock - Fear
   5484: DispelPriority.Medium, // Warlock - Howl of Terror
   710: DispelPriority.Medium, // Warlock - Banish
+  378464: DispelPriority.Medium, // Evoker - Nullifying Shroud
 };
 

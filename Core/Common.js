@@ -118,7 +118,6 @@ class Common {
     const item = this.getItemByName(name);
 
     if (!item) {
-      console.debug(`Item "${name}" not found.`);
       return false;
     }
 
@@ -127,19 +126,16 @@ class Common {
     }
 
     if (!item.useSpell) {
-      console.debug(`Item "${name}" is not usable.`);
       return false;
     }
 
     // Check if the item has charges (if applicable)
     if (item.enchantment && item.enchantment.charges === 0) {
-      console.debug(`Item "${name}" has no charges left.`);
       return false;
     }
 
     // Check if the item has expired (if applicable)
     if (item.expiration !== 0 && item.expiration <= wow.frameTime) {
-      console.debug(`Item "${name}" has expired.`);
       return false;
     }
 
