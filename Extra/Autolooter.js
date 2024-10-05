@@ -55,15 +55,7 @@ class Autolooter {
 
     if (!combat.targets || combat.targets.length === 0) return true;
 
-    return !combat.targets.some(unit => {
-      if (!unit || !unit.exists) return false;
-      try {
-        return unit.distanceTo(me) <= 8 || me.isWithinMeleeRange(unit);
-      } catch (error) {
-        console.debug(`Error checking distance for unit: ${error.message}`);
-        return false;
-      }
-    });
+    return combat.getUnitsAroundUnit(me, 12).length === 0;
   }
 
   static autoloot() {
