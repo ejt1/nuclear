@@ -8,6 +8,7 @@ import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 import Pet from "@/Core/Pet";
 import { DispelPriority } from "@/Data/Dispels"
 import { WoWDispelType } from "@/Enums/Auras";
+import Settings from "@/Core/Settings";
 
 
 const auras = {
@@ -22,6 +23,13 @@ export class HunterBeastMasteryBehavior extends Behavior {
   specialization = Specialization.Hunter.BeastMastery;
   version = wow.GameVersion.Retail;
   static settings = [
+    {
+      header: "Defensive",
+      options: [
+        { type: "slider", uid: "ExhilarationPlayerHealth", text: "Exhilaration Player Health %", min: 0, max: 100, default: 30 },
+        { type: "slider", uid: "ExhilarationPetHealth", text: "Exhilaration Pet Health %", min: 0, max: 100, default: 20 },
+      ]
+    },
   ];
 
   build() {
@@ -44,13 +52,13 @@ export class HunterBeastMasteryBehavior extends Behavior {
         new bt.Selector(
           spell.cast("Intimidation", on => combat.targets.find(unit => unit.isCastingOrChanneling)),
           spell.cast("Implosive Trap", on => combat.targets.find(unit => unit.isCastingOrChanneling)),
-          spell.cast("Exhilaration", on => me, req => (Pet.current && Pet.current.pctHealth < 20) || me.pctHealth < 70),
-          spell.cast("Barbed Shot", on => combat.bestTarget, req => {
+          spell.cast("Exhilaration", on => me, req => this.shouldUseExhilaration()),
+          spell.cast("Barbed Shot", on => combat.targets.find(unit => !unit.hasAuraByMe("Barbed Shot")) || combat.bestTarget, req => {
             const barbedShotAura = me.getAura(auras.barbedShot);
-            return !barbedShotAura || barbedShotAura.remaining < 1500 || spell.getCharges("Barbed Shot") == 2;
+            return !barbedShotAura || barbedShotAura.remaining != 0 && barbedShotAura.remaining < 1500 || spell.getCharges("Barbed Shot") == 2;
           }),
           spell.cast("Dire Beast", on => combat.bestTarget, req => me.pctPower < 80),
-          spell.dispel("Tranquilizing Shot", false, DispelPriority.Low, false, WoWDispelType.Enrage, WoWDispelType.Magic),
+          spell.dispel("Tranquilizing Shot", false, DispelPriority.Low, false, [WoWDispelType.Enrage, WoWDispelType.Magic]),
           spell.cast("Explosive Shot", on => combat.targets.find(unit => combat.getUnitsAroundUnit(unit, 10).length > 1 && !unit.isMoving()), req => combat.targets.length > 1),
           spell.cast("Dire Beast: Hawk", on => combat.targets.find(unit => combat.getUnitsAroundUnit(unit, 10).length > 1 && !unit.isMoving())),
           spell.cast("Multi-Shot", on => combat.bestTarget, req => {
@@ -64,5 +72,15 @@ export class HunterBeastMasteryBehavior extends Behavior {
         )
       )
     );
+  }
+
+  shouldUseExhilaration() {
+    const playerHealthThreshold = Settings.ExhilarationPlayerHealth;
+    const petHealthThreshold = Settings.ExhilarationPetHealth;
+
+    const playerHealthLow = me.pctHealth < playerHealthThreshold;
+    const petHealthLow = Pet.current && Pet.current.pctHealth < petHealthThreshold;
+
+    return playerHealthLow || petHealthLow;
   }
 }

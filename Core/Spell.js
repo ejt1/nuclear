@@ -517,7 +517,7 @@ class Spell extends wow.EventListener {
   }
 
   /**
-   * Retrieves the current and maximum charges of a spell.
+   * Retrieves the current charges of a spell.
    * @param {number | string} spellNameOrId - The name or ID of the spell.
    * @returns {number} - The charges
    */
