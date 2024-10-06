@@ -15,7 +15,8 @@ import Settings from "@/Core/Settings";
 const auras = {
   reversion: 366155,
   echo: 364343,
-  essenceBurst: 369299
+  essenceBurst: 369299,
+  blessingOfTheBronze: 381748
 };
 
 export class EvokerPreservationBehavior extends Behavior {
@@ -46,6 +47,19 @@ export class EvokerPreservationBehavior extends Behavior {
         { type: "slider", uid: "EvokerPreservationSpiritbloomPercent", text: "Spiritbloom Health Percent", min: 0, max: 100, default: 80 },
       ]
     },
+    {
+      header: "General",
+      options: [
+        { type: "checkbox", uid: "EvokerPreservationBlessingOfBronze", text: "Cast Blessing of the Bronze", default: true },
+      ]
+    },
+    {
+      header: "Damage",
+      options: [
+        { type: "checkbox", uid: "EvokerPreservationUseDeepBreath", text: "Use Deep Breath", default: true },
+        { type: "slider", uid: "EvokerPreservationDeepBreathMinTargets", text: "Deep Breath Minimum Targets", min: 1, max: 10, default: 3 },
+      ]
+    }
   ];
 
   build() {
@@ -57,8 +71,8 @@ export class EvokerPreservationBehavior extends Behavior {
       new bt.Decorator(
         ret => !spell.isGlobalCooldown(),
         new bt.Selector(
+          spell.cast("Blessing of the Bronze", on => me, req => Settings.EvokerPreservationBlessingOfBronze && !me.inCombat() && !me.hasAura(auras.blessingOfTheBronze)),
           spell.cast("Rewind", on => me, req => heal.priorityList.filter(unit => unit.predictedHealthPercent < Settings.EvokerPreservationRewindPercent).length > Settings.EvokerPreservationRewindCount),
-          this.castEmpowered("Fire Breath", 4),
           this.castEmpowered("Dream Breath", 4),
           spell.cast("Emerald Blossom",
             on => this.findBestEmeraldBlossomTarget(),
@@ -66,10 +80,46 @@ export class EvokerPreservationBehavior extends Behavior {
           ),
           spell.cast("Echo", on => heal.priorityList.find(unit => !unit.hasAura(auras.echo) && unit.predictedHealthPercent < Settings.EvokerPreservationEchoPercent)),
           spell.cast("Verdant Embrace", on => heal.priorityList.find(unit => unit.predictedHealthPercent < Settings.EvokerPreservationVerdantEmbracePercent)),
+          spell.cast("Time Dilation", on => {
+            const tank = heal.friends.Tanks[0];
+            if (!tank) return null;
+
+            const enemiesOnTank = combat.targets.filter(unit => unit.target && unit.target.guid.equals(tank.guid)).length;
+            const dangerousSpellOnTank = combat.targets.some(unit =>
+              unit.isCastingOrChanneling &&
+              !unit.isInterruptible &&
+              unit.spellInfo &&
+              unit.spellInfo.spellTargetGuid &&
+              unit.spellInfo.spellTargetGuid.equals(tank.guid)
+            );
+
+            return (enemiesOnTank >= 3 || dangerousSpellOnTank) ? tank : null;
+          }),
           spell.cast("Living Flame", on => heal.priorityList.find(unit => unit.predictedHealthPercent < Settings.EvokerPreservationLivingFlamePercent)),
-          spell.cast("Reversion", on => heal.priorityList.find(unit => !unit.hasAura(auras.reversion) && unit.predictedHealthPercent < Settings.EvokerPreservationReversionPercent)),
+          spell.cast("Reversion", on => {
+            const existingTarget = heal.priorityList.find(unit => !unit.hasAura(auras.reversion) && unit.predictedHealthPercent < Settings.EvokerPreservationReversionPercent);
+            if (existingTarget) return existingTarget;
+
+            if (spell.getCharges("Reversion") === 2) {
+              const tankWithoutAura = heal.friends.Tanks.find(unit => !unit.hasAura(auras.reversion));
+              if (tankWithoutAura) return tankWithoutAura;
+            }
+
+            return null;
+          }),
           spell.dispel("Naturalize", true, DispelPriority.Low, false, WoWDispelType.Magic, WoWDispelType.Poison),
           spell.interrupt("Tail Swipe"),
+          spell.cast("Deep Breath",
+            on => {
+              const bestTarget = findBestDeepBreathTarget();
+              return bestTarget.unit ? bestTarget.unit.position : null;
+            },
+            req => {
+              if (!Settings.EvokerPreservationUseDeepBreath) return false;
+              const bestTarget = findBestDeepBreathTarget();
+              return combat.targets.length > 2 && bestTarget.count >= Settings.EvokerPreservationDeepBreathMinTargets;
+            }
+          ),
           this.castEmpowered("Fire Breath", 4),
           spell.cast("Disintegrate",
             on => combat.bestTarget,
@@ -121,6 +171,7 @@ export class EvokerPreservationBehavior extends Behavior {
         );
         return validTargets.length >= Settings.EvokerPreservationDreamBreathCount;
       }),
+      spell.cast("Tip the Scales", on => me),
       this.setDesiredEmpowerLevel(desiredEmpowerLevel)
     );
   }
@@ -181,3 +232,14 @@ export class EvokerPreservationBehavior extends Behavior {
     ).length;
   }
 }
+
+const findBestDeepBreathTarget = () => {
+  return combat.targets.reduce((best, mainUnit) => {
+    const unitsInRange = combat.targets.filter(target =>
+      target.distanceTo(mainUnit) <= target.distanceTo(me) &&
+      me.isFacing(target, 30)
+    ).length;
+
+    return unitsInRange > best.count ? { unit: mainUnit, count: unitsInRange } : best;
+  }, { unit: null, count: 0 });
+};
