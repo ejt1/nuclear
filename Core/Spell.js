@@ -1,6 +1,6 @@
 import * as bt from './BehaviorTree';
 import { me } from './ObjectManager';
-import { losExclude } from "../Data/Exclusions";
+import { losExclude, castWhileMoveAuras, castWhileMove } from "../Data/Exclusions";
 import { DispelPriority, dispels } from "../Data/Dispels";
 import { interrupts } from '@/Data/Interrupts';
 import Settings from './Settings';
@@ -78,7 +78,7 @@ class Spell extends wow.EventListener {
 
     // Check if the last argument is an options object
     if (typeof rest[rest.length - 1] === 'object') {
-      options = {...options, ...rest.pop()};
+      options = { ...options, ...rest.pop() };
     }
 
     sequence.addChild(new bt.Action(() => {
@@ -225,7 +225,10 @@ class Spell extends wow.EventListener {
     }
 
     if (!options.skipMovingCheck && spell.castTime > 0 && me.isMoving()) {
-      return false;
+      const canCastWhileMoving = me.auras.find(aura => castWhileMoveAuras[aura.spellId]) || castWhileMove[spell.id];
+      if (!canCastWhileMoving) {
+        return false;
+      }
     }
 
     if (!options.skipLineOfSightCheck && (target instanceof wow.CGUnit && !losExclude[target.entryId]) && !me.withinLineOfSight(target)) {
