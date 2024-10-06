@@ -54,6 +54,12 @@ export class EvokerPreservationBehavior extends Behavior {
       ]
     },
     {
+      header: "Defensives",
+      options: [
+        { type: "checkbox", uid: "EvokerPreservationUseRenewingBlaze", text: "Use Renewing Blaze", default: true },
+      ]
+    },
+    {
       header: "Damage",
       options: [
         { type: "checkbox", uid: "EvokerPreservationUseDeepBreath", text: "Use Deep Breath", default: true },
@@ -67,6 +73,8 @@ export class EvokerPreservationBehavior extends Behavior {
       common.waitForNotMounted(),
       new bt.Action(() => this.handleEmpoweredSpell()),
       common.waitForCastOrChannel(),
+      spell.cast("Renewing Blaze", on => me,
+        req => Settings.EvokerPreservationUseRenewingBlaze && combat.targets.filter(unit => unit.isTanking() && me.isWithinMeleeRange(unit)).length > 1),
       spell.interrupt("Quell"),
       new bt.Decorator(
         ret => !spell.isGlobalCooldown(),
