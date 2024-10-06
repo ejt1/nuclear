@@ -45,6 +45,7 @@ export class EvokerPreservationBehavior extends Behavior {
         { type: "slider", uid: "EvokerPreservationEmeraldBlossomPercent", text: "Emerald Blossom Health Percent", min: 0, max: 100, default: 80 },
         { type: "slider", uid: "EvokerPreservationSpiritbloomCount", text: "Spiritbloom Minimum Targets", min: 1, max: 10, default: 3 },
         { type: "slider", uid: "EvokerPreservationSpiritbloomPercent", text: "Spiritbloom Health Percent", min: 0, max: 100, default: 80 },
+        { type: "slider", uid: "EvokerPreservationTemporalAnomalyCount", text: "Temporal Anomaly Minimum Targets", min: 1, max: 10, default: 3 },
       ]
     },
     {
@@ -111,10 +112,14 @@ export class EvokerPreservationBehavior extends Behavior {
             if (spell.getCharges("Reversion") === 2) {
               const tankWithoutAura = heal.friends.Tanks.find(unit => !unit.hasAura(auras.reversion));
               if (tankWithoutAura) return tankWithoutAura;
+
+              const healerWithoutAura = heal.friends.Healers.find(unit => !unit.hasAura(auras.reversion));
+              if (healerWithoutAura) return healerWithoutAura;
             }
 
             return null;
           }),
+          spell.cast("Temporal Anomaly", on => me, req => heal.friends.All.filter(unit => me.isFacing(unit, 30)).length >= Settings.EvokerPreservationTemporalAnomalyCount),
           spell.dispel("Naturalize", true, DispelPriority.Low, false, WoWDispelType.Magic, WoWDispelType.Poison),
           spell.interrupt("Tail Swipe"),
           spell.cast("Deep Breath",
