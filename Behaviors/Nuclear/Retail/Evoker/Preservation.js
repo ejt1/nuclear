@@ -32,6 +32,7 @@ export class EvokerPreservationBehavior extends Behavior {
         { type: "slider", uid: "EvokerPreservationLivingFlamePercent", text: "Living Flame Percent", min: 0, max: 100, default: 70 },
         { type: "slider", uid: "EvokerPreservationEchoPercent", text: "Echo Percent", min: 0, max: 100, default: 70 },
         { type: "slider", uid: "EvokerPreservationVerdantEmbracePercent", text: "Verdant Embrace Percent", min: 0, max: 100, default: 70 },
+        { type: "checkbox", uid: "EvokerPreservationUseTimeDilation", text: "Use Time Dilation", default: true },
       ]
     },
     {
@@ -58,6 +59,7 @@ export class EvokerPreservationBehavior extends Behavior {
       header: "Defensives",
       options: [
         { type: "checkbox", uid: "EvokerPreservationUseRenewingBlaze", text: "Use Renewing Blaze", default: true },
+        { type: "checkbox", uid: "EvokerPreservationUseObsidianScales", text: "Use Obsidian Scales", default: true },
       ]
     },
     {
@@ -76,6 +78,10 @@ export class EvokerPreservationBehavior extends Behavior {
       common.waitForCastOrChannel(),
       spell.cast("Renewing Blaze", on => me,
         req => Settings.EvokerPreservationUseRenewingBlaze && combat.targets.filter(unit => unit.isTanking() && me.isWithinMeleeRange(unit)).length > 1),
+      spell.cast("Obsidian Scales", on => me,
+        req => Settings.EvokerPreservationUseObsidianScales &&
+               combat.targets.filter(unit => unit.isTanking() && me.isWithinMeleeRange(unit)).length > 1 &&
+               !me.hasAura("Renewing Blaze")),
       spell.interrupt("Quell"),
       new bt.Decorator(
         ret => !spell.isGlobalCooldown(),
@@ -90,6 +96,8 @@ export class EvokerPreservationBehavior extends Behavior {
           spell.cast("Echo", on => heal.priorityList.find(unit => !unit.hasAura(auras.echo) && unit.predictedHealthPercent < Settings.EvokerPreservationEchoPercent)),
           spell.cast("Verdant Embrace", on => heal.priorityList.find(unit => unit.predictedHealthPercent < Settings.EvokerPreservationVerdantEmbracePercent)),
           spell.cast("Time Dilation", on => {
+            if (!Settings.EvokerPreservationUseTimeDilation) return null;
+
             const tank = heal.friends.Tanks[0];
             if (!tank) return null;
 
