@@ -60,10 +60,10 @@ export class PaladinHolyPvP extends Behavior {
       spell.cast("Barrier of Faith", on => h.getPriorityPVPHealTarget(), ret => h.getPriorityPVPHealTarget()?.pctHealth < 50 && spell.isSpellKnown("Barrier of Faith")),
       // Use Word of Glory when reaching 3 Holy Power
       spell.cast("Word of Glory", on => h.getPriorityPVPHealTarget(), ret => h.getPriorityPVPHealTarget()?.pctHealth < 65),
-      // Use Infusion of Light procs on Holy Light for bigger heals
-      spell.cast("Holy Light", on => h.getPriorityPVPHealTarget(), ret => me.hasAura(auras.infusionOfLight)),
       // Use Flash of Light for fast emergency healing
       spell.cast("Flash of Light", on => h.getPriorityPVPHealTarget(), ret => h.getPriorityPVPHealTarget()?.pctHealth < 50),
+      // Use Infusion of Light procs on Holy Light for bigger heals
+      spell.cast("Holy Light", on => h.getPriorityPVPHealTarget(), ret => me.hasAura(auras.infusionOfLight) && h.getPriorityPVPHealTarget()?.pctHealth < 75),
       // Dispel harmful debuffs (Purify)
       spell.dispel("Cleanse", true, DispelPriority.High, true, WoWDispelType.Magic, WoWDispelType.Poison, WoWDispelType.Disease),
       spell.cast("Blessing of Freedom", on => heal.friends.All.find(unit => unit.isRooted() || unit.isSlowed())),
