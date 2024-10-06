@@ -21,7 +21,7 @@ const auras = {
   premonitionInsight: 428933,
 };
 
-export class PriestDiscipline extends Behavior {
+export class PriestDisciplinePvP extends Behavior {
   name = "Priest (Discipline) PVP";
   context = BehaviorContext.Any; // PVP or PVE
   specialization = Specialization.Priest.Discipline;
