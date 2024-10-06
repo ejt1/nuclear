@@ -38,6 +38,8 @@ export class EvokerPreservationBehavior extends Behavior {
     {
       header: "AoE Healing",
       options: [
+        { type: "slider", uid: "EvokerPreservationEmeraldCommunionCount", text: "Emerald Communion Minimum Targets", min: 1, max: 10, default: 2 },
+        { type: "slider", uid: "EvokerPreservationEmeraldCommunionPercent", text: "Emerald Communion Health Percent", min: 0, max: 100, default: 50 },
         { type: "slider", uid: "EvokerPreservationRewindCount", text: "Rewind Minimum Targets", min: 1, max: 10, default: 5 },
         { type: "slider", uid: "EvokerPreservationRewindPercent", text: "Rewind Health Percent", min: 0, max: 100, default: 70 },
         { type: "slider", uid: "EvokerPreservationDreamBreathCount", text: "Dream Breath Minimum Targets", min: 1, max: 10, default: 3 },
@@ -80,8 +82,8 @@ export class EvokerPreservationBehavior extends Behavior {
         req => Settings.EvokerPreservationUseRenewingBlaze && combat.targets.filter(unit => unit.isTanking() && me.isWithinMeleeRange(unit)).length > 1),
       spell.cast("Obsidian Scales", on => me,
         req => Settings.EvokerPreservationUseObsidianScales &&
-               combat.targets.filter(unit => unit.isTanking() && me.isWithinMeleeRange(unit)).length > 1 &&
-               !me.hasAura("Renewing Blaze")),
+          combat.targets.filter(unit => unit.isTanking() && me.isWithinMeleeRange(unit)).length > 1 &&
+          !me.hasAura("Renewing Blaze")),
       spell.interrupt("Quell"),
       new bt.Decorator(
         ret => !spell.isGlobalCooldown(),
@@ -89,6 +91,10 @@ export class EvokerPreservationBehavior extends Behavior {
           spell.cast("Blessing of the Bronze", on => me, req => Settings.EvokerPreservationBlessingOfBronze && !me.inCombat() && !me.hasAura(auras.blessingOfTheBronze)),
           spell.cast("Rewind", on => me, req => heal.priorityList.filter(unit => unit.predictedHealthPercent < Settings.EvokerPreservationRewindPercent).length > Settings.EvokerPreservationRewindCount),
           this.castEmpowered("Dream Breath", 4),
+          this.castEmpowered("Spiritbloom", 4),
+          spell.cast("Emerald Communion", on => me
+            , req => me.pctPower < 80
+              && heal.priorityList.filter(unit => unit.predictedHealthPercent < Settings.EvokerPreservationEmeraldCommunionPercent).length > Settings.EvokerPreservationEmeraldCommunionCount),
           spell.cast("Emerald Blossom",
             on => this.findBestEmeraldBlossomTarget(),
             req => this.countUnitsNeedingEmeraldBlossom() >= Settings.EvokerPreservationEmeraldBlossomCount && spell.getTimeSinceLastCast("Emerald Blossom") > 2000
@@ -127,7 +133,7 @@ export class EvokerPreservationBehavior extends Behavior {
 
             return null;
           }),
-          spell.cast("Temporal Anomaly", on => me, req => heal.friends.All.filter(unit => me.isFacing(unit, 30)).length >= Settings.EvokerPreservationTemporalAnomalyCount),
+          spell.cast("Temporal Anomaly", on => me, req => heal.friends.All.filter(unit => me.isFacing(unit, 20)).length >= Settings.EvokerPreservationTemporalAnomalyCount),
           spell.dispel("Naturalize", true, DispelPriority.Low, false, WoWDispelType.Magic, WoWDispelType.Poison),
           spell.interrupt("Tail Swipe"),
           spell.cast("Deep Breath",
