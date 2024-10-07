@@ -5,6 +5,7 @@ import common from '@/Core/Common';
 import spell from '@/Core/Spell';
 import { me } from "@/Core/ObjectManager";
 import { defaultCombatTargeting as Combat } from "@/Targeting/CombatTargeting";
+import Settings from "@/Core/Settings";
 
 const auras = {
   darkSuccor: 101568,
@@ -25,6 +26,9 @@ export class DeathKnightFrostBehavior extends Behavior {
   context = BehaviorContext.Any; // PVP ?
   specialization = Specialization.DeathKnight.Frost;
   version = wow.GameVersion.Retail;
+  static settings = [
+    {type: "checkbox", uid: "FrostDKUseSmackyHands", text: "Use Smacky Hands", default: true},
+  ];
 
   build() {
     return new bt.Selector(
@@ -40,7 +44,6 @@ export class DeathKnightFrostBehavior extends Behavior {
       spell.cast("Frost Strike", ret => this.checkFrostStrikeKeepUpBuffs()),
       spell.cast("Howling Blast", on => me.target, ret => !me.target.hasAuraByMe(auras.frostFever)),
       // Decorator: Do I have Breath of Sindragosa?
-
       new bt.Decorator(
         () => this.doIKnowSindy(),
         new bt.Selector(
@@ -49,7 +52,7 @@ export class DeathKnightFrostBehavior extends Behavior {
           new bt.Decorator(
             () => this.wantCooldowns() && this.getSindyCooldown().ready,
             new bt.Selector(
-              spell.cast("Abomination Limb", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+              this.useAbomLimb(),
               spell.cast("Remorseless Winter", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
               spell.cast("Reaper's Mark", on => me.targetUnit, ret => spell.isSpellKnown("Reaper's Mark") && me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
               spell.cast("Pillar of Frost", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
@@ -81,7 +84,7 @@ export class DeathKnightFrostBehavior extends Behavior {
               spell.cast("Rune Strike", ret => me.hasAura(auras.killingMachine) && me.power < 100),
               spell.cast("Horn of Winter", ret => me.targetUnit && me.power < 70 && me.getReadyRunes() <= 4),
               spell.cast("Death and Decay", ret => !(me.hasAura(auras.deathAndDecay))),
-              spell.cast("Abomination Limb", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+              this.useAbomLimb(),
               spell.cast("Rune Strike", ret => me.power < 70),
             )
           ),
@@ -101,7 +104,7 @@ export class DeathKnightFrostBehavior extends Behavior {
               spell.cast("Howling Blast", ret => me.hasAura(auras.rime)),
               spell.cast("Rune Strike"),
               spell.cast("Horn of Winter", ret => me.targetUnit && me.power < 70 && me.getReadyRunes() <= 4 && this.getSindyCooldown().timeleft > 30000),
-              spell.cast("Abomination Limb", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+              this.useAbomLimb(),
             )
           )
         )
@@ -114,7 +117,7 @@ export class DeathKnightFrostBehavior extends Behavior {
           new bt.Decorator(
             () => this.wantCooldowns(),
             new bt.Selector(
-              spell.cast("Abomination Limb", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
+              this.useAbomLimb(),
               spell.cast("Reaper's Mark", on => me.targetUnit, ret => spell.isSpellKnown("Reaper's Mark") && me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
               spell.cast("Pillar of Frost", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit)),
               spell.cast("Empower Rune Weapon", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && me.getReadyRunes() < 3 && me.power < 70)
@@ -137,6 +140,13 @@ export class DeathKnightFrostBehavior extends Behavior {
         )
       )
     );
+  }
+
+  useAbomLimb() {
+    if (Settings.FrostDKUseSmackyHands) {
+      return spell.cast("Abomination Limb", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit));
+    }
+    return bt.Status.Failure;
   }
 
   wantCooldowns() {
@@ -167,11 +177,6 @@ export class DeathKnightFrostBehavior extends Behavior {
 
   getSindyCooldown() {
     return spell.getCooldown("Breath of Sindragosa");
-  }
-
-  readyToSindy() {
-    const reapersMarkCDReadyOrNotNeeded = spell.isSpellKnown("Reaper's Mark") ? spell.getCooldown("Reaper's Mark").ready : true;
-    return spell.getCooldown("Breath of Sindragosa").ready && spell.getCooldown("Pillar of Frost").ready && reapersMarkCDReadyOrNotNeeded;
   }
 
   isSindyActive() {

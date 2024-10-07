@@ -111,6 +111,33 @@ Object.defineProperties(wow.CGActivePlayer.prototype, {
     }
   },
 
+  getPlayerEnemies: {
+    /**
+     * Get an array of player enemies within a specified distance of this unit.
+     * Only player-controlled units that are attackable will be included.
+     *
+     * @param {number} [distance=20] - The maximum distance to check for nearby player enemies (default is 20).
+     * @returns {Array<wow.CGUnit>} - An array of CGUnit objects representing attackable player enemies within the specified distance.
+     */
+    value: function (distance = 20) {
+      const nearbyEnemies = [];
+
+      // Get all units around the player within the specified distance
+      const unitsAround = this.getUnitsAround(distance);
+
+      for (const unit of unitsAround) {
+        // Ensure the unit is a CGUnit, is attackable, and is a player
+        if (unit instanceof wow.CGUnit && this.canAttack(unit) && unit.isPlayer()) {
+          // Add valid player enemies to the list
+          nearbyEnemies.push(unit);
+        }
+      }
+
+      return nearbyEnemies;
+    }
+  },
+
+
   getReadyRunes: {
     /**
      * Get the number of runes that are currently ready (i.e., start === 0).
