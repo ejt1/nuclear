@@ -7,13 +7,13 @@ import {me} from "@/Core/ObjectManager";
 import { defaultHealTargeting as heal, defaultHealTargeting as h } from "@/Targeting/HealTargeting";
 import {DispelPriority} from "@/Data/Dispels"
 import {WoWDispelType} from "@/Enums/Auras";
-import spellBlacklist from "@/Data/PVPData";
 import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 import { PowerType } from "@/Enums/PowerType";
 
 const auras = {
   infusionOfLight: 54149,
   forbearance: 25771,
+  avengingwrath: 31884,
 };
 
 export class PaladinHolyPvP extends Behavior {
@@ -67,7 +67,7 @@ export class PaladinHolyPvP extends Behavior {
       spell.cast("Holy Light", on => h.getPriorityPVPHealTarget(), ret => me.hasAura(auras.infusionOfLight) && h.getPriorityPVPHealTarget()?.pctHealth < 75 && me.getPlayerEnemies(20).length === 0),
       // Dispel harmful debuffs (Purify)
       spell.dispel("Cleanse", true, DispelPriority.High, true, WoWDispelType.Magic, WoWDispelType.Poison, WoWDispelType.Disease),
-      spell.cast("Blessing of Freedom", on => heal.friends.All.find(unit => unit.isRooted() || unit.isSlowed())),
+      spell.cast("Blessing of Freedom", on => heal.friends.All.find(unit => unit.isRooted())),
       // Use Holy Shock to generate Holy Power and for quick heals
       spell.cast("Holy Shock", on => h.getPriorityPVPHealTarget(), ret => h.getPriorityPVPHealTarget()?.pctHealth < 95),
 
