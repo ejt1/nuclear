@@ -14,7 +14,14 @@ export const exclusions = {
 // Spells that can be cast while moving
 export const castWhileMove = {
   56641: true, // Steady Shot
+  2948: true, // Scorch
 };
+
+export const castWhileMoveAuras = {
+  358267: true, // Hover
+  79206: true, // Spiritwalkers Grace
+  108839: true, // Ice Floes
+}
 
 // Exclusions for Line of Sight checks (LoS exclusions)
 export const losExclude = {

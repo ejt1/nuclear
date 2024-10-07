@@ -18,4 +18,5 @@ export const PowerType = {
   ArcaneCharges: 16,
   Fury: 17,
   Pain: 18,
+  Essence: 19,
 };
