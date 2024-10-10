@@ -54,7 +54,7 @@ export class PaladinHolyPvP extends Behavior {
       // Use Word of Glory when reaching 5 Holy Power
       spell.cast("Word of Glory", on => h.getPriorityPVPHealTarget(), ret => me.powerByType(PowerType.HolyPower) > 4 && h.getPriorityPVPHealTarget()?.pctHealth < 90),
       // Use sacrifice
-      spell.cast("Blessing of Sacrifice", on => h.getPriorityPVPHealTarget(), ret => me.pctHealth > 80 && h.getPriorityPVPHealTarget().pctHealth < 39),
+      spell.cast("Blessing of Sacrifice", on => h.getPriorityPVPHealTarget(), ret => me.pctHealth > 80 && this.doesNotHaveForbearance(h.getPriorityPVPHealTarget()) && !(h.getPriorityPVPHealTarget().guid.equals(me.guid)) && h.getPriorityPVPHealTarget().pctHealth < 39),
       // Cast Divine Toll for Holy Power burst generation
       spell.cast("Divine Toll", on => h.getPriorityPVPHealTarget(), ret => h.getPriorityPVPHealTarget()?.pctHealth < 45),
       // Cast Barrier of Faith (if talented) for shields and Divine Favor
