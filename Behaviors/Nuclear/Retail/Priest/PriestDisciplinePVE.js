@@ -1,15 +1,14 @@
-import {Behavior, BehaviorContext} from "@/Core/Behavior";
+import { Behavior, BehaviorContext } from "@/Core/Behavior";
 import * as bt from '@/Core/BehaviorTree';
 import Specialization from '@/Enums/Specialization';
 import common from '@/Core/Common';
 import spell from "@/Core/Spell";
-import {me} from "@/Core/ObjectManager";
-import {defaultHealTargeting as h} from "@/Targeting/HealTargeting";
+import { me } from "@/Core/ObjectManager";
+import { defaultHealTargeting as h } from "@/Targeting/HealTargeting";
 import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
-import {DispelPriority} from "@/Data/Dispels"
-import {WoWDispelType} from "@/Enums/Auras";
+import { DispelPriority } from "@/Data/Dispels"
+import { WoWDispelType } from "@/Enums/Auras";
 import spellBlacklist from "@/Data/PVPData";
-import colors from "@/Enums/Colors";
 
 const auras = {
   painSuppression: 33206,
@@ -31,39 +30,26 @@ export class PriestDiscipline extends Behavior {
 
   build() {
     return new bt.Selector(
-      new bt.Action(() => {
-        if (imgui.isKeyPressed(imgui.Key.Z)) {
-          this.toggleRotation();
-        }
-        return bt.Status.Failure;
-      }),
       new bt.Decorator(
-        () => PriestDiscipline.rotationEnabled,
-        new bt.Decorator(
-          ret => !spell.isGlobalCooldown(),
-          new bt.Selector(
-            common.waitForNotMounted(),
-            common.waitForNotSitting(),
-            common.waitForCastOrChannel(),
-        spell.cast("Fade", on => me, req => me.inCombat() && (me.isTanking() || me.pctHealth < 90)),
-        spell.cast("Power Word: Fortitude", on => me, req => !me.hasVisibleAura(21562)),
-        this.healRotation(),
-        this.applyAtonement(),
-        common.waitForTarget(),
-        common.waitForFacing(),
-        new bt.Decorator(
-          ret => me.inCombat(),
-          new bt.Selector(
-            this.damageRotation(),
-          )
-        ),
+        ret => !spell.isGlobalCooldown(),
+        new bt.Selector(
+          common.waitForNotMounted(),
+          common.waitForNotSitting(),
+          common.waitForCastOrChannel(),
+          spell.cast("Fade", on => me, req => me.inCombat() && (me.isTanking() || me.pctHealth < 90)),
+          spell.cast("Power Word: Fortitude", on => me, req => !me.hasVisibleAura(21562)),
+          this.healRotation(),
+          this.applyAtonement(),
+          common.waitForTarget(),
+          common.waitForFacing(),
+          new bt.Decorator(
+            ret => me.inCombat(),
+            new bt.Selector(
+              this.damageRotation(),
+            )
+          ),
         )
-        )
-      ),
-      new bt.Action(() => {
-        this.renderRotationState();
-        return bt.Status.Failure;
-      })
+      )
     );
   }
 
@@ -77,7 +63,7 @@ export class PriestDiscipline extends Behavior {
   // Healing Rotation
   healRotation() {
     return new bt.Selector(
-      spell.cast("Power Word: Life", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 50 && me.inCombat),
+      spell.cast("Power Word: Life", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 35 && me.inCombat),
       spell.cast("Desperate Prayer", on => me, ret => me.pctHealth < 70 && me.inCombat),
       //spell.cast("Pain Suppression", on => h.getPriorityTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(34) && me.inCombat),
       spell.cast("Rapture", on => h.getPriorityTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(30) && me.inCombat()),
@@ -155,18 +141,19 @@ export class PriestDiscipline extends Behavior {
     if (spell.getCharges("Power Word: Radiance") < 2) {
       return false;
     }
-  
+
     const lowHealthAllies = this.getLowHealthAlliesCount(90);
     return lowHealthAllies >= 3;
   }
-  
+
   // Add this new method to the class:
   getLowHealthAlliesCount(healthThreshold) {
-    return h.friends.All.filter(friend => 
-      friend && 
-      friend.pctHealth < healthThreshold && 
+    return h.friends.All.filter(friend =>
+      friend &&
+      friend.pctHealth < healthThreshold &&
       this.isNotDeadAndInLineOfSight(friend) &&
-      !friend.getAuraByMe(auras.atonement).remaining > 4000
+      (!(friend.hasAuraByMe(auras.atonement)) ||
+        friend.getAuraByMe(auras.atonement)?.remaining < 4000)
     ).length;
   }
 
@@ -175,18 +162,18 @@ export class PriestDiscipline extends Behavior {
   }
 
   getCurrentTarget() {
-    const targetPredicate = unit => 
-      unit && common.validTarget(unit) && 
-      unit.distanceTo(me) <= 30 && 
+    const targetPredicate = unit =>
+      unit && common.validTarget(unit) &&
+      unit.distanceTo(me) <= 30 &&
       me.withinLineOfSight(unit) &&
       !unit.isImmune();
-  
+
     // First, look for a unit with the Schism aura
     const schismTarget = combat.targets.find(unit => unit.hasAuraByMe("Schism") && targetPredicate(unit));
     if (schismTarget) {
       return schismTarget;
     }
-  
+
     const target = me.target;
     if (target !== null && targetPredicate(target)) {
       return target;
@@ -203,35 +190,35 @@ export class PriestDiscipline extends Behavior {
   shouldCastPenance() {
     const priorityTarget = h.getPriorityTarget();
     const currentTarget = this.getCurrentTarget();
-  
+
     if (!priorityTarget) {
       return currentTarget != null;
     }
-  
-    return priorityTarget.pctHealth < 65 || 
-           (priorityTarget.pctHealth >= 65 && 
-            this.hasAtonement(priorityTarget) && 
-            currentTarget != null && 
-            this.hasPurgeTheWicked(currentTarget));
+
+    return priorityTarget.pctHealth < 65 ||
+      (priorityTarget.pctHealth >= 65 &&
+        this.hasAtonement(priorityTarget) &&
+        currentTarget != null &&
+        this.hasPurgeTheWicked(currentTarget));
   }
-  
+
   getPenanceTarget() {
     const priorityTarget = h.getPriorityTarget();
     const currentTarget = this.getCurrentTarget();
-  
+
     if (!priorityTarget) {
       return currentTarget;
     }
-  
+
     if (priorityTarget.pctHealth < 65) {
       return priorityTarget;
-    } else if (priorityTarget.pctHealth >= 65 && 
-               this.hasAtonement(priorityTarget) && 
-               currentTarget != null && 
-               this.hasPurgeTheWicked(currentTarget)) {
+    } else if (priorityTarget.pctHealth >= 65 &&
+      this.hasAtonement(priorityTarget) &&
+      currentTarget != null &&
+      this.hasPurgeTheWicked(currentTarget)) {
       return currentTarget;
     }
-  
+
     return currentTarget;
   }
 
@@ -347,40 +334,12 @@ export class PriestDiscipline extends Behavior {
     return (healTarget.pctHealth < health || healTarget.timeToDeath() < 3) && !healTarget.hasAuraByMe(auras.painSuppression);
   }
 
-  shouldCastRadiance(charges) {
-    const healTarget = h.getPriorityTarget()
-    if (!healTarget) {
-      return false;
-    }
-    return healTarget.pctHealth < 55 && spell.getCharges("Power Word: Radiance") === charges
-  }
-
-  // todo - probably move this somewhere useful rather than here?
   isNotDeadAndInLineOfSight(friend) {
     return friend && !friend.deadOrGhost && me.withinLineOfSight(friend);
   }
 
   getEnemiesInRange(range) {
     return combat.targets.filter(unit => me.distanceTo(unit) < range).length;
-  }
-
-  toggleRotation() {
-    PriestDiscipline.rotationEnabled = !PriestDiscipline.rotationEnabled;
-    console.info(`Rotation ${PriestDiscipline.rotationEnabled ? 'enabled' : 'disabled'}`);
-  }
-
-  renderRotationState() {
-    if (!PriestDiscipline.rotationEnabled) {
-      const drawList = imgui.getBackgroundDrawList();
-      if (!drawList) return;
-
-      const playerPos = me.position;
-      const screenPos = wow.WorldFrame.getScreenCoordinates(playerPos);
-      
-      if (screenPos) {
-        drawList.addText("OFF", { x: screenPos.x, y: screenPos.y - 20 }, colors.red);
-      }
-    }
   }
 
 }
