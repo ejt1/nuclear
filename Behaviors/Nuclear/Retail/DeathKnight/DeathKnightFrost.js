@@ -143,7 +143,7 @@ export class DeathKnightFrostBehavior extends Behavior {
   }
 
   useAbomLimb() {
-    if (Settings.FrostDKUseSmackyHands) {
+    if (Settings.FrostDKUseSmackyHands === true) {
       return spell.cast("Abomination Limb", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit));
     }
     return bt.Status.Failure;

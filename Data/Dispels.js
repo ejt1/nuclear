@@ -203,7 +203,7 @@ export const dispels = {
   5484: DispelPriority.Medium, // Warlock - Howl of Terror
   710: DispelPriority.Medium, // Warlock - Banish
   378464: DispelPriority.Medium, // Evoker - Nullifying Shroud
-  34914: DispelPriority.High, // Priest - Vampiric Touch
+  // 34914: DispelPriority.High, // Priest - Vampiric Touch - you dispel this, you get 4sec back lash silence, no DR. WHAT!?
   209749: DispelPriority.High // Druid - Faerie Swarm
 };
 

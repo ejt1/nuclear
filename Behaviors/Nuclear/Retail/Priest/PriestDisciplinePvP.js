@@ -58,7 +58,8 @@ export class PriestDisciplinePvP extends Behavior {
   // Atonement Application
   applyAtonement() {
     return new bt.Selector(
-      spell.cast("Power Word: Shield", on => this.findFriendWithoutAtonement(), ret => this.findFriendWithoutAtonement() !== undefined)
+      spell.cast("Power Word: Shield", on => this.findFriendWithoutAtonement(), ret => this.findFriendWithoutAtonement() !== undefined),
+      spell.cast("Renew", on => this.findFriendWithoutAtonement(), ret => this.findFriendWithoutAtonement() !== undefined)
     );
   }
 
@@ -68,12 +69,12 @@ export class PriestDisciplinePvP extends Behavior {
       spell.cast("Power Word: Life", on => h.getPriorityPVPHealTarget(), ret => h.getPriorityPVPHealTarget()?.pctHealth < 50),
       spell.cast("Desperate Prayer", on => me, ret => me.pctHealth < 40),
       spell.cast("Pain Suppression", on => h.getPriorityPVPHealTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(34)),
-      spell.cast("Rapture", on => h.getPriorityPVPHealTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(42)),
+      spell.cast("Rapture", on => h.getPriorityPVPHealTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(55)),
       spell.cast("Void Shift", on => h.getPriorityPVPHealTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(24)),
       spell.cast("Mass Dispel", on => this.findMassDispelTarget(), ret => this.findMassDispelTarget() !== undefined),
       spell.cast("Premonition", on => me, ret => this.shouldCastPremonition(h.getPriorityPVPHealTarget())),
       spell.cast("Shadow Word: Death", on => this.findDeathThePolyTarget(), ret => this.findDeathThePolyTarget() !== undefined),
-      spell.cast("Power Word: Barrier", on => h.getPriorityPVPHealTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(40)),
+      spell.cast("Power Word: Barrier", on => h.getPriorityPVPHealTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(45)),
       spell.cast("Power Word: Shield", on => h.getPriorityPVPHealTarget(), ret => h.getPriorityPVPHealTarget()?.pctHealth < 89 && !this.hasShield(h.getPriorityPVPHealTarget())),
       spell.cast("Power Word: Radiance", on => h.getPriorityPVPHealTarget(), ret => this.shouldCastRadiance(2)),
       spell.cast("Flash Heal", on => h.getPriorityPVPHealTarget(), ret => h.getPriorityPVPHealTarget()?.pctHealth < 85 && me.hasAura(auras.surgeOfLight)),
@@ -81,7 +82,7 @@ export class PriestDisciplinePvP extends Behavior {
       spell.dispel("Dispel Magic", false, DispelPriority.High, true, WoWDispelType.Magic),
       spell.cast("Penance", on => h.getPriorityPVPHealTarget(), ret => h.getPriorityPVPHealTarget()?.pctHealth < 69),
       spell.cast("Power Word: Radiance", on => h.getPriorityPVPHealTarget(), ret => this.shouldCastRadiance(1)),
-      spell.cast("Penance", on => h.getPriorityPVPHealTarget(), ret => h.getPriorityPVPHealTarget()?.pctHealth < 65),
+      spell.cast("Penance", on => h.getPriorityPVPHealTarget(), ret => h.getPriorityPVPHealTarget()?.pctHealth < 79),
       spell.cast("Flash Heal", on => h.getPriorityPVPHealTarget(), ret => h.getPriorityPVPHealTarget()?.pctHealth < 55),
       spell.dispel("Purify", true, DispelPriority.Medium, true, WoWDispelType.Magic),
       spell.dispel("Dispel Magic", false, DispelPriority.Medium, true, WoWDispelType.Magic),
@@ -197,6 +198,9 @@ export class PriestDisciplinePvP extends Behavior {
     if (!healTarget) {
       return false;
     }
+    if (healTarget.hasAura("Ice Block") || healTarget.hasAura("Divine Shield")) {
+      return false;
+    }
     return (healTarget.pctHealth < health || healTarget.timeToDeath() < 3) && !healTarget.hasAuraByMe(auras.painSuppression);
   }
 
@@ -205,7 +209,7 @@ export class PriestDisciplinePvP extends Behavior {
     if (!healTarget) {
       return false;
     }
-    return healTarget.pctHealth < 59 && spell.getCharges("Power Word: Radiance") === charges;
+    return healTarget.pctHealth < 75 && spell.getCharges("Power Word: Radiance") === charges;
   }
 
   // todo - probably move this somewhere useful rather than here?
