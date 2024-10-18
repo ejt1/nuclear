@@ -1,22 +1,22 @@
 const herbs = {
   // Herbs
-  1617:   "herb",   // Silverleaf
-  1618:   "herb",   // Peacebloom
-  1619:   "herb",   // Earthroot
-  3726:   "herb",   // Earthroot
-  1620:   "herb",   // Mageroyal
-  1621:   "herb",   // Briarthorn
-  1622:   "herb",   // Bruiseweed
-  1623:   "herb",   // Wild Steelbloom
-  1624:   "herb",   // Kingsblood
-  1628:   "herb",   // Grave Moss
-  2041:   "herb",   // Liferoot
-  2042:   "herb",   // Fadeleaf
-  2043:   "herb",   // Khadgar's Whisker
-  2044:   "herb",   // Wintersbite
-  2045:   "herb",   // Stranglekelp
-  2046:   "herb",   // Goldthorn
-  2866:   "herb",   // Firebloom
+  1617: "herb",   // Silverleaf
+  1618: "herb",   // Peacebloom
+  1619: "herb",   // Earthroot
+  3726: "herb",   // Earthroot
+  1620: "herb",   // Mageroyal
+  1621: "herb",   // Briarthorn
+  1622: "herb",   // Bruiseweed
+  1623: "herb",   // Wild Steelbloom
+  1624: "herb",   // Kingsblood
+  1628: "herb",   // Grave Moss
+  2041: "herb",   // Liferoot
+  2042: "herb",   // Fadeleaf
+  2043: "herb",   // Khadgar's Whisker
+  2044: "herb",   // Wintersbite
+  2045: "herb",   // Stranglekelp
+  2046: "herb",   // Goldthorn
+  2866: "herb",   // Firebloom
   142140: "herb",   // Purple Lotus
   142141: "herb",   // Arthas' Tears
   142142: "herb",   // Sungrass
@@ -154,43 +154,57 @@ const herbs = {
   454085: "herb",   // Lush Blessing Blossom
   454086: "herb",   // Blessing Blossom
   454545: "herb",   // Luredrop
+
+  414344: "herb",   // Camouflaged Arathor's Spear
+  414342: "herb",   // Camouflaged Orbinid
+  454007: "herb",   // Camouflaged Luredrop
+  414341: "herb",   // Camouflaged Luredrop
+  454051: "herb",   // Camouflaged Luredrop
+  454078: "herb",   // Camouflaged Blessing Blossom
+  414343: "herb",   // Camouflaged Blessing Blossom
+  454083: "herb",   // Camouflaged Blessing Blossom
+  454065: "herb",   // Camouflaged Mycobloom
+  454068: "herb",   // Camouflaged Mycobloom
+  454073: "herb",   // Camouflaged Mycobloom
+  414340: "herb",   // Camouflaged Mycobloom
+
 };
 
 const ores = {
   // Ores
-  2055:   "vein",   // Copper Vein
+  2055: "vein",   // Copper Vein
   181248: "vein",   // Copper Vein
-  1731:   "vein",   // Copper Vein
+  1731: "vein",   // Copper Vein
   103713: "vein",   // Copper Vein
-  3763:   "vein",   // Copper Vein
-  1610:   "vein",   // Incendicite Mineral Vein
-  1667:   "vein",   // Incendicite Mineral Vein
+  3763: "vein",   // Copper Vein
+  1610: "vein",   // Incendicite Mineral Vein
+  1667: "vein",   // Incendicite Mineral Vein
   103711: "vein",   // Tin Vein
-  3764:   "vein",   // Tin Vein
-  2054:   "vein",   // Tin Vein
+  3764: "vein",   // Tin Vein
+  2054: "vein",   // Tin Vein
   181249: "vein",   // Tin Vein
-  1732:   "vein",   // Tin Vein
-  2653:   "vein",   // Lesser Bloodstone Deposit
-  73940:  "vein",   // Ooze Covered Silver Vein
+  1732: "vein",   // Tin Vein
+  2653: "vein",   // Lesser Bloodstone Deposit
+  73940: "vein",   // Ooze Covered Silver Vein
   105569: "vein",   // Silver Vein
-  1733:   "vein",   // Silver Vein
-  1735:   "vein",   // Iron Deposit
-  19903:  "vein",   // Indurium Mineral Vein
+  1733: "vein",   // Silver Vein
+  1735: "vein",   // Iron Deposit
+  19903: "vein",   // Indurium Mineral Vein
   181109: "vein",   // Gold Vein
   150080: "vein",   // Gold Vein
-  1734:   "vein",   // Gold Vein
-  73941:  "vein",   // Ooze Covered Gold Vein
-  2040:   "vein",   // Mithril Deposit
+  1734: "vein",   // Gold Vein
+  73941: "vein",   // Ooze Covered Gold Vein
+  2040: "vein",   // Mithril Deposit
   176645: "vein",   // Mithril Deposit
   150079: "vein",   // Mithril Deposit
   123310: "vein",   // Ooze Covered Mithril Deposit
   165658: "vein",   // Dark Iron Deposit
   123309: "vein",   // Ooze Covered Truesilver Deposit
-  2047:   "vein",   // Truesilver Deposit
+  2047: "vein",   // Truesilver Deposit
   150081: "vein",   // Truesilver Deposit
   123848: "vein",   // Ooze Covered Thorium Vein
   176643: "vein",   // Small Thorium Vein
-  324:    "vein",   // Small Thorium Vein
+  324: "vein",   // Small Thorium Vein
   150082: "vein",   // Small Thorium Vein
   180215: "vein",   // Hakkari Thorium Vein
   177388: "vein",   // Ooze Covered Rich Thorium Vein
@@ -264,6 +278,9 @@ const ores = {
   452079: "vein",   // Bismuth
   452081: "vein",   // Bismuth
   452083: "vein",   // Ironclaw
+  413897: "vein",   // Camouflaged Aqirite
+  413907: "vein",   // Camouflaged Ironclaw
+  413889: "vein",   // Camouflaged Bismuth
 };
 
 const treasures = {
