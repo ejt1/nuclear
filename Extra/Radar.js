@@ -143,6 +143,9 @@ class Radar {
     } else if (obj instanceof wow.CGUnit && obj.classification == Classification.Rare && !obj.deadOrGhost) {
       prefix = '[R] ';
       prefixColor = colors.purple;
+    } else if (obj instanceof wow.CGAreaTrigger) {
+      prefix = '[AT] ';
+      prefixColor = colors.purple;
     }
 
     let text = `${obj.name}`;
@@ -255,7 +258,7 @@ class Radar {
     // New: Interact with tracked objects within melee range
     if (Settings.ExtraRadarInteractTracked && !me.currentCastOrChannel) {
       for (const obj of trackedObjects) {
-        if (me.withinInteractRange(obj)) {
+        if (me.withinInteractRange(obj) && !me.isMoving()) {
           obj.interact();
           break;
         }

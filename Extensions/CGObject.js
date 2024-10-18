@@ -15,12 +15,13 @@ Object.defineProperties(wow.CGObject.prototype, {
         // XXX: not sure about this, better have unit.spellDistance for bounding radius calculations
         let bbRadius = 0;
         if (this instanceof wow.CGUnit) {
-          bbRadius = this.boundingRadius + to.boundingRadius;
+          //bbRadius = this.boundingRadius + to.boundingRadius;
+          bbRadius = this.getMeleeRange(to);
         } else {
           bbRadius = to.boundingRadius;
         }
         const dist = from.distanceSq(to.position);
-        return dist < bbRadius ? 0 : dist + bbRadius;
+        return dist < bbRadius ? 0 : dist - bbRadius;
       } else if (to instanceof wow.CGObject) {
         const pos = to.position;
         return from.distanceSq(pos);
@@ -42,12 +43,13 @@ Object.defineProperties(wow.CGObject.prototype, {
       } else if (to instanceof wow.CGUnit) {
         let bbRadius = 0;
         if (this instanceof wow.CGUnit) {
-          bbRadius = this.boundingRadius + to.boundingRadius;
+          bbRadius = this.getMeleeRange(to);
+          //bbRadius = this.boundingRadius + to.boundingRadius;
         } else {
           bbRadius = to.boundingRadius;
         }
         const dist = from.distanceSq2D(to.position);
-        return dist < bbRadius ? 0 : dist + bbRadius;
+        return dist < bbRadius ? 0 : dist - bbRadius;
       } else if (to instanceof wow.CGObject) {
         const pos = to.position;
         return from.distanceSq2D(pos);
