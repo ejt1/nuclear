@@ -1,63 +1,95 @@
 export const interrupts = {
-  450756: "Abyssal Howl",
-  449734: "Acidic Eruption",
-  429110: "Alloy Bolt",
-  426283: "Arcing Void",
-  275826: "Bolstering Shout",
-  335143: "Bonemend",
-  257063: "Brackish Bolt",
-  324776: "Bramblethorn Coat",
-  429545: "Censoring Gear",
-  272571: "Choking Waters",
-  452099: "Congealed Darkness",
-  322450: "Consumption",
-  334748: "Drain Fluids",
+  ///////////////////////////////////////////
+  // Cataclysm Dungeons
+  ///////////////////////////////////////////
+
+  // Grim Batol
   451261: "Earth Bolt",
+  451871: "Mass Tremor",
+  76711: "Sear Mind",
+  447966: "Shadowflame Bolt",
+  76369: "Shadowflame Bolt",
+
+  ///////////////////////////////////////////
+  // Battle For Azeroth Dungeons
+  ///////////////////////////////////////////
+
+  // Siege of Boralus
+  275826: "Bolstering Shout",
+  257063: "Brackish Bolt",
+  272571: "Choking Waters",
+  454440: "Stinky Vomit",
+  272581: "Water Bolt",
+  256957: "Watertight Shell",
+
+  ///////////////////////////////////////////
+  // Shadowlands Dungeons
+  ///////////////////////////////////////////
+
+  // The Necrotic Wake
+  335143: "Bonemend",
+  334748: "Drain Fluids",
   322274: "Enfeeble",
-  431309: "Ensnaring Shadows",
   320336: "Frostbolt",
   333602: "Frostbolt",
   328667: "Frostbolt Volley",
   338353: "Goresplatter",
   327396: "Grim Fate",
-  442536: "Grimweave Blast",
-  322938: "Harvest Essence",
-  434802: "Horrifying Shrill",
-  449455: "Howling Fear",
-  451871: "Mass Tremor",
-  452162: "Mending Web",
-  430097: "Molten Metal",
   320171: "Necrotic Bolt",
   320462: "Necrotic Bolt",
-  431303: "Night Bolt",
+  324293: "Rasping Scream",
+
+  // Mists of Tirna Scithe
+  324776: "Bramblethorn Coat",
+  322450: "Consumption",
+  322938: "Harvest Essence",
   324914: "Nourish the Forest",
   321828: "Patty Cake",
-  445207: "Piercing Wail",
-  436322: "Poison Bolt",
-  324293: "Rasping Scream",
-  434793: "Resonant Barrage",
-  429109: "Restoring Metals",
-  448248: "Revolting Volley",
-  76711: "Sear Mind",
-  428086: "Shadow Bolt",
-  447966: "Shadowflame Bolt",
-  76369: "Shadowflame Bolt",
-  443430: "Silk Binding",
   323057: "Spirit Bolt",
   322767: "Spirit Bolt",
   340544: "Stimulate Regeneration",
   326046: "Stimulate Resistance",
-  454440: "Stinky Vomit",
-  429422: "Stone Bolt",
-  431333: "Tormenting Beam",
-  443433: "Twist Thoughts",
-  432520: "Umbral Barrier",
+
+  ///////////////////////////////////////////
+  // The War Within Dungeons
+  ///////////////////////////////////////////
+
+  // Ara-Kara, City of Echoes
+  434802: "Horrifying Shrill",
+  436322: "Poison Bolt",
+  434793: "Resonant Barrage",
+  448248: "Revolting Volley",
   433841: "Venom Volley",
+  434786: "Web Bolt",
+
+  // City of Threads
+  442536: "Grimweave Blast",
+  452162: "Mending Web",
+  443430: "Silk Binding",
+  443433: "Twist Thoughts",
   434122: "Void Bolt",
   446086: "Void Wave",
-  272581: "Water Bolt",
-  256957: "Watertight Shell",
-  451113: "Web Bolt",
   443427: "Web Bolt",
-  434786: "Web Bolt"
+
+  // The Dawnbreaker
+  450756: "Abyssal Howl",
+  449734: "Acidic Eruption",
+  452099: "Congealed Darkness",
+  431309: "Ensnaring Shadows",
+  431303: "Night Bolt",
+  428086: "Shadow Bolt",
+  431333: "Tormenting Beam",
+  432520: "Umbral Barrier",
+  451113: "Web Bolt",
+
+  // Stonevault
+  //429110: "Alloy Bolt",
+  //426283: "Arcing Void",
+  429109: "Restoring Metals",
+  429545: "Censoring Gear",
+  428161: "Molten Metal", // XXX: decide which of these are correct
+  430097: "Molten Metal",
+  445207: "Piercing Wail",
+  449455: "Howling Fear",
+  429422: "Stone Bolt",
 };
