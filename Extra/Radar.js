@@ -255,7 +255,7 @@ class Radar {
     // New: Interact with tracked objects within melee range
     if (Settings.ExtraRadarInteractTracked && !me.currentCastOrChannel) {
       for (const obj of trackedObjects) {
-        if (me.withinInteractRange(obj)) {
+        if (me.withinInteractRange(obj) && !me.isMoving()) {
           obj.interact();
           break;
         }
