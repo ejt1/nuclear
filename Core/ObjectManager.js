@@ -91,7 +91,7 @@ class ObjectManager {
         return new wow.CGAreaTrigger(base.guid);
       default:
         // obj number 10 and 11 appearing, whut this? Help me Tovarish Ian.
-        // console.warn(`Unknown object type: ${base.type}`);
+        //console.warn(`Unknown object type: ${base.type}`);
         return null;
     }
   }

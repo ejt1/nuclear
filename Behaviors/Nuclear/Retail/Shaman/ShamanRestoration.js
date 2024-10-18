@@ -13,7 +13,7 @@ import { WoWDispelType } from "@/Enums/Auras";
 
 const HEALING_RAIN_RADIUS = 11;
 const HEALING_STREAM_TOTEM_RANGE = 30;
-const HEALING_RAIN_COOLDOWN = 5000; // 500ms cooldown, adjust as needed
+const HEALING_RAIN_COOLDOWN = 500; // 500ms cooldown, adjust as needed
 
 export class ShamanRestorationBehavior extends Behavior {
   name = "Restoration Shaman";
@@ -25,6 +25,30 @@ export class ShamanRestorationBehavior extends Behavior {
   lastHealingStreamTotemCast = 0;
   //static HEALING_STREAM_TOTEM_COOLDOWN = 18000;
   static HEALING_STREAM_TOTEM_NAME = "Healing Stream Totem";
+  constructor() {
+    super();
+    this.lastHealingCheck = 0;
+    this.lastDamageCheck = 0;
+    this.lastTotemCheck = 0;
+    this.cachedLowestHealthAlly = null;
+    this.cachedLowestHealthExpiry = 0;
+  }
+
+  getActiveTankWithoutEarthShield() {
+    const tanks = heal.friends.Tanks;
+
+    // First, try to find an active tank without Earth Shield
+    const activeTankWithoutShield = tanks.find(tank =>
+      tank.isTanking() && !tank.hasAura("Earth Shield")
+    );
+
+    if (activeTankWithoutShield) {
+      return activeTankWithoutShield;
+    }
+
+    // If no active tank without shield, just return any tank without shield
+    return tanks.find(tank => !tank.hasAura("Earth Shield"));
+  }
 
   static settings = [
     { type: "slider", uid: "RestoShamanEmergencyHealingThreshold", text: "Emergency Healing Threshold", min: 0, max: 100, default: 30 },
@@ -38,45 +62,75 @@ export class ShamanRestorationBehavior extends Behavior {
     { type: "slider", uid: "RestoShamanChainHealThreshold", text: "Chain Heal Threshold", min: 0, max: 100, default: 60 },
   ];
 
+  shouldStopCasting() {
+    if (!me.isCastingOrChanneling) return false;
+
+    const currentCast = me.currentCastOrChannel;
+    const remainingCastTime = currentCast.timeleft;
+
+    // If the cast is almost complete (less than 0.5 seconds remaining), let it finish
+    if (remainingCastTime < 500) return false;
+
+    const isDamageCast = currentCast.name === "Chain Lightning" || currentCast.name === "Lava Burst";
+    const isHealCast = currentCast.name === "Healing Wave" || currentCast.name === "Healing Surge" || currentCast.name === "Chain Heal";
+
+    if (isDamageCast && (this.isHealingNeeded() || this.isEmergencyHealingNeeded())) {
+      return true;
+    }
+
+    if (isHealCast && !this.isHealingNeeded() && !this.isEmergencyHealingNeeded()) {
+      return true;
+    }
+
+    return false;
+  }
+
   build() {
     return new bt.Selector(
       common.waitForNotMounted(),
       common.waitForCastOrChannel(),
+      common.waitForNotSitting(),
+      new bt.Decorator(
+        () => this.shouldStopCasting(),
+        new bt.Action(() => {
+          me.stopCasting();
+          return bt.Status.Success;
+        })
+      ),
       spell.cast("Skyfury", on => me, req => !me.hasVisibleAura("Skyfury") && !me.hasVisibleAura("Ghost Wolf")),
       spell.cast("Water Shield", on => me, req => !me.hasVisibleAura("Water Shield") && !me.hasVisibleAura("Ghost Wolf")),
       spell.cast("Earth Shield", on => me, req => !me.hasVisibleAura("Earth Shield") && !me.hasVisibleAura("Ghost Wolf")),
       spell.cast("Earthliving Weapon", on => me, req => !me.hasAura(382022) && !me.hasVisibleAura("Ghost Wolf")),
-      spell.cast("Astral Shift", req => me.inCombat() && me.pctHealth < 40 && !me.hasVisibleAura("Ghost Wolf")),
-      spell.cast("Stone Bulwark Totem", req => me.inCombat() && me.pctHealth < 40 && !me.hasVisibleAura("Astral Shift") && !me.hasVisibleAura("Ghost Wolf")),
+      spell.cast("Astral Shift", req => me.inCombat() && me.effectiveHealthPercent < 40 && !me.hasVisibleAura("Ghost Wolf")),
+      spell.cast("Stone Bulwark Totem", req => me.inCombat() && me.effectiveHealthPercent < 40 && !me.hasVisibleAura("Astral Shift") && !me.hasVisibleAura("Ghost Wolf")),
       spell.cast("Earth Elemental", req => {
         const tank = this.getTank();
-        return me.inCombat() && tank && tank.pctHealth < 20 && !me.hasVisibleAura("Ghost Wolf");
+        return me.inCombat() && tank && tank.effectiveHealthPercent < 20 && !me.hasVisibleAura("Ghost Wolf");
       }),
       spell.interrupt("Wind Shear"),
       spell.dispel("Poison Cleansing Totem", true, DispelPriority.Low, false, WoWDispelType.Poison),
       spell.dispel("Purify Spirit", true, DispelPriority.Low, false, WoWDispelType.Magic),
       spell.dispel("Purify Spirit", true, DispelPriority.Low, false, WoWDispelType.Curse),
-      spell.cast("Earth Shield", on => this.getTank(), req => {
-        const tank = this.getTank();
-        return tank && !tank.hasAura("Earth Shield") && !me.hasVisibleAura("Ghost Wolf");
+      spell.cast("Earth Shield", on => this.getActiveTankWithoutEarthShield(), req => {
+        const activeTankWithoutShield = this.getActiveTankWithoutEarthShield();
+        return activeTankWithoutShield && !me.hasVisibleAura("Ghost Wolf") && me.distanceTo(activeTankWithoutShield) <= 40 && me.inMythicPlus() && me.withinLineOfSight(activeTankWithoutShield);
       }),
-      // Emergency healing check
       new bt.Decorator(
-        () => this.isEmergencyHealingNeeded() && (me.inCombat() || this.getTank() && this.getTank().inCombat()),
+        () => this.isEmergencyHealingNeeded() && (me.inCombat() || this.getTank() && this.getTank().inCombat()) && wow.frameTime - this.lastHealingCheck > 200,
         this.emergencyHealing()
       ),
       new bt.Decorator(
-        ret => !spell.isGlobalCooldown(),
+        ret => !spell.isGlobalCooldown() || !me.inMythicPlus(),
         new bt.Selector(
           new bt.Decorator(
-            () => this.isHealingNeeded() && (me.inCombat() || this.getTank() && this.getTank().inCombat() || this.getLowestHealthAlly() && this.getLowestHealthAlly().pctHealth < 90),
+            () => this.isHealingNeeded() && (me.inCombat() || this.getTank() && this.getTank().inCombat() || this.getLowestHealthAlly() && this.getLowestHealthAlly().effectiveHealthPercent < 90) && wow.frameTime - this.lastHealingCheck > 200,
             new bt.Selector(
               this.manageTotemProjection(),
               this.healingRotation()
             )
           ),
           new bt.Decorator(
-            () => (me.inCombat() || this.getTank() && this.getTank().inCombat()),
+            () => (me.inCombat() || this.getTank() && this.getTank().inCombat()) && wow.frameTime - this.lastDamageCheck > 200 && me.pctPower > 50,
             new bt.Selector(
               this.damageRotation()
             )
@@ -85,32 +139,35 @@ export class ShamanRestorationBehavior extends Behavior {
       )
     );
   }
-  
+
   isHealingNeeded() {
     const lowestHealth = this.getLowestHealthPercentage();
-    return lowestHealth <= 90 || 
-           lowestHealth < Settings.RestoShamanEmergencyHealingThreshold ||
-           lowestHealth < Settings.RestoShamanAncestralGuidanceThreshold ||
-           lowestHealth < Settings.RestoShamanAscendanceThreshold ||
-           lowestHealth < Settings.RestoShamanRiptideThreshold ||
-           lowestHealth < Settings.RestoShamanHealingSurgeThreshold ||
-           lowestHealth < Settings.RestoShamanHealingWaveThreshold ||
-           lowestHealth < Settings.RestoShamanPrimordialWaveThreshold ||
-           lowestHealth < Settings.RestoShamanChainHealThreshold;
+    if (lowestHealth > 90) return false;
+    if (lowestHealth <= 90 ||
+      lowestHealth < Settings.RestoShamanEmergencyHealingThreshold ||
+      lowestHealth < Settings.RestoShamanAncestralGuidanceThreshold ||
+      lowestHealth < Settings.RestoShamanAscendanceThreshold ||
+      lowestHealth < Settings.RestoShamanRiptideThreshold ||
+      lowestHealth < Settings.RestoShamanHealingSurgeThreshold ||
+      lowestHealth < Settings.RestoShamanHealingWaveThreshold ||
+      lowestHealth < Settings.RestoShamanPrimordialWaveThreshold ||
+      lowestHealth < Settings.RestoShamanChainHealThreshold) return true;
   }
 
   isEmergencyHealingNeeded() {
     const lowestHealth = this.getLowestHealthPercentage();
-    return me.inCombat() && this.getLowestHealthAlly().inCombat() &&
-           lowestHealth <= Settings.RestoShamanEmergencyHealingThreshold;
+    return me.inCombat() && this.getLowestHealthAlly().inCombat() && me.withinLineOfSight(this.getLowestHealthAlly()) &&
+      lowestHealth <= Settings.RestoShamanEmergencyHealingThreshold;
   }
-  
+
   emergencyHealing() {
     return new bt.Selector(
+      common.useEquippedItemByName("Spymaster's Web"),
+      common.useEquippedItemByName("Imperfect Ascendancy Serum"),
       spell.cast("Nature's Swiftness", on => me),
-      spell.cast("Healing Surge", on => this.getLowestHealthAlly(), req => me.hasAura("Nature's Swiftness")),
+      spell.cast("Healing Wave", on => this.getLowestHealthAlly(), req => me.hasAura("Nature's Swiftness")),
       spell.cast("Healing Tide Totem"),
-      spell.cast("Spirit Link Totem", on => this.getBestSpiritLinkTarget(), req => this.shouldUseSpiritLinkTotem()),
+      // spell.cast("Spirit Link Totem", on => this.getBestSpiritLinkTarget(), req => this.shouldUseSpiritLinkTotem()),
       spell.cast("Ascendance", req => this.getLowestHealthPercentage() < Settings.RestoShamanAscendanceThreshold),
       spell.cast("Ancestral Guidance", req => this.getLowestHealthPercentage() < Settings.RestoShamanAncestralGuidanceThreshold),
       spell.cast("Healing Surge", on => this.getLowestHealthAlly())
@@ -120,21 +177,24 @@ export class ShamanRestorationBehavior extends Behavior {
   healingRotation() {
     return new bt.Selector(
       new bt.Decorator(
-        () => me.inCombat() && this.getLowestHealthAlly() && 
-              this.getLowestHealthAlly().inCombat() && 
-              this.getLowestHealthAlly().pctHealth <= Settings.RestoShamanEmergencyHealingThreshold,
+        () => this.shouldStopCasting(),
+        new bt.Action(() => {
+          me.stopCasting();
+          return bt.Status.Success;
+        })
+      ),
+      new bt.Decorator(
+        () => me.inCombat() && this.getLowestHealthAlly() &&
+          this.getLowestHealthAlly().inCombat() &&
+          this.getLowestHealthAlly().effectiveHealthPercent <= Settings.RestoShamanEmergencyHealingThreshold,
         this.emergencyHealing()
       ),
       new bt.Decorator(
-        () => !this.isHealingStreamTotemNearby() && this.canCastHealingStreamTotem(),
-        spell.cast("Healing Stream Totem", on => me)
-      ),
-      new bt.Decorator(
-        () => !this.isHealingRainActive() && wow.frameTime - this.lastHealingRainCast > HEALING_RAIN_COOLDOWN,
+        () => !this.isHealingRainActive() && wow.frameTime - this.lastHealingRainCast > HEALING_RAIN_COOLDOWN && (this.getLowestHealthAlly().effectiveHealthPercent > 90 || me.hasAura("Surging Totem")),
         new bt.Selector(
-          spell.cast("Healing Rain", on => this.getBestHealingRainTarget(), req => {
-            const target = this.getBestHealingRainTarget();
-            return target && target.pctHealth < 90;
+          spell.cast("Healing Rain", on => this.getBestHealingRainPosition(), req => {
+            const bestPosition = this.getBestHealingRainPosition();
+            return bestPosition !== null;
           }),
           new bt.Action(() => {
             this.lastHealingRainCast = wow.frameTime;
@@ -142,56 +202,85 @@ export class ShamanRestorationBehavior extends Behavior {
           })
         )
       ),
-      spell.cast("Healing Rain", on => this.getLowestHealthAlly(), req => {
-        const tank = this.getTank();
-        return tank && tank.inCombat() && me.hasAura("Surging Totem");
-      }),
-      spell.cast("Riptide", on => this.getAllyNeedingRiptide()),
-      spell.cast("Primordial Wave", on => this.getLowestHealthAlly(), req => {
-        const lowestHealthAlly = this.getLowestHealthAlly();
-        return lowestHealthAlly && lowestHealthAlly.pctHealth < Settings.RestoShamanPrimordialWaveThreshold;
-      }),
-      spell.cast("Chain Heal", on => this.getLowestHealthAlly(), req => {
-        const lowestHealthAlly = this.getLowestHealthAlly();
-        if (!lowestHealthAlly) return false;
-        const alliesNearby = this.getAlliesInRange(lowestHealthAlly, 12);
-        return alliesNearby.length >= 2 && 
-               this.getAverageHealthPercentage(alliesNearby) < Settings.RestoShamanChainHealThreshold;
-      }),
-      spell.cast("Healing Surge", on => this.getLowestHealthAlly(), req => {
-        const lowestHealthAlly = this.getLowestHealthAlly();
-        return lowestHealthAlly && lowestHealthAlly.pctHealth < Settings.RestoShamanHealingSurgeThreshold;
-      }),
-      spell.cast("Healing Wave", on => this.getLowestHealthAlly(), req => {
-        const lowestHealthAlly = this.getLowestHealthAlly();
-        return lowestHealthAlly && lowestHealthAlly.pctHealth < Settings.RestoShamanHealingWaveThreshold;
-      }),
-      spell.cast("Wellspring", on => this.getLowestHealthAlly()),
       spell.cast("Downpour", on => this.getBestDownpourTarget(), req => {
         const healingRainTotem = this.getTotemByName("Healing Rain");
         const surgingTotem = this.getTotemByName("Surging Totem");
-        
+
         const checkDamagedAlliesAroundTotem = (totem) => {
           if (!totem) return false;
           const alliesNearTotem = this.getAlliesInRange(totem, 11);
-          return alliesNearTotem.some(ally => ally.pctHealth < 90);
+          return alliesNearTotem.some(ally => ally.effectiveHealthPercent < 90);
         };
-      
+
         return checkDamagedAlliesAroundTotem(healingRainTotem) || checkDamagedAlliesAroundTotem(surgingTotem);
-      })
+      }),
+      spell.cast("Riptide", on => this.getAllyNeedingRiptide()),
+      new bt.Decorator(
+        () => !this.isHealingStreamTotemNearby() && this.canCastHealingStreamTotem(),
+        spell.cast("Healing Stream Totem", on => me)
+      ),
+      spell.cast("Primordial Wave", on => this.getAllyNeedingRiptide(), req => {
+        const lowestHealthAlly = this.getLowestHealthAlly();
+        return lowestHealthAlly && lowestHealthAlly.effectiveHealthPercent < Settings.RestoShamanPrimordialWaveThreshold;
+      }),
+      spell.cast("Nature's Swiftness", on => me, req => {
+        const lowestHealthAlly = this.getLowestHealthAlly();
+        return lowestHealthAlly && lowestHealthAlly.effectiveHealthPercent < 70 && me.inCombat();
+      }),
+      spell.cast("Ancestral Swiftness", on => me, req => {
+        const lowestHealthAlly = this.getLowestHealthAlly();
+        return lowestHealthAlly && lowestHealthAlly.effectiveHealthPercent < 70 && me.hasAura("Ancestral Swiftness");
+      }),
+      spell.cast("Unleash Life", on => me, req => {
+        const lowestHealthAlly = this.getLowestHealthAlly();
+        return lowestHealthAlly && lowestHealthAlly.effectiveHealthPercent < 70;
+      }),
+      spell.cast("Chain Heal", on => this.getBestChainHealTarget(), req => {
+        const target = this.getBestChainHealTarget();
+        if (!target) return false;
+
+        const alliesNearby = this.getAlliesInRange(target, 12);
+        const injuredAllies = alliesNearby.filter(ally => ally.effectiveHealthPercent < Settings.RestoShamanChainHealThreshold);
+
+        return (injuredAllies.length >= 3 ||
+          (injuredAllies.length >= 2 && injuredAllies.some(ally => ally.effectiveHealthPercent < Settings.RestoShamanChainHealThreshold - 10))) &&
+          me.hasVisibleAura("High Tide");
+      }),
+      spell.cast("Healing Wave", on => this.getLowestHealthAlly(), req => {
+        const lowestHealthAlly = this.getLowestHealthAlly();
+        return lowestHealthAlly && lowestHealthAlly.effectiveHealthPercent < 80 && me.hasVisibleAura("Primordial Wave");
+      }),
+      spell.cast("Healing Surge", on => this.getLowestHealthAlly(), req => {
+        const lowestHealthAlly = this.getLowestHealthAlly();
+        return lowestHealthAlly && lowestHealthAlly.effectiveHealthPercent < 70 && !me.hasVisibleAura("Nature's Swiftness") && me.hasVisibleAura("Master of the Elements");
+      }),
+      spell.cast("Healing Surge", on => this.getLowestHealthAlly(), req => {
+        const lowestHealthAlly = this.getLowestHealthAlly();
+        return lowestHealthAlly && lowestHealthAlly.effectiveHealthPercent < Settings.RestoShamanHealingSurgeThreshold && !me.hasVisibleAura("Nature's Swiftness");
+      }),
+      spell.cast("Healing Wave", on => this.getLowestHealthAlly(), req => {
+        const lowestHealthAlly = this.getLowestHealthAlly();
+        return lowestHealthAlly && lowestHealthAlly.effectiveHealthPercent < Settings.RestoShamanHealingWaveThreshold;
+      }),
+      spell.cast("Wellspring", on => this.getLowestHealthAlly()),
     );
   }
 
   damageRotation() {
     return new bt.Selector(
-      spell.cast("Lava Burst", on => this.getLavaBurstTarget(), req => me.hasVisibleAura("Lava Surge") && this.getLavaBurstTarget() !== null),
-      spell.cast("Flame Shock", on => this.getFlameShockTarget(), req => this.getFlameShockTarget() !== null),
+      new bt.Decorator(
+        () => this.shouldStopCasting(),
+        new bt.Action(() => {
+          me.stopCasting();
+          return bt.Status.Success;
+        })
+      ),
       new bt.Decorator(
         () => !this.isHealingRainActive() && wow.frameTime - this.lastHealingRainCast > HEALING_RAIN_COOLDOWN,
         new bt.Selector(
-          spell.cast("Healing Rain", on => this.getCurrentTarget(), req => {
-            const target = this.getCurrentTarget();
-            return target && this.getAttackableUnitsAroundUnit(target, 10) >= 3 && me.hasAura("Acid Rain");
+          spell.cast("Healing Rain", on => this.getBestHealingRainPosition(), req => {
+            const bestPosition = this.getBestHealingRainPosition();
+            return bestPosition !== null;
           }),
           new bt.Action(() => {
             this.lastHealingRainCast = wow.frameTime;
@@ -199,15 +288,17 @@ export class ShamanRestorationBehavior extends Behavior {
           })
         )
       ),
+      spell.cast("Lava Burst", on => this.getLavaBurstTarget(), req => me.hasVisibleAura("Lava Surge") && this.getLavaBurstTarget() !== null),
+      spell.cast("Flame Shock", on => this.getFlameShockTarget(), req => this.getFlameShockTarget() !== null),
       spell.cast("Chain Lightning", on => this.getCurrentTarget(), req => {
         const target = this.getCurrentTarget();
-        return target && this.getAttackableUnitsAroundUnit(target, 10) >= 3;
+        return target && target.getUnitsAroundCount(10) >= 2;
       }),
       spell.cast("Lava Burst", on => this.getLavaBurstTarget(), req => this.getLavaBurstTarget() !== null),
       spell.cast("Lightning Bolt", on => this.getCurrentTarget())
     );
   }
-  
+
   manageTotemProjection() {
     return new bt.Selector(
       spell.cast("Totemic Projection", req => {
@@ -231,9 +322,9 @@ export class ShamanRestorationBehavior extends Behavior {
   getTotemByName(totemName) {
     let totem = null;
     objMgr.objects.forEach(obj => {
-      if (obj instanceof wow.CGUnit && 
-          obj.name === totemName && 
-          obj.createdBy && obj.createdBy.equals(me.guid)) {
+      if (obj instanceof wow.CGUnit &&
+        obj.name === totemName &&
+        obj.createdBy && obj.createdBy.equals(me.guid)) {
         totem = obj;
         return false; // Break the loop
       }
@@ -267,7 +358,7 @@ export class ShamanRestorationBehavior extends Behavior {
   }
 
   isHealingRainActive() {
-    const totem = this.getTotemByName("Healing Rain");
+    const totem = me.hasAura("Surging Totem") && this.getTotemByName("Surging Totem") || this.getTotemByName("Healing Rain");
     if (totem) {
       const alliesInRange = this.getAlliesInRange(totem, HEALING_RAIN_RADIUS);
       // console.info(`Healing Rain found. Allies in range: ${alliesInRange.length}`);
@@ -290,21 +381,21 @@ export class ShamanRestorationBehavior extends Behavior {
 
   getAlliesInRange(unit, range) {
     let allies = heal.friends.All.filter(ally => ally && ally.distanceTo(unit) <= range);
-    
+
     // Check if 'me' is already in the list
     const selfIncluded = allies.some(ally => ally.guid.equals(me.guid));
-    
+
     // If 'me' is not in the list and is within range, add it
     if (!selfIncluded && me.distanceTo(unit) <= range) {
       allies.push(me);
     }
-    
+
     return allies;
   }
-  
+
   getAverageHealthPercentage(allies) {
     if (allies.length === 0) return 100;
-    const totalHealth = allies.reduce((sum, ally) => sum + (ally ? ally.pctHealth : 0), 0);
+    const totalHealth = allies.reduce((sum, ally) => sum + (ally ? ally.effectiveHealthPercent : 0), 0);
     return totalHealth / allies.length;
   }
 
@@ -313,28 +404,37 @@ export class ShamanRestorationBehavior extends Behavior {
   }
 
   getLowestHealthAlly() {
+    if (wow.frameTime < this.cachedLowestHealthExpiry) {
+      return this.cachedLowestHealthAlly;
+    }
+
     let allies = [...heal.friends.All];
     if (!allies.some(ally => ally.guid.equals(me.guid))) {
       allies.push(me);
     }
-    return allies.sort((a, b) => (a ? a.pctHealth : 100) - (b ? b.pctHealth : 100))[0] || null;
+    allies = allies.filter(ally => me.withinLineOfSight(ally));
+
+    this.cachedLowestHealthAlly = allies.sort((a, b) => (a ? a.effectiveHealthPercent : 100) - (b ? b.effectiveHealthPercent : 100))[0] || null;
+    this.cachedLowestHealthExpiry = wow.frameTime + 200;
+
+    return this.cachedLowestHealthAlly;
   }
 
   getLowestHealthPercentage() {
     const lowestHealthAlly = this.getLowestHealthAlly();
-    return lowestHealthAlly ? lowestHealthAlly.pctHealth : 100;
+    return lowestHealthAlly ? lowestHealthAlly.effectiveHealthPercent : 100;
   }
 
   getAllyNeedingRiptide() {
-    return heal.friends.All.find(ally => 
-      ally && ally.pctHealth < Settings.RestoShamanRiptideThreshold && !ally.hasAura("Riptide")
+    return heal.friends.All.find(ally =>
+      ally && ally.effectiveHealthPercent < Settings.RestoShamanRiptideThreshold && !ally.hasVisibleAura("Riptide")
     ) || null;
   }
 
   getDamagedAlliesCount(range = 40) {
     const lowestHealthAlly = this.getLowestHealthAlly();
-    return lowestHealthAlly ? heal.friends.All.filter(ally => 
-      ally && ally.pctHealth < 100 && ally.distanceTo(lowestHealthAlly) <= range
+    return lowestHealthAlly ? heal.friends.All.filter(ally =>
+      ally && ally.effectiveHealthPercent < 100 && ally.distanceTo(lowestHealthAlly) <= range
     ).length : 0;
   }
 
@@ -343,10 +443,12 @@ export class ShamanRestorationBehavior extends Behavior {
   }
 
   getCurrentTarget() {
-    const targetPredicate = unit => 
-      unit && common.validTarget(unit) && 
-      unit.distanceTo(me) <= 30 && 
-      me.isFacing(unit);
+    const targetPredicate = unit =>
+      unit && common.validTarget(unit) &&
+      unit.distanceTo(me) <= 30 &&
+      me.isFacing(unit) &&
+      me.withinLineOfSight(unit) &&
+      !unit.isImmune();
 
     const target = me.target;
     if (target !== null && targetPredicate(target)) {
@@ -360,14 +462,14 @@ export class ShamanRestorationBehavior extends Behavior {
       return me.target;
     }
 
-    const units = me.getUnitsAround(30);
-    return units.find(unit => unit && !unit.hasAuraByMe("Flame Shock") && me.isFacing(unit) && me.canAttack(unit)) || null;
+    const units = me.getUnitsAround(40);
+    return units.find(unit => unit && !unit.hasAuraByMe("Flame Shock") && me.isFacing(unit) && unit.inCombat() && !unit.isImmune() && me.withinLineOfSight(unit) && me.canAttack(unit)) || null;
   }
 
   getAttackableUnitsAroundUnit(unit, range) {
     if (!unit) return 0;
     const units = me.getUnitsAround(range);
-    return units.filter(u => u && u.distanceTo(unit) <= range && me.canAttack(u)).length;
+    return units.filter(u => u && u.distanceTo(unit) <= range && me.canAttack(u) && !u.isImmune()).length;
   }
 
   getLavaBurstTarget() {
@@ -375,8 +477,8 @@ export class ShamanRestorationBehavior extends Behavior {
       return me.target;
     }
 
-    const units = me.getUnitsAround(30);
-    return units.find(unit => unit && unit.hasAuraByMe("Flame Shock") && me.isFacing(unit) && me.canAttack(unit)) || null;
+    const units = me.getUnitsAround(40);
+    return units.find(unit => unit && unit.hasAuraByMe("Flame Shock") && me.isFacing(unit) && unit.inCombat() && !unit.isImmune() && me.withinLineOfSight(unit) && me.canAttack(unit)) || null;
   }
 
   getAlliesInRange(unit, range) {
@@ -385,6 +487,28 @@ export class ShamanRestorationBehavior extends Behavior {
       allies.push(me);
     }
     return allies;
+  }
+
+  getBestChainHealTarget() {
+    return heal.friends.All.reduce((best, current) => {
+      if (!current) return best;
+      const alliesNearby = this.getAlliesInRange(current, 12);
+      const injuredAllies = alliesNearby.filter(ally => ally.effectiveHealthPercent < Settings.RestoShamanChainHealThreshold);
+
+      if (!best) return current;
+
+      const bestInjuredAllies = this.getAlliesInRange(best, 12).filter(ally => ally.effectiveHealthPercent < Settings.RestoShamanChainHealThreshold);
+
+      if (injuredAllies.length > bestInjuredAllies.length) {
+        return current;
+      } else if (injuredAllies.length === bestInjuredAllies.length) {
+        const currentLowestHealth = Math.min(...injuredAllies.map(ally => ally.effectiveHealthPercent));
+        const bestLowestHealth = Math.min(...bestInjuredAllies.map(ally => ally.effectiveHealthPercent));
+        return currentLowestHealth < bestLowestHealth ? current : best;
+      }
+
+      return best;
+    }, null);
   }
 
   getBestHealingRainTarget() {
@@ -396,6 +520,46 @@ export class ShamanRestorationBehavior extends Behavior {
       }
       return best;
     }, null);
+  }
+
+  getBestHealingRainPosition() {
+    const allUnits = [...heal.friends.All, ...combat.targets];
+    const tank = this.getTank();
+    const hasAcidRain = me.hasAura("Acid Rain");
+
+    let bestPosition = null;
+    let maxUnitsInRange = 0;
+
+    // Function to count units within range of a position
+    const countUnitsInRange = (position, units) => {
+      return units.filter(unit => unit.distanceTo(position) <= HEALING_RAIN_RADIUS).length;
+    };
+
+    // Check each unit's position as a potential center
+    allUnits.forEach(centerUnit => {
+      const position = centerUnit.position;
+      let unitsInRange;
+
+      if (hasAcidRain) {
+        // Count both friends and enemies
+        unitsInRange = countUnitsInRange(position, allUnits);
+      } else {
+        // Count only friends, but ensure tank is included
+        const friendsInRange = countUnitsInRange(position, heal.friends.All);
+        if (tank && tank.distanceTo(position) <= HEALING_RAIN_RADIUS) {
+          unitsInRange = friendsInRange;
+        } else {
+          unitsInRange = 0; // Don't consider positions without the tank
+        }
+      }
+
+      if (unitsInRange > maxUnitsInRange) {
+        maxUnitsInRange = unitsInRange;
+        bestPosition = position;
+      }
+    });
+
+    return bestPosition;
   }
 
   getBestSpiritLinkTarget() {
@@ -410,31 +574,51 @@ export class ShamanRestorationBehavior extends Behavior {
   }
 
   shouldUseSpiritLinkTotem() {
-    const alliesInDanger = heal.friends.All.filter(ally => ally && ally.pctHealth < Settings.RestoShamanSpiritLinkThreshold && this.getAlliesInRange(ally, 12).length >= 3);
+    const alliesInDanger = heal.friends.All.filter(ally => ally && ally.effectiveHealthPercent < Settings.RestoShamanSpiritLinkThreshold && this.getAlliesInRange(ally, 8).length >= 4);
     return alliesInDanger;
   }
 
   getBestDownpourTarget() {
     const healingRainTotem = this.getTotemByName("Healing Rain");
     const surgingTotem = this.getTotemByName("Surging Totem");
-    
+
     const findBestTargetAroundTotem = (totem) => {
       if (!totem) return null;
       const alliesNearTotem = this.getAlliesInRange(totem, 11);
       return alliesNearTotem.reduce((best, current) => {
-        if (current.pctHealth < 90 && (!best || current.pctHealth < best.pctHealth)) {
+        if (current.effectiveHealthPercent < 90 && (!best || current.effectiveHealthPercent < best.effectiveHealthPercent)) {
           return current;
         }
         return best;
       }, null);
     };
-  
+
     const targetNearHealingRain = findBestTargetAroundTotem(healingRainTotem);
     const targetNearSurgingTotem = findBestTargetAroundTotem(surgingTotem);
-  
+
     // Return the target with lower health, or null if no valid targets
-    return (targetNearHealingRain && targetNearSurgingTotem) 
-      ? (targetNearHealingRain.pctHealth < targetNearSurgingTotem.pctHealth ? targetNearHealingRain : targetNearSurgingTotem)
+    return (targetNearHealingRain && targetNearSurgingTotem)
+      ? (targetNearHealingRain.effectiveHealthPercent < targetNearSurgingTotem.effectiveHealthPercent ? targetNearHealingRain : targetNearSurgingTotem)
       : (targetNearHealingRain || targetNearSurgingTotem);
+  }
+
+  getTanks() {
+    return heal.friends.Tanks.filter(tank => tank !== null);
+  }
+
+  getActiveTankWithoutEarthShield() {
+    const tanks = this.getTanks();
+
+    // First, try to find an active tank without Earth Shield
+    const activeTankWithoutShield = tanks.find(tank =>
+      tank.isTanking() && !tank.hasAura("Earth Shield")
+    );
+
+    if (activeTankWithoutShield) {
+      return activeTankWithoutShield;
+    }
+
+    // If no active tank without shield, just return any tank without shield
+    return tanks.find(tank => !tank.hasAura("Earth Shield"));
   }
 }
