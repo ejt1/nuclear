@@ -88,8 +88,8 @@ export class PaladinHolyPvP extends Behavior {
   damageRotation() {
     return new bt.Selector(
       spell.cast("Hammer of Wrath",
-        on => combat.targets.find(unit =>
-          (unit.pctHealth < 20 || me.hasAura(auras.avengingwrath)) &&
+        on => combat.targets.find(unit => (unit.isPlayer() &&
+          (unit.pctHealth < 20  || me.hasAura(auras.avengingwrath))) &&
           me.isFacing(unit)
         ),
         { skipUsableCheck: true }

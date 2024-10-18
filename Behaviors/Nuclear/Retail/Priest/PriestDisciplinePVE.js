@@ -56,14 +56,15 @@ export class PriestDiscipline extends Behavior {
   // Atonement Application
   applyAtonement() {
     return new bt.Selector(
-      spell.cast("Power Word: Shield", on => this.findFriendWithoutAtonement(), ret => this.findFriendWithoutAtonement() !== undefined)
+      spell.cast("Power Word: Shield", on => this.findFriendWithoutAtonement(), ret => this.findFriendWithoutAtonement() !== undefined),
+      spell.cast("Renew", on => this.findFriendWithoutAtonement(), ret => this.findFriendWithoutAtonement() !== undefined && me.currentParty.members.length < 7)
     );
   }
 
   // Healing Rotation
   healRotation() {
     return new bt.Selector(
-      spell.cast("Power Word: Life", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 35 && me.inCombat),
+      spell.cast("Power Word: Life", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 50 && me.inCombat),
       spell.cast("Desperate Prayer", on => me, ret => me.pctHealth < 70 && me.inCombat),
       //spell.cast("Pain Suppression", on => h.getPriorityTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(34) && me.inCombat),
       spell.cast("Rapture", on => h.getPriorityTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(30) && me.inCombat()),
