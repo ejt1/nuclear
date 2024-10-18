@@ -143,6 +143,9 @@ class Radar {
     } else if (obj instanceof wow.CGUnit && obj.classification == Classification.Rare && !obj.deadOrGhost) {
       prefix = '[R] ';
       prefixColor = colors.purple;
+    } else if (obj instanceof wow.CGAreaTrigger) {
+      prefix = '[AT] ';
+      prefixColor = colors.purple;
     }
 
     let text = `${obj.name}`;
