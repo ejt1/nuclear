@@ -369,12 +369,14 @@ class Spell extends wow.EventListener {
         if (Settings.InterruptMode === "None") {
           return bt.Status.Failure;
         }
+
         const spell = this.getSpell(spellNameOrId);
         if (!spell || !spell.isUsable || !spell.cooldown.ready) {
           return bt.Status.Failure;
         }
+
         const spellRange = spell.baseMaxRange;
-        const unitsAround = combat.targets
+        const unitsAround = combat.targets;
         for (const target of unitsAround) {
           if (!(target instanceof wow.CGUnit)) {
             continue;
@@ -398,6 +400,7 @@ class Spell extends wow.EventListener {
           if (!me.isFacing(target)) {
             continue;
           }
+
           const currentTime = wow.frameTime;
           const castRemains = castInfo.castEnd - currentTime;
           const castTime = castInfo.castEnd - castInfo.castStart;
@@ -415,10 +418,11 @@ class Spell extends wow.EventListener {
               shouldInterrupt = castPctRemain <= Settings.InterruptPercentage;
             }
           } else if (Settings.InterruptMode === "List") {
+            console.log(interrupts[castInfo.spellCastId])
             if (target.isChanneling) {
-              shouldInterrupt = interrupts[castInfo.spellId] && channelTime > randomInterruptTime;
+              shouldInterrupt = interrupts[castInfo.spellCastId] && channelTime > randomInterruptTime;
             } else {
-              shouldInterrupt = interrupts[castInfo.spellId] && castPctRemain <= Settings.InterruptPercentage;
+              shouldInterrupt = interrupts[castInfo.spellCastId] && castPctRemain <= Settings.InterruptPercentage;
             }
           }
 
