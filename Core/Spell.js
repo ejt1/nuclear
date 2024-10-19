@@ -418,7 +418,6 @@ class Spell extends wow.EventListener {
               shouldInterrupt = castPctRemain <= Settings.InterruptPercentage;
             }
           } else if (Settings.InterruptMode === "List") {
-            console.log(interrupts[castInfo.spellCastId])
             if (target.isChanneling) {
               shouldInterrupt = interrupts[castInfo.spellCastId] && channelTime > randomInterruptTime;
             } else {
