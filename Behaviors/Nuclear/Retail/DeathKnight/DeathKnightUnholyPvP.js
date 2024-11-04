@@ -62,7 +62,7 @@ export class DeathKnightUnholy extends Behavior {
       spell.cast("Abomination Limb", ret => true),
       spell.cast("Unholy Assault", ret => true),
       spell.cast("Apocalypse", ret => true, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) >= 4),
-      //spell.cast("Death and Decay", ret => this.shouldDeathAndDecay()),
+      spell.cast("Death and Decay", on => me, ret => this.shouldDeathAndDecay()),
       spell.cast("Dark Transformation", ret => true),
       spell.cast("Death Coil", on => me.target, ret => this.shouldDeathCoil(90) && me.targetUnit.hasAura(auras.festeringWound) >= 3 && this.apocalypseOnCooldown()),
       spell.cast("Scourge Strike", on => me.target, ret => me.target && me.targetUnit.hasAura(auras.festeringWound) && this.apocalypseOnCooldown()),
@@ -76,7 +76,7 @@ export class DeathKnightUnholy extends Behavior {
     return new bt.Selector(
       //spell.cast("Chains of Ice", on => me.target, ret => me.target && me.targetUnit.isPlayer() && !me.targetUnit.hasAura(auras.chainsOfIce)),
       spell.cast("Outbreak", on => me.target, ret => me.target && !me.targetUnit.hasAura(auras.virulentPlague)),
-      //spell.cast("Death and Decay", ret => this.shouldDeathAndDecay()),
+      spell.cast("Death and Decay", ret => this.shouldDeathAndDecay()),
       spell.cast("Festering Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) < 5),
       spell.cast("Scourge Strike", on => me.target, ret => me.target && me.targetUnit.hasAura(auras.festeringWound)),
       spell.cast("Death Coil", on => me.target, ret => this.shouldDeathCoil(60))
@@ -88,7 +88,7 @@ export class DeathKnightUnholy extends Behavior {
   }
 
   shouldDeathAndDecay() {
-    me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && !me.hasAura(auras.deathAndDecay)
+    return me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && !me.hasAura(auras.deathAndDecay)
   }
 
   apocalypseOnCooldown() {
