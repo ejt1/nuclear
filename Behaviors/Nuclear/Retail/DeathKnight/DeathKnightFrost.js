@@ -40,7 +40,7 @@ export class DeathKnightFrostBehavior extends Behavior {
       common.waitForFacing(),
       common.ensureAutoAttack(),
       spell.cast("Death Strike", ret => me.pctHealth < 95 && me.hasAura(auras.darkSuccor)),
-      spell.cast("Death Strike", ret => me.pctHealth < 65 && me.power > 35),
+      spell.cast("Death Strike", ret => me.pctHealth < 65 && me.power > 35 && !(this.isSindyActive())),
       spell.cast("Frost Strike", ret => this.checkFrostStrikeKeepUpBuffs()),
       spell.cast("Howling Blast", on => me.target, ret => !me.target.hasAuraByMe(auras.frostFever)),
       // Decorator: Do I have Breath of Sindragosa?
