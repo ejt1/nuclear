@@ -32,7 +32,7 @@ export class DeathKnightBloodBehavior extends Behavior {
     { header: "Utility" },
     { type: "slider", uid: "JmrDeathGripCharges", text: "Death Grip Charges to Save", min: 0, max: 2, default: 2 },
   ];
- 
+
   constructor() {
     super();
     console.debug("DeathKnightBloodBehavior initialized");
@@ -145,7 +145,7 @@ export class DeathKnightBloodBehavior extends Behavior {
       54: "SPELL_EMPOWER_END",
       55: "SPELL_EMPOWER_INTERRUPT"
   };
-  
+
     if (typeof event.args === 'object') {
         //console.debug("Event args is an object, logging each key-value pair:");
         for (const [key, value] of Object.entries(event.args)) {
@@ -186,7 +186,7 @@ export class DeathKnightBloodBehavior extends Behavior {
       }
     }
   }
-  
+
 
   destroy() {
     super.destroy();
@@ -196,7 +196,7 @@ export class DeathKnightBloodBehavior extends Behavior {
     if (this.lastEnemyCast) {
       const currentTime = wow.frameTime;
       const castProgress = (currentTime - this.lastEnemyCast.castStart) / (this.lastEnemyCast.castEnd - this.lastEnemyCast.castStart);
-      
+
       if (castProgress >= 0.90 && castProgress <= 0.99) {
         console.debug(`Enemy ${this.lastEnemyCast.sourceName} is casting ${this.lastEnemyCast.spellName} (${this.lastEnemyCast.spellID}). Cast progress: ${castProgress * 100}%`);
         return true;
@@ -204,7 +204,7 @@ export class DeathKnightBloodBehavior extends Behavior {
     }
     return false;
   }
-   
+
 
   build() {
     return new bt.Selector(
@@ -213,12 +213,12 @@ export class DeathKnightBloodBehavior extends Behavior {
         ret => !spell.isGlobalCooldown(),
         new bt.Selector(
           common.waitForCastOrChannel(),
-          spell.cast("Raise Ally", 
+          spell.cast("Raise Ally",
             on => me.targetUnit,
             req => me.targetUnit !== null && me.targetUnit.deadOrGhost && !me.targetUnit.isEnemy
           ),
-          spell.cast("Anti-Magic Shell", 
-          on => me, 
+          spell.cast("Anti-Magic Shell",
+          on => me,
           req => this.shouldUseAntiMagicShell() && !me.hasVisibleAura("Anti-Magic Shell")
           ),
           common.waitForFacing(),
