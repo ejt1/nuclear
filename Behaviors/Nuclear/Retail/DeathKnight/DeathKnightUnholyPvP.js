@@ -57,15 +57,15 @@ export class DeathKnightUnholy extends Behavior {
   burstDamage() {
     return new bt.Selector(
       spell.cast("Army of the Dead", ret => true),
-      //spell.cast("Chains of Ice", on => me.target, ret => me.target && me.targetUnit.isPlayer() && !me.targetUnit.hasAura(auras.chainsOfIce)),
+      //spell.cast("Chains of Ice", on => me.target, ret => me.target && me.targetUnit.isPlayer() && !me.targetUnit.hasAuraByMe(auras.chainsOfIce)),
       spell.cast("Summon Gargoyle", ret => true),
       spell.cast("Abomination Limb", ret => true),
       spell.cast("Unholy Assault", ret => true),
       spell.cast("Apocalypse", ret => true, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) >= 4),
       spell.cast("Death and Decay", on => me, ret => this.shouldDeathAndDecay()),
       spell.cast("Dark Transformation", ret => true),
-      spell.cast("Death Coil", on => me.target, ret => this.shouldDeathCoil(90) && me.targetUnit.hasAura(auras.festeringWound) >= 3 && this.apocalypseOnCooldown()),
-      spell.cast("Scourge Strike", on => me.target, ret => me.target && me.targetUnit.hasAura(auras.festeringWound) && this.apocalypseOnCooldown()),
+      spell.cast("Death Coil", on => me.target, ret => this.shouldDeathCoil(90) && me.targetUnit.hasAuraByMe(auras.festeringWound) >= 3 && this.apocalypseOnCooldown()),
+      spell.cast("Scourge Strike", on => me.target, ret => me.target && me.targetUnit.hasAuraByMe(auras.festeringWound) && this.apocalypseOnCooldown()),
       spell.cast("Death Coil", on => me.target, ret => this.shouldDeathCoil(60) && (this.apocalypseOnCooldown() || me.getReadyRunes() < 2)),
       spell.cast("Festering Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) < 5),
     );
@@ -74,11 +74,11 @@ export class DeathKnightUnholy extends Behavior {
   // Sustained Damage
   sustainedDamage() {
     return new bt.Selector(
-      //spell.cast("Chains of Ice", on => me.target, ret => me.target && me.targetUnit.isPlayer() && !me.targetUnit.hasAura(auras.chainsOfIce)),
-      spell.cast("Outbreak", on => me.target, ret => me.target && !me.targetUnit.hasAura(auras.virulentPlague)),
+      //spell.cast("Chains of Ice", on => me.target, ret => me.target && me.targetUnit.isPlayer() && !me.targetUnit.hasAuraByMe(auras.chainsOfIce)),
+      spell.cast("Outbreak", on => me.target, ret => me.target && !me.targetUnit.hasAuraByMe(auras.virulentPlague)),
       spell.cast("Death and Decay", ret => this.shouldDeathAndDecay()),
       spell.cast("Festering Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) < 5),
-      spell.cast("Scourge Strike", on => me.target, ret => me.target && me.targetUnit.hasAura(auras.festeringWound)),
+      spell.cast("Scourge Strike", on => me.target, ret => me.target && me.targetUnit.hasAuraByMe(auras.festeringWound)),
       spell.cast("Death Coil", on => me.target, ret => this.shouldDeathCoil(60))
     );
   }

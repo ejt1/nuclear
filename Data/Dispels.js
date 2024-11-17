@@ -114,7 +114,7 @@ export const dispels = {
   429545: DispelPriority.Low,  // Censoring Gear
   328664: DispelPriority.Low,  // Chilled
   464876: DispelPriority.Low,  // Concussive Smash
-  461487: DispelPriority.Low,  // Cultivated Poisons
+//  461487: DispelPriority.Low,  // Cultivated Poisons
   450095: DispelPriority.Low,  // Curse of Entropy
   257168: DispelPriority.Low,  // Cursed Slash
   326092: DispelPriority.Low,  // Debilitating Poison
@@ -122,17 +122,17 @@ export const dispels = {
   322968: DispelPriority.Low,  // Dying Breath
   431309: DispelPriority.Low,  // Ensnaring Shadows
   451224: DispelPriority.Low,  // Enveloping Shadowflame
-  320788: DispelPriority.Low,  // Frozen Binds
+//  320788: DispelPriority.Low,  // Frozen Binds
   338353: DispelPriority.Low,  // Goresplatter
   425974: DispelPriority.Low,  // Ground Pound
   320596: DispelPriority.Low,  // Heaving Retch
   449455: DispelPriority.Low,  // Howling Fear
   440238: DispelPriority.Low,  // Ice Sickles
   340283: DispelPriority.Low,  // Poisonous Discharge
-  275014: DispelPriority.Low,  // Putrid Waters
+//  275014: DispelPriority.Low,  // Putrid Waters
   448248: DispelPriority.Low,  // Revolting Volley
   272588: DispelPriority.Low,  // Rotting Wounds
-  424889: DispelPriority.Low,  // Seismic Reverberation
+//  424889: DispelPriority.Low,  // Seismic Reverberation
   448561: DispelPriority.Low,  // Shadows of Doubt
   443437: DispelPriority.Low,  // Shadows of Doubt
   322557: DispelPriority.Low,  // Soul Split

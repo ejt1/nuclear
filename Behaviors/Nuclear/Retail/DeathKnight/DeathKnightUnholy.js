@@ -84,7 +84,7 @@ export class DeathKnightUnholy extends Behavior {
       spell.cast("Death Coil", on => me.target, ret => this.shouldDeathCoil(60)),
       spell.cast("Outbreak", on => me.target, ret => this.shouldCastOutbreak()),
       spell.cast("Festering Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) < 3),
-      spell.cast("Scourge Strike", on => me.target, ret => me.target && !(me.hasAura(auras.plagueBringer))),
+      spell.cast("Scourge Strike", on => me.target, ret => me.target && !(me.hasAuraByMe(auras.plagueBringer))),
       spell.cast("Death and Decay", ret => this.shouldDeathAndDecay()),
       spell.cast("Death Coil", on => me.target, ret => this.isDeathRotAboutToExpire()),
       spell.cast("Scourge Strike", ret => true, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) >= 3),
@@ -96,7 +96,7 @@ export class DeathKnightUnholy extends Behavior {
   aoeDamage() {
     return new bt.Selector(
       spell.cast("Scourge Strike", on => me.target, ret => me.target && !(me.hasAura(auras.plagueBringer))),
-      spell.cast("Scourge Strike", on => me.target, ret => me.target && me.target.hasAura(auras.trollbaneChainsOfIce)),
+      spell.cast("Scourge Strike", on => me.target, ret => me.target && me.target.hasAuraByMe(auras.trollbaneChainsOfIce)),
       spell.cast("Army of the Dead", ret => true),
       spell.cast("Outbreak", on => me.target, ret => this.shouldCastOutbreak()),
       spell.cast("Epidemic", on => me.target, ret => me.target && me.hasAura(auras.suddenDoom)),
@@ -114,7 +114,7 @@ export class DeathKnightUnholy extends Behavior {
     const enemies = me.getEnemies(8);
 
     for (const enemy of enemies) {
-      const festeringWounds = enemy.getAura(auras.festeringWound);
+      const festeringWounds = enemy.getAuraByMe(auras.festeringWound);
       if (me.isFacing(enemy) && (!festeringWounds || festeringWounds.stacks <= 1)) {
         return enemy;
       }
@@ -127,7 +127,7 @@ export class DeathKnightUnholy extends Behavior {
     const enemies = me.getEnemies(8);
 
     for (const enemy of enemies) {
-      const festeringWounds = enemy.getAura(auras.festeringWound);
+      const festeringWounds = enemy.getAuraByMe(auras.festeringWound);
       if (me.isFacing(enemy) && festeringWounds && festeringWounds.stacks > 2) {
         return enemy;
       }
@@ -142,7 +142,7 @@ export class DeathKnightUnholy extends Behavior {
     let maxWounds = 0;
 
     for (const enemy of enemies) {
-      const festeringWounds = enemy.getAura(auras.festeringWound);
+      const festeringWounds = enemy.getAuraByMe(auras.festeringWound);
       if (me.isFacing(enemy) && festeringWounds && festeringWounds.stacks > maxWounds) {
         targetWithMostWounds = enemy;
         maxWounds = festeringWounds.stacks;
@@ -185,7 +185,7 @@ export class DeathKnightUnholy extends Behavior {
     if (!me.target) {
       return false;
     }
-    return !me.targetUnit.hasAura(auras.virulentPlague) || !me.targetUnit.hasAura(auras.bloodPlague) || !me.targetUnit.hasAura(auras.frostFever);
+    return !me.targetUnit.hasAuraByMe(auras.virulentPlague) || !me.targetUnit.hasAuraByMe(auras.bloodPlague) || !me.targetUnit.hasAuraByMe(auras.frostFever);
   }
 
   isDeathRotAboutToExpire() {
@@ -193,7 +193,7 @@ export class DeathKnightUnholy extends Behavior {
       return false;
     }
 
-    const deathRot = me.target.getAura(auras.deathRot);
+    const deathRot = me.target.getAuraByMe(auras.deathRot);
     return !!(deathRot && deathRot.remaining < 2000);
 
   }

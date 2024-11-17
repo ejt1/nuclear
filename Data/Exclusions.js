@@ -14,7 +14,7 @@ export const exclusions = {
 // Spells that can be cast while moving
 export const castWhileMove = {
   56641: true, // Steady Shot
-  2948: true, // Scorch
+  47540: true, // Penance
 };
 
 export const castWhileMoveAuras = {
@@ -32,6 +32,8 @@ export const losExclude = {
   56754: true,  // Serpent in Mists of Pandaria
   71543: true,  // Immerseus boss
   63191: true,  // Big boi
+  137614: true, // Demolishing Terror
+  137405: true, // Gripping Terror
 };
 
 // Exclusions for use (probably not interactable)
