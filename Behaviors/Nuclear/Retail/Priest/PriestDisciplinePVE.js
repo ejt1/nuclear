@@ -9,6 +9,7 @@ import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 import { DispelPriority } from "@/Data/Dispels"
 import { WoWDispelType } from "@/Enums/Auras";
 import spellBlacklist from "@/Data/PVPData";
+import colors from "@/Enums/Colors";
 
 const auras = {
   painSuppression: 33206,
@@ -36,12 +37,22 @@ export class PriestDiscipline extends Behavior {
           common.waitForNotMounted(),
           common.waitForNotSitting(),
           common.waitForCastOrChannel(),
-          spell.cast("Fade", on => me, req => me.inCombat() && (me.isTanking() || me.pctHealth < 90)),
+          spell.cast("Fade", on => me, req => me.inCombat() && (me.isTanking() || me.effectiveHealthPercent < 90)),
           spell.cast("Power Word: Fortitude", on => me, req => !me.hasVisibleAura(21562)),
+          new bt.Decorator(
+            ret => me.inCombat() && h.getPriorityTarget() !== undefined && h.getPriorityTarget().effectiveHealthPercent >= 75 && h.getPriorityTarget().hasAura(auras.atonement).remaining > 4000,
+            this.damageRotation(),
+            new bt.Action(() => bt.Status.Success)
+          ),
+
+          new bt.Decorator(
+            ret => me.inCombat() && h.getPriorityTarget() !== undefined && h.getPriorityTarget().effectiveHealthPercent >= 95,
+            this.damageRotation(),
+            new bt.Action(() => bt.Status.Success)
+          ),
           this.healRotation(),
           this.applyAtonement(),
           common.waitForTarget(),
-          common.waitForFacing(),
           new bt.Decorator(
             ret => me.inCombat(),
             new bt.Selector(
@@ -53,19 +64,38 @@ export class PriestDiscipline extends Behavior {
     );
   }
 
+  getTanks() {
+    return h.friends.Tanks.filter(tank => tank !== null);
+  }
+
+  getActiveTankWithoutPWS() {
+    const tanks = this.getTanks();
+
+    // First, try to find an active tank without Shield
+    const activeTankWithoutPWShield = tanks.find(tank =>
+      tank.isTanking() && !tank.hasAura("Power Word: Shield")
+    );
+
+    if (activeTankWithoutPWShield) {
+      return activeTankWithoutPWShield;
+    }
+
+    // If no active tank without shield, just return any tank without shield
+    return tanks.find(tank => !tank.hasAura("Power Word: Shield"));
+  }
+
   // Atonement Application
   applyAtonement() {
     return new bt.Selector(
-      spell.cast("Power Word: Shield", on => this.findFriendWithoutAtonement(), ret => this.findFriendWithoutAtonement() !== undefined),
-      spell.cast("Renew", on => this.findFriendWithoutAtonement(), ret => this.findFriendWithoutAtonement() !== undefined && me.currentParty.members.length < 7)
+      spell.cast("Power Word: Shield", on => this.findFriendWithoutAtonement(), ret => this.findFriendWithoutAtonement() !== undefined && this.findFriendWithoutAtonement().effectiveHealthPercent < 90 && !this.hasShield(this.findFriendWithoutAtonement())),
     );
   }
 
   // Healing Rotation
   healRotation() {
     return new bt.Selector(
-      spell.cast("Power Word: Life", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 50 && me.inCombat),
-      spell.cast("Desperate Prayer", on => me, ret => me.pctHealth < 70 && me.inCombat),
+      spell.cast("Power Word: Life", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.effectiveHealthPercent < 50 && me.inCombat),
+      spell.cast("Desperate Prayer", on => me, ret => me.effectiveHealthPercent < 70 && me.inCombat),
       //spell.cast("Pain Suppression", on => h.getPriorityTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(34) && me.inCombat),
       spell.cast("Rapture", on => h.getPriorityTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(30) && me.inCombat()),
       spell.cast("Void Shift", on => h.getPriorityTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(24)),
@@ -73,40 +103,46 @@ export class PriestDiscipline extends Behavior {
       spell.cast("Premonition", on => me, ret => this.shouldCastPremonition(h.getPriorityTarget())),
       spell.cast("Shadow Word: Death", on => this.findDeathThePolyTarget(), ret => this.findDeathThePolyTarget() !== undefined),
       //spell.cast("Power Word: Barrier", on => h.getPriorityTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(40) && me.inCombat),
-      spell.cast("Power Word: Shield", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 94 && !this.hasShield(h.getPriorityTarget()) && !me.hasVisibleAura("Rapture")),
-      spell.cast("Power Word: Radiance", on => h.getPriorityTarget(), ret => this.shouldCastRadiance()),
-      spell.cast("Flash Heal", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 85 && me.hasAura(auras.surgeOfLight)),
-      spell.cast("Flash Heal", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 85 && me.pctHealth < 90 && !me.hasVisibleAura("Protective Light")),
+      spell.cast("Power Word: Shield", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.effectiveHealthPercent < 90 && !this.hasShield(h.getPriorityTarget()) && !me.hasVisibleAura("Rapture")),
+      spell.cast("Power Word: Radiance", on => me, ret => this.shouldCastRadiance()),
+      spell.cast("Penance", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.effectiveHealthPercent < 40),
+      spell.cast("Flash Heal", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.effectiveHealthPercent < 75 && me.hasAura(auras.surgeOfLight)),
+      spell.cast("Flash Heal", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.effectiveHealthPercent < 75 && me.effectiveHealthPercent < 90 && !me.hasVisibleAura("Protective Light")),
       spell.dispel("Purify", true, DispelPriority.High, true, WoWDispelType.Magic),
       //spell.dispel("Dispel Magic", false, DispelPriority.High, true, WoWDispelType.Magic),
-      spell.cast("Renew", on => h.getPriorityTarget(), ret => (!this.hasAtonement(h.getPriorityTarget()) || h.getPriorityTarget().getAuraByMe(auras.atonement).remaining < 4000) && h.getPriorityTarget()?.pctHealth < 80 && !me.hasVisibleAura("Rapture")),
-      spell.cast("Mind Blast", on => combat.bestTarget, ret => this.hasAtonement(h.getPriorityTarget())),
-      spell.cast("Shadowfiend", on => combat.bestTarget, ret => me.inCombat() && this.hasAtonement(h.getPriorityTarget())),
+      spell.cast("Renew", on => h.getPriorityTarget(), ret => (!this.hasAtonement(h.getPriorityTarget()) || h.getPriorityTarget().hasAura(auras.atonement).remaining < 4000) && h.getPriorityTarget()?.effectiveHealthPercent < 80 && !me.hasVisibleAura("Rapture")),
+      spell.cast("Mind Blast", on => this.currentorbestTarget(), ret => this.hasAtonement(h.getPriorityTarget())),
+      spell.cast("Shadowfiend", on => this.currentorbestTarget(), ret => me.inCombat() && this.hasAtonement(h.getPriorityTarget())),
+      spell.cast("Voidwraith", on => this.currentorbestTarget(), ret => me.inCombat() && this.hasAtonement(h.getPriorityTarget())),
       spell.cast("Shadow Word: Death", on => this.findShadowWordDeathTarget(), ret => this.findShadowWordDeathTarget() !== undefined && this.hasAtonement(h.getPriorityTarget())),
       spell.cast("Penance", on => this.getPenanceTarget(), ret => this.shouldCastPenance()),
-      spell.cast("Flash Heal", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 55),
-      spell.cast("Power Word: Shield", on => h.getPriorityTarget(), ret => (!this.hasAtonement(h.getPriorityTarget()) || h.getPriorityTarget().getAuraByMe(auras.atonement).remaining < 4000) && me.hasVisibleAura("Rapture")),
+      spell.cast("Flash Heal", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.effectiveHealthPercent < 55),
+      spell.cast("Power Word: Shield", on => h.getPriorityTarget(), ret => (!this.hasAtonement(h.getPriorityTarget()) || h.getPriorityTarget().hasAura(auras.atonement).remaining < 4000) && me.hasVisibleAura("Rapture")),
       spell.dispel("Purify", true, DispelPriority.Low, true, WoWDispelType.Magic, WoWDispelType.Disease),
+      spell.cast("Penance", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.effectiveHealthPercent < 50),
       this.maintainTankAtonement(),
-      spell.cast("Penance", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.pctHealth < 65),
     );
   }
 
   // Damage Rotation
   damageRotation() {
     return new bt.Selector(
+      spell.cast("Shadow Word: Pain", on => this.currentorbestTarget(), ret => !this.hasPurgeTheWicked(this.currentorbestTarget())),
+      spell.cast("Power Word: Radiance", on => me, ret => (spell.getCooldown("Voidwraith").timeleft < 1.5 || spell.getCooldown("Shadowfiend").timeleft < 1.5 || me.hasVisibleAura("Shadow Covenant")) && spell.getCharges("Power Word: Radiance") === 2),
+      spell.cast("Shadowfiend", on => this.currentorbestTarget(), ret => me.inCombat()),
+      spell.cast("Voidwraith", on => this.currentorbestTarget(), ret => me.inCombat()),
       spell.cast("Shadow Word: Death", on => this.findShadowWordDeathTarget(), ret => this.findShadowWordDeathTarget() !== undefined),
-      spell.cast("Shadow Word: Death", on => combat.bestTarget, ret => combat.bestTarget.timeToDeath() > 10 && me.hasVisibleAura("Shadow Covenant")),
-      spell.cast("Shadowfiend", on => combat.bestTarget, ret => me.inCombat()),
-      spell.cast("Voidwraith", on => combat.bestTarget, ret => me.inCombat()),
-      spell.cast("Shadow Word: Pain", on => combat.bestTarget, ret => !this.hasPurgeTheWicked(combat.bestTarget)),
-      spell.cast("Mindgames", on => me.targetUnit, ret => me.targetUnit?.pctHealth < 50),
-      spell.cast("Mind Blast", on => combat.bestTarget, ret => true),
-      spell.cast("Penance", on => combat.bestTarget, ret => true),
+      spell.cast("Shadow Word: Death", on => this.currentorbestTarget(), ret => me.hasVisibleAura("Shadow Covenant")),
+      spell.cast("Mindgames", on => me.targetUnit, ret => me.targetUnit?.effectiveHealthPercent < 50),
+      spell.cast("Mind Blast", on => this.currentorbestTarget(), ret => true),
+      spell.cast("Penance", on => this.hasswpTarget(), ret => this.hasswpTarget() !== undefined),
+      spell.cast("Penance", on => this.currentorbestTarget(), ret => this.hasPurgeTheWicked(this.currentorbestTarget())),
       spell.cast("Halo", on => me, ret => this.getEnemiesInRange(40) >= 3),
-      spell.cast("Smite", on => combat.bestTarget, ret => me.hasVisibleAura("Shadow Covenant")),
-      spell.cast("Shadow Word: Pain", on => this.findswpTarget(), ret => this.findswpTarget() !== undefined),
-      spell.cast("Smite", on => combat.bestTarget, ret => true)
+      spell.cast("Smite", on => this.currentorbestTarget(), ret => me.hasVisibleAura("Shadow Covenant")),
+      //spell.cast("Shadow Word: Pain", on => this.findswpTarget(), ret => this.findswpTarget() !== undefined),
+      // shadow word pain on findswpTarget if number of targets with swp is less than 4
+      spell.cast("Shadow Word: Pain", on => this.findswpTarget(), ret => this.findswpTarget() !== undefined && this.hasswpTarget() !== undefined && this.hasswpTarget().length < 4),
+      spell.cast("Smite", on => this.currentorbestTarget(), ret => true)
     );
   }
 
@@ -117,6 +153,20 @@ export class PriestDiscipline extends Behavior {
     );
   }
 
+  currentorbestTarget() {
+    const schismTarget = combat.targets.find(unit => unit.hasVisibleAura("Schism"));
+    const target = me.target;
+    if (schismTarget) {
+      return schismTarget;
+    }
+    if (target !== null) {
+      return target;
+    }
+    if (target === null) {
+      return combat.bestTarget;
+    }
+  }
+
   getTankNeedingAtonement() {
     if (!me.inMythicPlus()) {
       return null;
@@ -125,7 +175,7 @@ export class PriestDiscipline extends Behavior {
     const tanks = h.friends.Tanks;
     for (const tank of tanks) {
       if (this.isNotDeadAndInLineOfSight(tank)) {
-        const atonement = tank.getAuraByMe(auras.atonement);
+        const atonement = tank.hasAura(auras.atonement);
         if (!atonement || atonement.remaining < 4000) {
           return tank;
         }
@@ -143,23 +193,21 @@ export class PriestDiscipline extends Behavior {
       return false;
     }
 
-    const lowHealthAllies = this.getLowHealthAlliesCount(90);
-    return lowHealthAllies >= 3;
+    const lowHealthAllies = this.getLowHealthAlliesCount(85);
+    if (lowHealthAllies < 3) {
+      return false;
+    }
+    return true;
   }
 
   // Add this new method to the class:
   getLowHealthAlliesCount(healthThreshold) {
     return h.friends.All.filter(friend =>
       friend &&
-      friend.pctHealth < healthThreshold &&
+      friend.effectiveHealthPercent < healthThreshold &&
       this.isNotDeadAndInLineOfSight(friend) &&
-      (!(friend.hasAuraByMe(auras.atonement)) ||
-        friend.getAuraByMe(auras.atonement)?.remaining < 4000)
+      !friend.hasAura(auras.atonement).remaining > 4000
     ).length;
-  }
-
-  bestTarget() {
-    return combat.bestTarget || me.target;
   }
 
   getCurrentTarget() {
@@ -170,7 +218,7 @@ export class PriestDiscipline extends Behavior {
       !unit.isImmune();
 
     // First, look for a unit with the Schism aura
-    const schismTarget = combat.targets.find(unit => unit.hasAuraByMe("Schism") && targetPredicate(unit));
+    const schismTarget = combat.targets.find(unit => unit.hasAura("Schism") && targetPredicate(unit));
     if (schismTarget) {
       return schismTarget;
     }
@@ -196,8 +244,8 @@ export class PriestDiscipline extends Behavior {
       return currentTarget != null;
     }
 
-    return priorityTarget.pctHealth < 65 ||
-      (priorityTarget.pctHealth >= 65 &&
+    return priorityTarget.effectiveHealthPercent < 55 ||
+      (priorityTarget.effectiveHealthPercent >= 55 &&
         this.hasAtonement(priorityTarget) &&
         currentTarget != null &&
         this.hasPurgeTheWicked(currentTarget));
@@ -211,9 +259,9 @@ export class PriestDiscipline extends Behavior {
       return currentTarget;
     }
 
-    if (priorityTarget.pctHealth < 65) {
+    if (priorityTarget.effectiveHealthPercent < 55) {
       return priorityTarget;
-    } else if (priorityTarget.pctHealth >= 65 &&
+    } else if (priorityTarget.effectiveHealthPercent >= 55 &&
       this.hasAtonement(priorityTarget) &&
       currentTarget != null &&
       this.hasPurgeTheWicked(currentTarget)) {
@@ -251,7 +299,7 @@ export class PriestDiscipline extends Behavior {
     const enemies = me.getEnemies();
 
     for (const enemy of enemies) {
-      if (enemy.pctHealth < 20 && enemy.inCombatWithMe) {
+      if (enemy.effectiveHealthPercent < 20 && enemy.inCombatWithMe) {
         return enemy;
       }
     }
@@ -263,7 +311,19 @@ export class PriestDiscipline extends Behavior {
     const enemies = me.getEnemies();
 
     for (const enemy of enemies) {
-      if ((!this.hasPurgeTheWicked(enemy) || enemy.getAuraByMe(auras.purgeTheWicked).remaining < 4000) && enemy.inCombatWithMe) {
+      if ((!this.hasPurgeTheWicked(enemy) || enemy.hasAura(auras.purgeTheWicked).remaining < 4000) && enemy.inCombatWithMe) {
+        return enemy;
+      }
+    }
+
+    return undefined
+  }
+
+  hasswpTarget() {
+    const enemies = me.getEnemies();
+
+    for (const enemy of enemies) {
+      if (this.hasPurgeTheWicked(enemy) && me.inCombatWith(enemy) && enemy.effectiveHealthPercent > 10) {
         return enemy;
       }
     }
@@ -299,7 +359,7 @@ export class PriestDiscipline extends Behavior {
     if (me.hasAura(auras.premonitionInsight) || me.hasAura(auras.premonitionSolace) || me.hasAura(auras.premonitionPiety)) {
       return false;
     }
-    if (target.pctHealth < 50 || target.timeToDeath() < 3) {
+    if (target.effectiveHealthPercent < 50 || target.timeToDeath() < 3) {
       return true;
     }
   }
@@ -309,14 +369,14 @@ export class PriestDiscipline extends Behavior {
     if (!target) {
       return false;
     }
-    return target.hasAuraByMe(auras.atonement);
+    return target.hasAura(auras.atonement);
   }
 
   hasShield(target) {
     if (!target) {
       return false;
     }
-    return target.hasAuraByMe(auras.powerWordShield);
+    return target.hasAura(auras.powerWordShield);
   }
 
 
@@ -324,7 +384,7 @@ export class PriestDiscipline extends Behavior {
     if (!target) {
       return false;
     }
-    return target.hasAuraByMe(auras.purgeTheWicked);
+    return target.hasAura(auras.purgeTheWicked);
   }
 
   shouldCastWithHealthAndNotPainSupp(health) {
@@ -332,9 +392,18 @@ export class PriestDiscipline extends Behavior {
     if (!healTarget) {
       return false;
     }
-    return (healTarget.pctHealth < health || healTarget.timeToDeath() < 3) && !healTarget.hasAuraByMe(auras.painSuppression);
+    return (healTarget.effectiveHealthPercent < health || healTarget.timeToDeath() < 3) && !healTarget.hasAura(auras.painSuppression);
   }
 
+  shouldCastRadiance(charges) {
+    const healTarget = h.getPriorityTarget()
+    if (!healTarget) {
+      return false;
+    }
+    return healTarget.effectiveHealthPercent < 55 && spell.getCharges("Power Word: Radiance") === charges
+  }
+
+  // todo - probably move this somewhere useful rather than here?
   isNotDeadAndInLineOfSight(friend) {
     return friend && !friend.deadOrGhost && me.withinLineOfSight(friend);
   }
@@ -342,6 +411,4 @@ export class PriestDiscipline extends Behavior {
   getEnemiesInRange(range) {
     return combat.targets.filter(unit => me.distanceTo(unit) < range).length;
   }
-
 }
-
