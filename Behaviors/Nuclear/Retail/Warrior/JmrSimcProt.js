@@ -68,6 +68,7 @@ export class WarriorProtNewBehavior extends Behavior {
       spell.cast("Last Stand", () => Boolean(this.shouldUseLastStand() || me.pctHealth < 60) && !me.hasAura("Shield Wall")),
       spell.cast("Ravager"),
       spell.cast("Demoralizing Shout", () => Boolean(me.hasAura("Booming Voice"))),
+      spell.cast("Champion's Spear"),
       spell.cast("Spear of Bastion"),
       spell.cast("Thunderous Roar"),
       spell.cast("Shield Charge")
@@ -96,10 +97,10 @@ export class WarriorProtNewBehavior extends Behavior {
             (rageDeficit <= 55 && spell.getCooldown("Shield Slam").ready && me.hasAura("Violent Outburst") && me.hasAura("Last Stand") && this.hasTalent("Unnerving Focus") && this.hasTalent("Heavy Repercussions") && this.hasTalent("Impenetrable Wall")) ||
             (rageDeficit <= 17 && spell.getCooldown("Shield Slam").ready && this.hasTalent("Heavy Repercussions")) ||
             (rageDeficit <= 18 && spell.getCooldown("Shield Slam").ready && this.hasTalent("Impenetrable Wall"))
-          ) || 
-          ((rage >= 70 || (me.getAuraStacks("Seeing Red") === 7 && rage >= 35)) && 
-           spell.getCooldown("Shield Slam").remaining <= 1 && 
-           this.getAuraRemainingTime("Shield Block") >= 4 && 
+          ) ||
+          ((rage >= 70 || (me.getAuraStacks("Seeing Red") === 7 && rage >= 35)) &&
+           spell.getCooldown("Shield Slam").remaining <= 1 &&
+           this.getAuraRemainingTime("Shield Block") >= 4 &&
            me.hasSetBonus(31, 2))
         );
       })
