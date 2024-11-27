@@ -191,7 +191,7 @@ export class PriestDiscipline extends Behavior {
       friend &&
       friend.effectiveHealthPercent < healthThreshold &&
       this.isNotDeadAndInLineOfSight(friend) &&
-      !friend.getAuraByMe(auras.atonement).remaining > 4000
+      !friend.getAuraByMe(auras.atonement)?.remaining > 4000
     ).length;
   }
 
