@@ -85,6 +85,7 @@ export class DeathKnightUnholy extends Behavior {
       // actions.st=soul_reaper,if=target.health.pct<=35
       spell.cast("Soul Reaper", on => me.target, ret => me.target && me.targetUnit.pctHealth <= 35),
       // actions.st+=/wound_spender,if=debuff.chains_of_ice_trollbane_slow.up
+      spell.cast("Outbreak", on => me.target, ret => this.shouldCastOutbreak()),
       spell.cast("Scourge Strike", on => this.findTargetWithTrollbaneChainsOfIce(), ret => this.findTargetWithTrollbaneChainsOfIce() !== undefined),
       // actions.st+=/any_dnd,if=talent.unholy_ground&!buff.death_and_decay.up&(pet.apoc_ghoul.active|pet.abomination.active|pet.gargoyle.active)
       spell.cast("Death and Decay", ret => !me.hasAura(auras.deathAndDecay) && this.hasMagusOfTheDead()),
