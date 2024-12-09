@@ -139,12 +139,12 @@ export class PriestDiscipline extends Behavior {
   }
 
   currentOrBestTarget() {
-    const schismTarget = combat.targets.find(unit => unit.hasVisibleAura("Schism"));
+    const schismTarget = combat.targets.find(unit => unit.hasVisibleAuraByMe("Schism"));
     const target = me.target;
     if (schismTarget) {
       return schismTarget;
     }
-    if (target !== null) {
+    if (target !== null && me.canAttack(target)) {
       return target;
     }
     if (target === null) {
