@@ -11,6 +11,7 @@ import { PowerType } from "@/Enums/PowerType";
 import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 import { defaultHealTargeting as heal } from "@/Targeting/HealTargeting";
 import Settings from "@/Core/Settings";
+import EvokerCommon from "@/Behaviors/Nuclear/Retail/Evoker/EvokerCommon";
 
 const auras = {
   reversion: 366155,
@@ -28,47 +29,157 @@ export class EvokerPreservationBehavior extends Behavior {
     {
       header: "Single Target Healing",
       options: [
-        { type: "slider", uid: "EvokerPreservationReversionPercent", text: "Reversion Percent", min: 0, max: 100, default: 70 },
-        { type: "slider", uid: "EvokerPreservationLivingFlamePercent", text: "Living Flame Percent", min: 0, max: 100, default: 70 },
-        { type: "slider", uid: "EvokerPreservationEchoPercent", text: "Echo Percent", min: 0, max: 100, default: 70 },
-        { type: "slider", uid: "EvokerPreservationVerdantEmbracePercent", text: "Verdant Embrace Percent", min: 0, max: 100, default: 70 },
-        { type: "checkbox", uid: "EvokerPreservationUseTimeDilation", text: "Use Time Dilation", default: true },
+        {
+          type: "slider",
+          uid: "EvokerPreservationReversionPercent",
+          text: "Reversion Percent",
+          min: 0,
+          max: 100,
+          default: 70
+        },
+        {
+          type: "slider",
+          uid: "EvokerPreservationLivingFlamePercent",
+          text: "Living Flame Percent",
+          min: 0,
+          max: 100,
+          default: 70
+        },
+        {type: "slider", uid: "EvokerPreservationEchoPercent", text: "Echo Percent", min: 0, max: 100, default: 70},
+        {
+          type: "slider",
+          uid: "EvokerPreservationVerdantEmbracePercent",
+          text: "Verdant Embrace Percent",
+          min: 0,
+          max: 100,
+          default: 70
+        },
+        {type: "checkbox", uid: "EvokerPreservationUseTimeDilation", text: "Use Time Dilation", default: true},
       ]
     },
     {
       header: "AoE Healing",
       options: [
-        { type: "slider", uid: "EvokerPreservationEmeraldCommunionCount", text: "Emerald Communion Minimum Targets", min: 1, max: 10, default: 2 },
-        { type: "slider", uid: "EvokerPreservationEmeraldCommunionPercent", text: "Emerald Communion Health Percent", min: 0, max: 100, default: 50 },
-        { type: "slider", uid: "EvokerPreservationRewindCount", text: "Rewind Minimum Targets", min: 1, max: 10, default: 5 },
-        { type: "slider", uid: "EvokerPreservationRewindPercent", text: "Rewind Health Percent", min: 0, max: 100, default: 70 },
-        { type: "slider", uid: "EvokerPreservationDreamBreathCount", text: "Dream Breath Minimum Targets", min: 1, max: 10, default: 3 },
-        { type: "slider", uid: "EvokerPreservationDreamBreathPercent", text: "Dream Breath Health Percent", min: 0, max: 100, default: 85 },
-        { type: "slider", uid: "EvokerPreservationEmeraldBlossomCount", text: "Emerald Blossom Minimum Targets", min: 1, max: 10, default: 3 },
-        { type: "slider", uid: "EvokerPreservationEmeraldBlossomPercent", text: "Emerald Blossom Health Percent", min: 0, max: 100, default: 80 },
-        { type: "slider", uid: "EvokerPreservationSpiritbloomCount", text: "Spiritbloom Minimum Targets", min: 1, max: 10, default: 3 },
-        { type: "slider", uid: "EvokerPreservationSpiritbloomPercent", text: "Spiritbloom Health Percent", min: 0, max: 100, default: 80 },
-        { type: "slider", uid: "EvokerPreservationTemporalAnomalyCount", text: "Temporal Anomaly Minimum Targets", min: 1, max: 10, default: 3 },
+        {
+          type: "slider",
+          uid: "EvokerPreservationEmeraldCommunionCount",
+          text: "Emerald Communion Minimum Targets",
+          min: 1,
+          max: 10,
+          default: 2
+        },
+        {
+          type: "slider",
+          uid: "EvokerPreservationEmeraldCommunionPercent",
+          text: "Emerald Communion Health Percent",
+          min: 0,
+          max: 100,
+          default: 50
+        },
+        {
+          type: "slider",
+          uid: "EvokerPreservationRewindCount",
+          text: "Rewind Minimum Targets",
+          min: 1,
+          max: 10,
+          default: 5
+        },
+        {
+          type: "slider",
+          uid: "EvokerPreservationRewindPercent",
+          text: "Rewind Health Percent",
+          min: 0,
+          max: 100,
+          default: 70
+        },
+        {
+          type: "slider",
+          uid: "EvokerPreservationDreamBreathCount",
+          text: "Dream Breath Minimum Targets",
+          min: 1,
+          max: 10,
+          default: 3
+        },
+        {
+          type: "slider",
+          uid: "EvokerPreservationDreamBreathPercent",
+          text: "Dream Breath Health Percent",
+          min: 0,
+          max: 100,
+          default: 85
+        },
+        {
+          type: "slider",
+          uid: "EvokerPreservationEmeraldBlossomCount",
+          text: "Emerald Blossom Minimum Targets",
+          min: 1,
+          max: 10,
+          default: 3
+        },
+        {
+          type: "slider",
+          uid: "EvokerPreservationEmeraldBlossomPercent",
+          text: "Emerald Blossom Health Percent",
+          min: 0,
+          max: 100,
+          default: 80
+        },
+        {
+          type: "slider",
+          uid: "EvokerPreservationSpiritbloomCount",
+          text: "Spiritbloom Minimum Targets",
+          min: 1,
+          max: 10,
+          default: 3
+        },
+        {
+          type: "slider",
+          uid: "EvokerPreservationSpiritbloomPercent",
+          text: "Spiritbloom Health Percent",
+          min: 0,
+          max: 100,
+          default: 80
+        },
+        {
+          type: "slider",
+          uid: "EvokerPreservationTemporalAnomalyCount",
+          text: "Temporal Anomaly Minimum Targets",
+          min: 1,
+          max: 10,
+          default: 3
+        },
       ]
     },
     {
       header: "General",
       options: [
-        { type: "checkbox", uid: "EvokerPreservationBlessingOfBronze", text: "Cast Blessing of the Bronze", default: true },
+        {
+          type: "checkbox",
+          uid: "EvokerPreservationBlessingOfBronze",
+          text: "Cast Blessing of the Bronze",
+          default: true
+        },
       ]
     },
     {
       header: "Defensives",
       options: [
-        { type: "checkbox", uid: "EvokerPreservationUseRenewingBlaze", text: "Use Renewing Blaze", default: true },
-        { type: "checkbox", uid: "EvokerPreservationUseObsidianScales", text: "Use Obsidian Scales", default: true },
+        {type: "checkbox", uid: "EvokerPreservationUseRenewingBlaze", text: "Use Renewing Blaze", default: true},
+        {type: "checkbox", uid: "EvokerPreservationUseObsidianScales", text: "Use Obsidian Scales", default: true},
       ]
     },
     {
       header: "Damage",
       options: [
-        { type: "checkbox", uid: "EvokerPreservationUseDeepBreath", text: "Use Deep Breath", default: true },
-        { type: "slider", uid: "EvokerPreservationDeepBreathMinTargets", text: "Deep Breath Minimum Targets", min: 1, max: 10, default: 3 },
+        {type: "checkbox", uid: "EvokerPreservationUseDeepBreath", text: "Use Deep Breath", default: true},
+        {
+          type: "slider",
+          uid: "EvokerPreservationDeepBreathMinTargets",
+          text: "Deep Breath Minimum Targets",
+          min: 1,
+          max: 10,
+          default: 3
+        },
       ]
     }
   ];
@@ -76,7 +187,7 @@ export class EvokerPreservationBehavior extends Behavior {
   build() {
     return new bt.Selector(
       common.waitForNotMounted(),
-      new bt.Action(() => this.handleEmpoweredSpell()),
+      new bt.Action(() => EvokerCommon.handleEmpoweredSpell()),
       common.waitForCastOrChannel(),
       spell.cast("Renewing Blaze", on => me,
         req => Settings.EvokerPreservationUseRenewingBlaze && combat.targets.filter(unit => unit.isTanking() && me.isWithinMeleeRange(unit)).length > 1),
@@ -90,8 +201,8 @@ export class EvokerPreservationBehavior extends Behavior {
         new bt.Selector(
           spell.cast("Blessing of the Bronze", on => me, req => Settings.EvokerPreservationBlessingOfBronze && !me.inCombat() && !me.hasAura(auras.blessingOfTheBronze)),
           spell.cast("Rewind", on => me, req => heal.priorityList.filter(unit => unit.predictedHealthPercent < Settings.EvokerPreservationRewindPercent).length > Settings.EvokerPreservationRewindCount),
-          this.castEmpowered("Dream Breath", 4),
-          this.castEmpowered("Spiritbloom", 4),
+          this.castEmpoweredPreservation("Dream Breath", 4),
+          this.castEmpoweredPreservation("Spiritbloom", 4),
           spell.cast("Emerald Communion", on => me
             , req => me.pctPower < 80
               && heal.priorityList.filter(unit => unit.predictedHealthPercent < Settings.EvokerPreservationEmeraldCommunionPercent).length > Settings.EvokerPreservationEmeraldCommunionCount),
@@ -138,16 +249,16 @@ export class EvokerPreservationBehavior extends Behavior {
           spell.interrupt("Tail Swipe"),
           spell.cast("Deep Breath",
             on => {
-              const bestTarget = findBestDeepBreathTarget();
+              const bestTarget = EvokerCommon.findBestDeepBreathTarget();
               return bestTarget.unit ? bestTarget.unit.position : null;
             },
             req => {
               if (!Settings.EvokerPreservationUseDeepBreath) return false;
-              const bestTarget = findBestDeepBreathTarget();
+              const bestTarget = EvokerCommon.findBestDeepBreathTarget();
               return combat.targets.length > 2 && bestTarget.count >= Settings.EvokerPreservationDeepBreathMinTargets;
             }
           ),
-          this.castEmpowered("Fire Breath", 4),
+          this.castEmpoweredPreservation("Fire Breath", 4),
           spell.cast("Disintegrate",
             on => combat.bestTarget,
             req => {
@@ -162,7 +273,7 @@ export class EvokerPreservationBehavior extends Behavior {
     );
   }
 
-  castEmpowered(spellNameOrId, desiredEmpowerLevel) {
+  castEmpoweredPreservation(spellNameOrId, desiredEmpowerLevel) {
     switch (spellNameOrId) {
       case "Fire Breath":
         return this.castEmpoweredFireBreath(desiredEmpowerLevel);
@@ -171,23 +282,21 @@ export class EvokerPreservationBehavior extends Behavior {
       case "Spiritbloom":
         return this.castEmpoweredSpiritbloom(desiredEmpowerLevel);
       default:
-        return this.castEmpoweredDefault(spellNameOrId, desiredEmpowerLevel);
+        return EvokerCommon.castEmpowered(spellNameOrId, desiredEmpowerLevel, on => combat.bestTarget, req => true);
     }
   }
 
+
   castEmpoweredFireBreath(desiredEmpowerLevel) {
-    return new bt.Sequence(
-      spell.cast("Fire Breath", on => combat.bestTarget, req => {
-        const enemiesInFront = combat.targets.filter(unit => me.isFacing(unit) && unit.distanceTo(me) <= 30).length;
-        return enemiesInFront > 1;
-      }),
-      this.setDesiredEmpowerLevel(desiredEmpowerLevel)
-    );
+    return EvokerCommon.castEmpowered("Fire Breath", desiredEmpowerLevel, on => me.target, req => {
+      const enemiesInFront = combat.targets.filter(unit => me.isFacing(unit) && unit.distanceTo(me) <= 30).length;
+      return enemiesInFront > 1;
+    });
   }
 
   castEmpoweredDreamBreath(desiredEmpowerLevel) {
     return new bt.Sequence(
-      spell.cast("Dream Breath", on => {
+      EvokerCommon.castEmpowered("Dream Breath", desiredEmpowerLevel, on => {
         const validTargets = heal.priorityList.filter(unit => me.isFacing(unit) && unit.distanceTo(me) <= 30);
         return validTargets.length > 0 ? validTargets[0] : null;
       }, req => {
@@ -204,43 +313,13 @@ export class EvokerPreservationBehavior extends Behavior {
   }
 
   castEmpoweredSpiritbloom(desiredEmpowerLevel) {
-    return new bt.Sequence(
-      spell.cast("Spiritbloom", on => heal.priorityList[0], req => {
-        const validTargets = heal.priorityList.filter(unit =>
-          unit.distanceTo(me) <= 30 &&
-          unit.predictedHealthPercent < Settings.EvokerPreservationSpiritbloomPercent
-        );
-        return validTargets.length >= Settings.EvokerPreservationSpiritbloomCount;
-      }),
-      this.setDesiredEmpowerLevel(desiredEmpowerLevel)
-    );
-  }
-
-  castEmpoweredDefault(spellNameOrId, desiredEmpowerLevel) {
-    return new bt.Sequence(
-      spell.cast(spellNameOrId, on => combat.bestTarget),
-      this.setDesiredEmpowerLevel(desiredEmpowerLevel)
-    );
-  }
-
-  setDesiredEmpowerLevel(desiredEmpowerLevel) {
-    return new bt.Action(() => {
-      this._desiredEmpowerLevel = desiredEmpowerLevel;
-      return bt.Status.Success;
-    });
-  }
-
-  handleEmpoweredSpell() {
-    if (this._desiredEmpowerLevel !== undefined && me.spellInfo.empowerLevel === this._desiredEmpowerLevel) {
-      const currentSpellId = me.spellInfo.spellChannelId;
-      const currentSpell = spell.getSpell(currentSpellId);
-      if (currentSpell) {
-        currentSpell.cast(me.targetUnit);
-        this._desiredEmpowerLevel = undefined;
-      }
-      return bt.Status.Success;
-    }
-    return bt.Status.Failure;
+    return EvokerCommon.castEmpowered("Spiritbloom", desiredEmpowerLevel, on => heal.priorityList[0], req => {
+      const validTargets = heal.priorityList.filter(unit =>
+        unit.distanceTo(me) <= 30 &&
+        unit.predictedHealthPercent < Settings.EvokerPreservationSpiritbloomPercent
+      );
+      return validTargets.length >= Settings.EvokerPreservationSpiritbloomCount;
+    })
   }
 
   findBestEmeraldBlossomTarget() {
@@ -259,14 +338,3 @@ export class EvokerPreservationBehavior extends Behavior {
     ).length;
   }
 }
-
-const findBestDeepBreathTarget = () => {
-  return combat.targets.reduce((best, mainUnit) => {
-    const unitsInRange = combat.targets.filter(target =>
-      target.distanceTo(mainUnit) <= target.distanceTo(me) &&
-      me.isFacing(target, 30)
-    ).length;
-
-    return unitsInRange > best.count ? { unit: mainUnit, count: unitsInRange } : best;
-  }, { unit: null, count: 0 });
-};
