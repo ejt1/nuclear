@@ -47,6 +47,8 @@ export class EvokerDevastationBehavior extends Behavior {
           !me.hasAura("Renewing Blaze")
       ),
       spell.interrupt("Quell"),
+      common.waitForTarget(),
+      common.waitForFacing(),
       new bt.Decorator(
         ret => !spell.isGlobalCooldown(),
         new bt.Selector(
