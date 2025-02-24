@@ -308,7 +308,6 @@ export class EvokerPreservationBehavior extends Behavior {
         return validTargets.length >= Settings.EvokerPreservationDreamBreathCount;
       }),
       spell.cast("Tip the Scales", on => me),
-      this.setDesiredEmpowerLevel(desiredEmpowerLevel)
     );
   }
 
