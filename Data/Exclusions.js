@@ -42,9 +42,16 @@ export const useExclude = {
   208478: true, // Worm raid boss
 };
 
+// Add this alongside the other exclusion objects
+export const rootExclusions = {
+  198013: true,  // Eye Beam
+  212084: true, // Fel Devastation
+};
+
 export default {
   exclusions,
   castWhileMove,
   losExclude,
   useExclude,
+  rootExclusions,
 };
