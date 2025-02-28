@@ -6,7 +6,6 @@ import spell from "@/Core/Spell";
 import { me } from "@/Core/ObjectManager";
 import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 import { defaultHealTargeting as heal } from "@/Targeting/HealTargeting";
-import Settings from "@/Core/Settings";
 import { DispelPriority } from "@/Data/Dispels"
 import { WoWDispelType } from "@/Enums/Auras";
 import Settings from "@/Core/Settings";
