@@ -29,6 +29,18 @@ export class PriestHolyBehavior extends Behavior {
       ]
     },
     {
+      header: "Defensives",
+      options: [
+        { type: "slider", uid: "HolyPriestDesperatePrayerPercent", text: "Desperate Prayer Percent", min: 0, max: 100, default: 40 },
+      ]
+    },
+    {
+      header: "General",
+      options: [
+        { type: "checkbox", uid: "HolyPriestUseLightweaver", text: "Use Lightweaver Logic", default: true },
+      ]
+    },
+    {
       header: "Single Target Healing",
       options: [
         { type: "slider", uid: "HolyPriestFlashHealPercent", text: "Flash Heal Percent", min: 0, max: 100, default: 40 },
@@ -50,23 +62,39 @@ export class PriestHolyBehavior extends Behavior {
   ];
 
   build() {
-    return new bt.Decorator(
-      ret => !spell.isGlobalCooldown(),
-      new bt.Selector(
-        common.waitForNotMounted(),
-        common.waitForCastOrChannel(),
-        this.dispelRotation(),
-        this.emergencyHealing(),
-        this.maintainLightweaver(),
-        this.mainHealingRotation(),
-        this.damageRotation()
+    return new bt.Selector(
+      common.waitForNotMounted(),
+      common.waitForCastOrChannel(),
+      this.defensiveRotation(),
+      new bt.Decorator(
+        ret => !spell.isGlobalCooldown(),
+        new bt.Selector(
+          this.dispelRotation(),
+          this.emergencyHealing(),
+          this.maintainLightweaver(),
+          this.mainHealingRotation(),
+          this.damageRotation()
+        )
       )
     );
   }
 
   dispelRotation() {
     return new bt.Selector(
-      spell.dispel("Purify", true, DispelPriority.High, true, WoWDispelType.Magic, WoWDispelType.Disease)
+      spell.dispel("Purify", true, DispelPriority.Low, true, WoWDispelType.Magic, WoWDispelType.Disease)
+    );
+  }
+
+  defensiveRotation() {
+    return new bt.Selector(
+      spell.cast("Desperate Prayer",
+        on => me,
+        req => me.inCombat() && me.pctHealth < Settings.HolyPriestDesperatePrayerPercent
+      ),
+      spell.cast("Fade",
+        on => me,
+        req => me.inCombat() && combat.targets.find(unit => unit.isTanking())
+      )
     );
   }
 
@@ -85,12 +113,15 @@ export class PriestHolyBehavior extends Behavior {
     return new bt.Selector(
       spell.cast("Flash Heal",
         on => heal.getPriorityTarget(),
-        req => this.shouldCastFlashHealForLightweaver() || (me.hasAura(auras.surgeoflight) && this.shouldUseSurgeOfLight())
+        req => Settings.HolyPriestUseLightweaver && (this.shouldCastFlashHealForLightweaver() || (me.hasAura(auras.surgeoflight) && this.shouldUseSurgeOfLight()))
       )
     );
   }
 
   shouldCastFlashHealForLightweaver() {
+    if (!Settings.HolyPriestUseLightweaver) {
+      return false;
+    }
     const lightweaverAura = me.getAura(auras.lightweaver);
     const currentStacks = lightweaverAura?.stacks ?? 0;
     const desiredStacks = me.pctPower === 100 ? 2 : 1;
@@ -119,6 +150,7 @@ export class PriestHolyBehavior extends Behavior {
 
   mainHealingRotation() {
     return new bt.Selector(
+      spell.cast("Holy Word: Serenity", on => this.findHolyWordSerenityTarget()),
       spell.cast("Holy Word: Sanctify", on => this.findHolyWordSanctifyTarget()),
       spell.cast("Halo", on => this.findHaloTarget()),
       spell.cast("Heal", on => this.findHealTarget()),
@@ -129,12 +161,15 @@ export class PriestHolyBehavior extends Behavior {
   }
 
   damageRotation() {
-    return new bt.Selector(
-      spell.cast("Holy Word: Chastise", on => combat.bestTarget),
-      spell.cast("Holy Fire", on => combat.bestTarget),
-      this.castHolyNova(),
-      spell.cast("Shadow Word: Pain", on => this.findShadowWordPainTarget()),
-      spell.cast("Smite", on => combat.bestTarget)
+    return new bt.Decorator(
+      ret => !me.target || !me.target.isPlayer(),
+      new bt.Selector(
+        spell.cast("Holy Word: Chastise", on => combat.bestTarget),
+        spell.cast("Holy Fire", on => combat.bestTarget),
+        this.castHolyNova(),
+        spell.cast("Shadow Word: Pain", on => this.findShadowWordPainTarget()),
+        spell.cast("Smite", on => combat.bestTarget)
+      )
     );
   }
 
@@ -173,7 +208,7 @@ export class PriestHolyBehavior extends Behavior {
     const lightweaverAura = me.getAura(auras.lightweaver);
     const healThreshold = Settings.HolyPriestHealPercent;
 
-    if (lightweaverAura && lightweaverAura.stacks > 0) {
+    if (Settings.HolyPriestUseLightweaver && lightweaverAura && lightweaverAura.stacks > 0) {
       return heal.priorityList.find(unit => unit.pctHealth < healThreshold);
     }
 
@@ -187,13 +222,13 @@ export class PriestHolyBehavior extends Behavior {
     const surgeOfLightThreshold = Settings.HolyPriestSurgeOfLightPercent;
 
     if (surgeOfLightAura) {
-      if (surgeOfLightAura.remaining <= 2000 || !lightweaverAura || lightweaverAura.remaining < 3000) {
+      if (surgeOfLightAura.remaining <= 2000 || Settings.HolyPriestUseLightweaver && (!lightweaverAura || lightweaverAura.remaining < 3000)) {
         return heal.getPriorityTarget();
       }
       return heal.priorityList.find(unit => unit.pctHealth < surgeOfLightThreshold);
     }
 
-    if (!lightweaverAura || lightweaverAura.remaining < 3000) {
+    if (Settings.HolyPriestUseLightweaver && (!lightweaverAura || lightweaverAura.remaining < 3000)) {
       return heal.getPriorityTarget();
     }
 

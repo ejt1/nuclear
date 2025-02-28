@@ -529,7 +529,10 @@ class Spell extends wow.EventListener {
    */
   getCharges(spellNameOrId) {
     const spell = this.getSpell(spellNameOrId);
-    return spell.charges.charges
+    if (!spell || !spell.charges) {
+      return 0;
+    }
+    return spell.charges.charges || 0;
   }
 
   /**

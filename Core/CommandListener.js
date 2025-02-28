@@ -7,20 +7,20 @@ import colors from '@/Enums/Colors';
 class CommandListener extends wow.EventListener {
   constructor() {
     super();
-    this.commandRegex = /Unknown console command \((.+)\)/;
     this.spellQueue = [];
     this.targetFunctions = {
       me: () => me,
       focus: () => me.focusTarget,
       target: () => me.targetUnit
     };
+
   }
 
   onEvent(event) {
-    if (event.name === 'CONSOLE_MESSAGE') {
-      const match = this.commandRegex.exec(event.args[0]);
-      if (match) {
-        this.handleCommand(match[1]);
+    if (event.name == 'CHAT_MSG_ADDON') {
+      const [prefix, message, channel, sender] = event.args;
+      if (prefix === "STYX") {
+        this.handleCommand(message);
       }
     }
   }
@@ -32,7 +32,7 @@ class CommandListener extends wow.EventListener {
       queue: () => this.handleQueueCommand(args)
     };
 
-    (handlers[action] || (() => console.info(`Unknown custom command: ${command}`)))();
+    (handlers[action] || (() => wow.Chat.addMessage(`Unknown custom command: ${command}`)))();
   }
 
   handleQueueCommand(args) {

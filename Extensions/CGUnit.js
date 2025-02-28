@@ -3,6 +3,7 @@ import Common from "@/Core/Common";
 import { MovementFlags, TraceLineHitFlags, UnitFlags, UnitStandStateType } from "@/Enums/Flags";
 import { HealImmune } from "@/Enums/Auras";
 import Settings from "@/Core/Settings";
+import { rootExclusions } from "@/Data/Exclusions";
 
 const originalTargetGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'target').get;
 const originalAurasGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'auras').get;
@@ -397,10 +398,14 @@ Object.defineProperties(wow.CGUnit.prototype, {
 
   isRooted: {
     /**
-     * Check if the unit is rooted based on movement flags.
-     * @returns {boolean} - Returns true if the unit is rooted.
+     * Check if the unit is rooted based on movement flags, excluding certain spells.
+     * @returns {boolean} - Returns true if the unit is rooted and not casting excluded spells.
      */
     value: function () {
+      // If casting an excluded spell, not considered rooted
+      if (this.currentCastOrChannel?.spellId && rootExclusions[this.currentCastOrChannel.spellId]) {
+        return false;
+      }
       return (this.movementInfo.flags & MovementFlags.ROOT) !== 0;
     }
   },
