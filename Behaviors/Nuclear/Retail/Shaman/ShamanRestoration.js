@@ -156,6 +156,9 @@ export class ShamanRestorationBehavior extends Behavior {
 
   isEmergencyHealingNeeded() {
     const lowestHealth = this.getLowestHealthPercentage();
+    if (!lowestHealth) {
+      return false;
+    }
     return me.inCombat() && this.getLowestHealthAlly().inCombat() && me.withinLineOfSight(this.getLowestHealthAlly()) &&
       lowestHealth <= Settings.RestoShamanEmergencyHealingThreshold;
   }
