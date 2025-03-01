@@ -34,6 +34,7 @@ export class EvokerDevastationBehavior extends Behavior {
 
   build() {
     return new bt.Selector(
+      common.waitForNotSitting(),
       common.waitForNotMounted(),
       new bt.Action(() => EvokerCommon.handleEmpoweredSpell()),
       common.waitForCastOrChannel(),
