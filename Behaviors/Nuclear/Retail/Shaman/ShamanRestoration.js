@@ -25,6 +25,7 @@ export class ShamanRestorationBehavior extends Behavior {
   lastHealingStreamTotemCast = 0;
   //static HEALING_STREAM_TOTEM_COOLDOWN = 18000;
   static HEALING_STREAM_TOTEM_NAME = "Healing Stream Totem";
+
   constructor() {
     super();
     this.lastHealingCheck = 0;
@@ -51,15 +52,64 @@ export class ShamanRestorationBehavior extends Behavior {
   }
 
   static settings = [
-    { type: "slider", uid: "RestoShamanEmergencyHealingThreshold", text: "Emergency Healing Threshold", min: 0, max: 100, default: 30 },
-    { type: "slider", uid: "RestoShamanAncestralGuidanceThreshold", text: "Ancestral Guidance Threshold", min: 0, max: 100, default: 40 },
-    { type: "slider", uid: "RestoShamanAscendanceThreshold", text: "Ascendance Threshold", min: 0, max: 100, default: 40 },
-    { type: "slider", uid: "RestoShamanSpiritLinkThreshold", text: "Spirit Link Totem Threshold", min: 0, max: 100, default: 30 },
-    { type: "slider", uid: "RestoShamanRiptideThreshold", text: "Riptide Threshold", min: 0, max: 100, default: 70 },
-    { type: "slider", uid: "RestoShamanHealingSurgeThreshold", text: "Healing Surge Threshold", min: 0, max: 100, default: 50 },
-    { type: "slider", uid: "RestoShamanHealingWaveThreshold", text: "Healing Wave Threshold", min: 0, max: 100, default: 50 },
-    { type: "slider", uid: "RestoShamanPrimordialWaveThreshold", text: "Primordial Wave Threshold", min: 0, max: 100, default: 40 },
-    { type: "slider", uid: "RestoShamanChainHealThreshold", text: "Chain Heal Threshold", min: 0, max: 100, default: 60 },
+    {
+      type: "slider",
+      uid: "RestoShamanEmergencyHealingThreshold",
+      text: "Emergency Healing Threshold",
+      min: 0,
+      max: 100,
+      default: 30
+    },
+    {
+      type: "slider",
+      uid: "RestoShamanAncestralGuidanceThreshold",
+      text: "Ancestral Guidance Threshold",
+      min: 0,
+      max: 100,
+      default: 40
+    },
+    {
+      type: "slider",
+      uid: "RestoShamanAscendanceThreshold",
+      text: "Ascendance Threshold",
+      min: 0,
+      max: 100,
+      default: 40
+    },
+    {
+      type: "slider",
+      uid: "RestoShamanSpiritLinkThreshold",
+      text: "Spirit Link Totem Threshold",
+      min: 0,
+      max: 100,
+      default: 30
+    },
+    {type: "slider", uid: "RestoShamanRiptideThreshold", text: "Riptide Threshold", min: 0, max: 100, default: 70},
+    {
+      type: "slider",
+      uid: "RestoShamanHealingSurgeThreshold",
+      text: "Healing Surge Threshold",
+      min: 0,
+      max: 100,
+      default: 50
+    },
+    {
+      type: "slider",
+      uid: "RestoShamanHealingWaveThreshold",
+      text: "Healing Wave Threshold",
+      min: 0,
+      max: 100,
+      default: 50
+    },
+    {
+      type: "slider",
+      uid: "RestoShamanPrimordialWaveThreshold",
+      text: "Primordial Wave Threshold",
+      min: 0,
+      max: 100,
+      default: 40
+    },
+    {type: "slider", uid: "RestoShamanChainHealThreshold", text: "Chain Heal Threshold", min: 0, max: 100, default: 60},
   ];
 
   shouldStopCasting() {
@@ -156,9 +206,6 @@ export class ShamanRestorationBehavior extends Behavior {
 
   isEmergencyHealingNeeded() {
     const lowestHealth = this.getLowestHealthPercentage();
-    if (!lowestHealth) {
-      return false;
-    }
     return me.inCombat() && this.getLowestHealthAlly().inCombat() && me.withinLineOfSight(this.getLowestHealthAlly()) &&
       lowestHealth <= Settings.RestoShamanEmergencyHealingThreshold;
   }
@@ -246,7 +293,7 @@ export class ShamanRestorationBehavior extends Behavior {
         const injuredAllies = alliesNearby.filter(ally => ally.effectiveHealthPercent < Settings.RestoShamanChainHealThreshold);
 
         return (injuredAllies.length >= 3 ||
-          (injuredAllies.length >= 2 && injuredAllies.some(ally => ally.effectiveHealthPercent < Settings.RestoShamanChainHealThreshold - 10))) &&
+            (injuredAllies.length >= 2 && injuredAllies.some(ally => ally.effectiveHealthPercent < Settings.RestoShamanChainHealThreshold - 10))) &&
           me.hasVisibleAura("High Tide");
       }),
       spell.cast("Healing Wave", on => this.getLowestHealthAlly(), req => {
@@ -425,7 +472,11 @@ export class ShamanRestorationBehavior extends Behavior {
 
   getLowestHealthPercentage() {
     const lowestHealthAlly = this.getLowestHealthAlly();
-    return lowestHealthAlly ? lowestHealthAlly.effectiveHealthPercent : 100;
+    if (lowestHealthAlly === undefined || lowestHealthAlly === null) {
+      return 100;
+    } else {
+      return lowestHealthAlly.effectiveHealthPercent;
+    }
   }
 
   getAllyNeedingRiptide() {
