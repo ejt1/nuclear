@@ -6,7 +6,7 @@ import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 class EvokerCommon {
   static castEmpowered(spellNameOrId, desiredEmpowerLevel, on, conditions) {
     return new bt.Sequence(
-      spell.cast(spellNameOrId, () => on, () => conditions),
+      spell.cast(spellNameOrId, () => on(), () => conditions()),
       this.setDesiredEmpowerLevel(desiredEmpowerLevel)
     );
   }
