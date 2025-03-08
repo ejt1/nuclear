@@ -156,7 +156,6 @@ const herbs = {
   454545: "herb",   // Luredrop
 
   414344: "herb",   // Camouflaged Arathor's Spear
-  414342: "herb",   // Camouflaged Orbinid
   454007: "herb",   // Camouflaged Luredrop
   414341: "herb",   // Camouflaged Luredrop
   454051: "herb",   // Camouflaged Luredrop
@@ -166,7 +165,6 @@ const herbs = {
   454065: "herb",   // Camouflaged Mycobloom
   454068: "herb",   // Camouflaged Mycobloom
   454073: "herb",   // Camouflaged Mycobloom
-  414340: "herb",   // Camouflaged Mycobloom
 
 };
 
@@ -278,9 +276,6 @@ const ores = {
   452079: "vein",   // Bismuth
   452081: "vein",   // Bismuth
   452083: "vein",   // Ironclaw
-  413897: "vein",   // Camouflaged Aqirite
-  413907: "vein",   // Camouflaged Ironclaw
-  413889: "vein",   // Camouflaged Bismuth
 };
 
 const treasures = {
@@ -348,6 +343,9 @@ const treasures = {
   444802: "treasure", // Kobyss ritual cache
   444866: "treasure", // Overflowing Kobyss ritual cache
   446140: "treasure", // Missing scouts pack
+
+  // TWW 1.1
+  469858: "treasure" // Shiny Trash Can
 };
 
 export default { herb: herbs, ore: ores, treasure: treasures };
