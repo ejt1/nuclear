@@ -98,7 +98,7 @@ export class EvokerPreservationBehavior extends Behavior {
           text: "Dream Breath Minimum Targets",
           min: 1,
           max: 10,
-          default: 3
+          default: 2
         },
         {
           type: "slider",
@@ -225,9 +225,9 @@ export class EvokerPreservationBehavior extends Behavior {
       spell.cast("Time Dilation", on => heal.getPriorityPVPHealTarget(), ret => heal.getPriorityPVPHealTarget() < 30),
       spell.cast("Echo", on => heal.getPriorityPVPHealTarget(), ret => heal.getPriorityPVPHealTarget() < Settings.PVPEvokerPreservationEchoPercent),
       spell.cast("Verdant Embrace", on => heal.getPriorityPVPHealTarget(), req => heal.getPriorityPVPHealTarget().predictedHealthPercent < Settings.PVPEvokerPreservationVerdantEmbracePercent),
-      this.castEmpoweredPreservation("Dream Breath", heal.priorityList.length >= Settings.PVPEvokerPreservationDreamBreathCount ? 2 : 1),
+      this.castEmpoweredPreservation("Dream Breath", 2),
       spell.dispel("Naturalize", true, DispelPriority.High, true, WoWDispelType.Magic, WoWDispelType.Poison),
-      this.castEmpoweredPreservation("Spiritbloom", 1),
+      this.castEmpoweredPreservation("Spiritbloom", 2),
       spell.cast("Emerald Communion",
         on => me,
         req => me.pctPower < 80 && heal.priorityList.filter(unit => unit.predictedHealthPercent < Settings.PVPEvokerPreservationEmeraldCommunionPercent).length > Settings.PVPEvokerPreservationEmeraldCommunionCount),
