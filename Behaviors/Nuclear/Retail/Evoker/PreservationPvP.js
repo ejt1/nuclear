@@ -35,7 +35,7 @@ export class EvokerPreservationBehavior extends Behavior {
           text: "Reversion Percent",
           min: 0,
           max: 100,
-          default: 70
+          default: 85
         },
         {
           type: "slider",
@@ -43,7 +43,7 @@ export class EvokerPreservationBehavior extends Behavior {
           text: "Living Flame Percent",
           min: 0,
           max: 100,
-          default: 70
+          default: 80
         },
         {type: "slider", uid: "PVPEvokerPreservationEchoPercent", text: "Echo Percent", min: 0, max: 100, default: 70},
         {
@@ -52,7 +52,7 @@ export class EvokerPreservationBehavior extends Behavior {
           text: "Verdant Embrace Percent",
           min: 0,
           max: 100,
-          default: 70
+          default: 85
         },
         {type: "checkbox", uid: "PVPEvokerPreservationUseTimeDilation", text: "Use Time Dilation", default: true},
       ]
@@ -138,7 +138,7 @@ export class EvokerPreservationBehavior extends Behavior {
           text: "Spiritbloom Health Percent",
           min: 0,
           max: 100,
-          default: 80
+          default: 75
         },
         {
           type: "slider",
@@ -209,25 +209,14 @@ export class EvokerPreservationBehavior extends Behavior {
   healRotation() {
     return new bt.Selector(
       spell.cast("Blessing of the Bronze", on => me, req => Settings.PVPEvokerPreservationBlessingOfBronze && !me.inCombat() && !me.hasAura(auras.blessingOfTheBronze)),
-      spell.cast("Reversion", on => {
-        const existingTarget = heal.priorityList.find(unit => !unit.hasAura(auras.reversion) && unit.predictedHealthPercent < Settings.PVPEvokerPreservationReversionPercent);
-        if (existingTarget) return existingTarget;
-
-        if (spell.getCharges("Reversion") === 2) {
-          const tankWithoutAura = heal.friends.Tanks.find(unit => !unit.hasAura(auras.reversion));
-          if (tankWithoutAura) return tankWithoutAura;
-
-          const healerWithoutAura = heal.friends.Healers.find(unit => !unit.hasAura(auras.reversion));
-          if (healerWithoutAura) return healerWithoutAura;
-        }
-        return null;
-      }),
-      spell.cast("Time Dilation", on => heal.getPriorityPVPHealTarget(), ret => heal.getPriorityPVPHealTarget() < 30),
-      spell.cast("Echo", on => heal.getPriorityPVPHealTarget(), ret => heal.getPriorityPVPHealTarget() < Settings.PVPEvokerPreservationEchoPercent),
+      spell.cast("Echo", on => heal.getPriorityPVPHealTarget(), ret => !(heal.getPriorityPVPHealTarget()?.hasAuraByMe(auras.echo)) && heal.getPriorityPVPHealTarget().predictedHealthPercent < Settings.PVPEvokerPreservationEchoPercent),
+      spell.cast("Time Dilation", on => heal.getPriorityPVPHealTarget(), ret => heal.getPriorityPVPHealTarget().predictedHealthPercent < 35),
+      spell.cast("Reversion", on =>  on => heal.getPriorityPVPHealTarget(), ret => !(heal.getPriorityPVPHealTarget()?.hasAuraByMe(auras.reversion)) && heal.getPriorityPVPHealTarget()?.predictedHealthPercent < Settings.PVPEvokerPreservationReversionPercent),
       spell.cast("Verdant Embrace", on => heal.getPriorityPVPHealTarget(), req => heal.getPriorityPVPHealTarget().predictedHealthPercent < Settings.PVPEvokerPreservationVerdantEmbracePercent),
-      this.castEmpoweredPreservation("Dream Breath", 2),
+
+      this.castEmpoweredPreservation("Dream Breath", 1),
       spell.dispel("Naturalize", true, DispelPriority.High, true, WoWDispelType.Magic, WoWDispelType.Poison),
-      this.castEmpoweredPreservation("Spiritbloom", 2),
+      this.castEmpoweredPreservation("Spiritbloom", 1),
       spell.cast("Emerald Communion",
         on => me,
         req => me.pctPower < 80 && heal.priorityList.filter(unit => unit.predictedHealthPercent < Settings.PVPEvokerPreservationEmeraldCommunionPercent).length > Settings.PVPEvokerPreservationEmeraldCommunionCount),
@@ -240,6 +229,8 @@ export class EvokerPreservationBehavior extends Behavior {
       spell.dispel("Naturalize", true, DispelPriority.Low, true, WoWDispelType.Magic, WoWDispelType.Poison),
     )
   }
+
+  evoker
 
   damageRotation() {
     return new bt.Selector(
