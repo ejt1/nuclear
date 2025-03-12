@@ -17,7 +17,8 @@ const auras = {
   reversion: 366155,
   echo: 364343,
   essenceBurst: 369299,
-  blessingOfTheBronze: 381748
+  blessingOfTheBronze: 381748,
+  tipTheScales: 370553,
 };
 
 export class EvokerPreservationBehavior extends Behavior {
@@ -74,7 +75,7 @@ export class EvokerPreservationBehavior extends Behavior {
           text: "Emerald Communion Health Percent",
           min: 0,
           max: 100,
-          default: 50
+          default: 20
         },
         {
           type: "slider",
@@ -208,29 +209,30 @@ export class EvokerPreservationBehavior extends Behavior {
 
   healRotation() {
     return new bt.Selector(
+      spell.cast("Rewind", on => me, req => heal.getPriorityPVPHealTarget()?.predictedHealthPercent < 25),
+      spell.cast("Tip the Scales", on => me, req => heal.getPriorityPVPHealTarget()?.predictedHealthPercent < 30),
+      spell.cast("Echo", on => heal.getPriorityPVPHealTarget(), ret =>
+        !(heal.getPriorityPVPHealTarget()?.hasAuraByMe(auras.echo))
+        && heal.getPriorityPVPHealTarget()?.predictedHealthPercent < Settings.PVPEvokerPreservationEchoPercent
+        && heal.getPriorityPVPHealTarget()?.predictedHealthPercent > 20
+        && me.hasAuraByMe(auras.tipTheScales)),
+      spell.cast("Spiritbloom", on => heal.getPriorityPVPHealTarget(), req => me.hasAuraByMe(auras.tipTheScales) && heal.getPriorityPVPHealTarget()?.predictedHealthPercent < 35),
+      spell.cast("Time Dilation", on => heal.getPriorityPVPHealTarget(), ret => heal.getPriorityPVPHealTarget().predictedHealthPercent < 45),
       spell.cast("Blessing of the Bronze", on => me, req => Settings.PVPEvokerPreservationBlessingOfBronze && !me.inCombat() && !me.hasAura(auras.blessingOfTheBronze)),
       spell.cast("Echo", on => heal.getPriorityPVPHealTarget(), ret => !(heal.getPriorityPVPHealTarget()?.hasAuraByMe(auras.echo)) && heal.getPriorityPVPHealTarget().predictedHealthPercent < Settings.PVPEvokerPreservationEchoPercent),
-      spell.cast("Time Dilation", on => heal.getPriorityPVPHealTarget(), ret => heal.getPriorityPVPHealTarget().predictedHealthPercent < 35),
-      spell.cast("Reversion", on =>  on => heal.getPriorityPVPHealTarget(), ret => !(heal.getPriorityPVPHealTarget()?.hasAuraByMe(auras.reversion)) && heal.getPriorityPVPHealTarget()?.predictedHealthPercent < Settings.PVPEvokerPreservationReversionPercent),
+      spell.cast("Emerald Communion",
+        on => me,
+        req =>  heal.getPriorityPVPHealTarget()?.predictedHealthPercent < 40),
+      spell.cast("Reversion", on => on => heal.getPriorityPVPHealTarget(), ret => !(heal.getPriorityPVPHealTarget()?.hasAuraByMe(auras.reversion)) && heal.getPriorityPVPHealTarget()?.predictedHealthPercent < Settings.PVPEvokerPreservationReversionPercent),
       spell.cast("Verdant Embrace", on => heal.getPriorityPVPHealTarget(), req => heal.getPriorityPVPHealTarget().predictedHealthPercent < Settings.PVPEvokerPreservationVerdantEmbracePercent),
-
       this.castEmpoweredPreservation("Dream Breath", 1),
       spell.dispel("Naturalize", true, DispelPriority.High, true, WoWDispelType.Magic, WoWDispelType.Poison),
       this.castEmpoweredPreservation("Spiritbloom", 1),
-      spell.cast("Emerald Communion",
-        on => me,
-        req => me.pctPower < 80 && heal.priorityList.filter(unit => unit.predictedHealthPercent < Settings.PVPEvokerPreservationEmeraldCommunionPercent).length > Settings.PVPEvokerPreservationEmeraldCommunionCount),
-      spell.cast("Rewind", on => me, req => heal.priorityList.filter(unit => unit.predictedHealthPercent < Settings.PVPEvokerPreservationRewindPercent).length > Settings.PVPEvokerPreservationRewindCount),
-      spell.cast("Emerald Blossom",
-        on => this.findBestEmeraldBlossomTarget(),
-        req => this.countUnitsNeedingEmeraldBlossom() >= Settings.PVPEvokerPreservationEmeraldBlossomCount && spell.getTimeSinceLastCast("Emerald Blossom") > 2000
-      ),
+
       spell.cast("Living Flame", on => heal.getPriorityPVPHealTarget(), ret => heal.getPriorityPVPHealTarget() < Settings.PVPEvokerPreservationLivingFlamePercent),
       spell.dispel("Naturalize", true, DispelPriority.Low, true, WoWDispelType.Magic, WoWDispelType.Poison),
     )
   }
-
-  evoker
 
   damageRotation() {
     return new bt.Selector(
@@ -276,7 +278,6 @@ export class EvokerPreservationBehavior extends Behavior {
 
   castEmpoweredDreamBreath(desiredEmpowerLevel) {
     return new bt.Sequence(
-      spell.cast("Tip the Scales", on => me, req => heal.getPriorityPVPHealTarget()?.predictedHealthPercent < Settings.PVPEvokerPreservationDreamBreathPercent),
       EvokerCommon.castEmpowered("Dream Breath", desiredEmpowerLevel,
         on => heal.getPriorityPVPHealTarget(),
         req => heal.getPriorityPVPHealTarget().predictedHealthPercent < Settings.PVPEvokerPreservationDreamBreathPercent),
