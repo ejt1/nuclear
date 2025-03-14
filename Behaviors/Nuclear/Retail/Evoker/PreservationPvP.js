@@ -4,11 +4,8 @@ import Specialization from '@/Enums/Specialization';
 import common from '@/Core/Common';
 import spell from "@/Core/Spell";
 import { me } from "@/Core/ObjectManager";
-import { MovementFlags } from "@/Enums/Flags";
 import { DispelPriority } from "@/Data/Dispels";
 import { WoWDispelType } from "@/Enums/Auras";
-import { PowerType } from "@/Enums/PowerType";
-import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 import { defaultHealTargeting as heal } from "@/Targeting/HealTargeting";
 import Settings from "@/Core/Settings";
 import EvokerCommon from "@/Behaviors/Nuclear/Retail/Evoker/EvokerCommon";
@@ -21,7 +18,7 @@ const auras = {
   tipTheScales: 370553,
 };
 
-export class EvokerPreservationBehavior extends Behavior {
+export class EvokerPVPPreservationBehavior extends Behavior {
   name = "PVP Preservation Evoker";
   context = BehaviorContext.Any;
   specialization = Specialization.Evoker.Preservation;
@@ -192,6 +189,13 @@ export class EvokerPreservationBehavior extends Behavior {
       common.waitForNotMounted(),
       new bt.Action(() => EvokerCommon.handleEmpoweredSpell()),
       common.waitForCastOrChannel(),
+      new bt.Decorator(
+        () => this.shouldStopCasting(),
+        new bt.Action(() => {
+          me.stopCasting();
+          return bt.Status.Success;
+        })
+      ),
       spell.cast("Renewing Blaze", on => me, req => Settings.PVPEvokerPreservationUseRenewingBlaze && me.pctHealth < 50),
       spell.cast("Obsidian Scales", on => me, req => Settings.PVPEvokerPreservationUseObsidianScales && me.pctHealth < 40 && !me.hasAura("Renewing Blaze")),
       spell.interrupt("Quell", true),
@@ -216,13 +220,13 @@ export class EvokerPreservationBehavior extends Behavior {
         && heal.getPriorityPVPHealTarget()?.predictedHealthPercent < Settings.PVPEvokerPreservationEchoPercent
         && heal.getPriorityPVPHealTarget()?.predictedHealthPercent > 20
         && me.hasAuraByMe(auras.tipTheScales)),
-      spell.cast("Spiritbloom", on => heal.getPriorityPVPHealTarget(), req => me.hasAuraByMe(auras.tipTheScales) && heal.getPriorityPVPHealTarget()?.predictedHealthPercent < 35),
+      spell.cast("Dream Breath", on => heal.getPriorityPVPHealTarget(), req => me.hasAuraByMe(auras.tipTheScales) && heal.getPriorityPVPHealTarget()?.predictedHealthPercent < 35),
       spell.cast("Time Dilation", on => heal.getPriorityPVPHealTarget(), ret => heal.getPriorityPVPHealTarget().predictedHealthPercent < 45),
       spell.cast("Blessing of the Bronze", on => me, req => Settings.PVPEvokerPreservationBlessingOfBronze && !me.inCombat() && !me.hasAura(auras.blessingOfTheBronze)),
       spell.cast("Echo", on => heal.getPriorityPVPHealTarget(), ret => !(heal.getPriorityPVPHealTarget()?.hasAuraByMe(auras.echo)) && heal.getPriorityPVPHealTarget().predictedHealthPercent < Settings.PVPEvokerPreservationEchoPercent),
       spell.cast("Emerald Communion",
         on => me,
-        req =>  heal.getPriorityPVPHealTarget()?.predictedHealthPercent < 40),
+        req => heal.getPriorityPVPHealTarget()?.predictedHealthPercent < 40),
       spell.cast("Reversion", on => on => heal.getPriorityPVPHealTarget(), ret => !(heal.getPriorityPVPHealTarget()?.hasAuraByMe(auras.reversion)) && heal.getPriorityPVPHealTarget()?.predictedHealthPercent < Settings.PVPEvokerPreservationReversionPercent),
       spell.cast("Verdant Embrace", on => heal.getPriorityPVPHealTarget(), req => heal.getPriorityPVPHealTarget().predictedHealthPercent < Settings.PVPEvokerPreservationVerdantEmbracePercent),
       this.castEmpoweredPreservation("Dream Breath", 1),
@@ -305,4 +309,44 @@ export class EvokerPreservationBehavior extends Behavior {
       unit.predictedHealthPercent < Settings.PVPEvokerPreservationEmeraldBlossomPercent
     ).length;
   }
+
+  shouldStopCasting() {
+    if (!me.isCastingOrChanneling) return false;
+
+    const currentCast = me.currentCastOrChannel;
+    const remainingCastTime = currentCast.timeleft;
+
+    // If the cast is almost complete (less than 0.5 seconds remaining), let it finish
+    if (remainingCastTime < 500) return false;
+
+    // Define damaging spells to stop
+    const isDamageCast = [
+      "Fire Breath",
+      "Disintegrate",
+      "Living Flame",
+      "Deep Breath",
+      "Azure Strike",
+      "Pyre"
+    ].includes(currentCast.name);
+
+    if (isDamageCast && (this.isHealingNeeded() || this.isEmergencyHealingNeeded())) {
+      return true;
+    }
+
+    return false;
+  }
+
+  isHealingNeeded() {
+    const lowestHealth = heal.getPriorityPVPHealTarget()?.predictedHealthPercent;
+    return lowestHealth < 70
+  }
+
+  isEmergencyHealingNeeded() {
+    const lowestHealth = heal.getPriorityPVPHealTarget()?.predictedHealthPercent;
+    return me.inCombat() &&
+      heal.getPriorityPVPHealTarget()?.inCombat() &&
+      me.withinLineOfSight(heal.getPriorityPVPHealTarget()) &&
+      lowestHealth <= 40;
+  }
+
 }
