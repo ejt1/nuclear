@@ -15,6 +15,9 @@ const auras = {
   burnout: 375802,
   massDisintegrate: 436336,
   leapingFlames: 370901,
+  iridescenceBlue: 386399,
+  shatteringStar: 370452,
+  tipTheScales: 370553,
 };
 
 export class EvokerDevastationBehavior extends Behavior {
@@ -56,7 +59,7 @@ export class EvokerDevastationBehavior extends Behavior {
       common.waitForTarget(),
       common.waitForFacing(),
       new bt.Decorator(
-        ret => me.target && me.isWithinMeleeRange(me.target) && me.hasAura(auras.dragonRage),
+        ret => me.target && me.distanceTo(me.target) < 25 && me.hasAura(auras.dragonRage),
         this.burstRotation()
       ),
       new bt.Decorator(
@@ -68,14 +71,16 @@ export class EvokerDevastationBehavior extends Behavior {
 
   burstRotation() {
     return new bt.Selector(
+      spell.cast("Fire Breath", on => me.target, req => me.hasAuraByMe(auras.tipTheScales)),
       spell.cast("Shattering Star", on => me.target, req => this.shouldCastShatteringStar()),
+      spell.cast("Tip the Scales", on => me, req => me.hasAuraByMe(auras.dragonRage)),
       EvokerCommon.castEmpowered("Fire Breath", 1, on => me.target, req => true),
       EvokerCommon.castEmpowered("Eternity Surge", 1, on => me.target, req => true),
       spell.cast("Disintegrate", on => me.target, req => me.hasAura(auras.massDisintegrate)),
       spell.cast("Disintegrate", on => me.target, req => me.hasAura(auras.essenceBurst)),
       spell.cast("Living Flame", on => me.target, req => me.hasAura(auras.leapingFlames) || me.hasAura(auras.burnout)),
       spell.cast("Disintegrate", on => me.target, req => true),
-      spell.cast("Azure Strike", on => me.target, req => true)
+      spell.cast("Azure Strike", on => me.target, req => true),
     );
   }
 
@@ -102,6 +107,8 @@ export class EvokerDevastationBehavior extends Behavior {
       spell.cast("Disintegrate", on => me.target, req => me.powerByType(PowerType.Essence) >= 3),
       spell.cast("Living Flame", on => me.target, req => me.hasAura(auras.burnout) && me.powerByType(PowerType.Essence) < 4),
       spell.cast("Azure Strike", on => me.target, req => combat.targets.length >= 3 && me.powerByType(PowerType.Essence) < 3),
+      spell.cast("Disintegrate", on => me.target, req => true),
+      spell.cast("Azure Strike", on => me.target, req => true),
     );
   }
 
