@@ -11,7 +11,7 @@ import { PowerType } from "@/Enums/PowerType";
 import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 import { defaultHealTargeting as heal } from "@/Targeting/HealTargeting";
 import Settings from "@/Core/Settings";
-import EvokerCommon from "@/Behaviors/Nuclear/Retail/Evoker/EvokerCommon";
+import EvokerCommon from "@/Behaviors/EvokerCommon";
 
 const auras = {
   reversion: 366155,

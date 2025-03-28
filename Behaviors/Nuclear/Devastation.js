@@ -4,7 +4,7 @@ import common from "@/Core/Common";
 import spell from "@/Core/Spell";
 import { me } from "@/Core/ObjectManager";
 import Settings from "@/Core/Settings";
-import EvokerCommon from "@/Behaviors/Nuclear/Retail/Evoker/EvokerCommon";
+import EvokerCommon from "@/Behaviors/EvokerCommon";
 import { defaultCombatTargeting as Combat, defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 import { PowerType } from "@/Enums/PowerType";
 import Specialization from "@/Enums/Specialization";

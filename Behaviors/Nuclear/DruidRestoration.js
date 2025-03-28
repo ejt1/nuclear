@@ -6,8 +6,8 @@ import spell from "@/Core/Spell";
 import { me } from "@/Core/ObjectManager";
 import { PowerType } from "@/Enums/PowerType";
 import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
-import { defaultHealTargeting as heal } from "../../../../Targeting/HealTargeting";
-import { ShapeshiftForm } from "../../../../Enums/UnitEnums";
+import { defaultHealTargeting as heal } from "../../Targeting/HealTargeting";
+import { ShapeshiftForm } from "../../Enums/UnitEnums";
 import { DispelPriority } from "@/Data/Dispels";
 import { WoWDispelType } from "@/Enums/Auras";
 
