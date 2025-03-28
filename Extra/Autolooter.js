@@ -69,28 +69,10 @@ class Autolooter {
       this.lastLoot = currentTime;
     }
 
-    if (wow.gameVersion === 0) {
-      this.autolootClassic();
-    } else if (wow.gameVersion === 1) {
-      this.autolootRetail();
-    }
+    this.performAutoloot();
   }
 
-  static autolootClassic() {
-    objMgr.objects.forEach(obj => {
-      if (!(obj instanceof wow.CGUnit) || !obj.dead || !me.inInteractRange(obj) || this.looted.has(obj.guid)) return;
-
-      const isLootable = obj.isLootable;
-      const isSkinnable = Settings.ExtraSkinning && (obj.unitFlags & UnitFlags.Skinnable) > 0;
-
-      if (isLootable || isSkinnable) {
-        obj.interact();
-        this.looted.add(obj.guid);
-      }
-    });
-  }
-
-  static autolootRetail() {
+  static performAutoloot() {
     const lootUnit = this.getLootableUnit();
     if (lootUnit && wow.frameTime > this.lastLoot) {
       lootUnit.interact();

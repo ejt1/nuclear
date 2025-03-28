@@ -72,7 +72,7 @@ export default class BehaviorBuilder {
             }
           });
         } catch (e) {
-          console.error(`${entry.name}: ${e}`);
+          console.error(`${fullPath}: ${e}`);
           if (e.stack) {
             console.error(e.stack);
           }
@@ -100,9 +100,6 @@ export default class BehaviorBuilder {
     }
     if (o.specialization == Specialization.Invalid) {
       console.error(`${name} invalid specialization`);
-      return false;
-    }
-    if (o.version != wow.gameVersion) {
       return false;
     }
     if (!o.build || !(o.build instanceof Function)) {
