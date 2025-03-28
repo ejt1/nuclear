@@ -72,7 +72,7 @@ export default class BehaviorBuilder {
             }
           });
         } catch (e) {
-          console.error(`${entry.name}: ${e}`);
+          console.error(`${fullPath}: ${e}`);
           if (e.stack) {
             console.error(e.stack);
           }
