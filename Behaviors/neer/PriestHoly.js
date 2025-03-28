@@ -20,7 +20,6 @@ export class PriestHolyBehavior extends Behavior {
   name = "Holy Priest";
   context = BehaviorContext.Any;
   specialization = Specialization.Priest.Holy;
-  version = wow.GameVersion.Retail;
   static settings = [
     {
       header: "Emergency Healing",

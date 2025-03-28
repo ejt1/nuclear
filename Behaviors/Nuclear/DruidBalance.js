@@ -10,7 +10,6 @@ import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 export class WarriorFuryBehavior extends Behavior {
   context = BehaviorContext.Any;
   specialization = Specialization.Druid.Balance;
-  version = wow.GameVersion.Retail;
 
   build() {
     return new bt.Decorator(

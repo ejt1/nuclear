@@ -9,7 +9,6 @@ export class DemonhunterHavocBehavior extends Behavior {
   name = "Demon Hunter Havoc"
   context = BehaviorContext.Any; // PVP ?
   specialization = Specialization.DemonHunter.Havoc;
-  version = wow.GameVersion.Retail;
 
   build() {
     return new bt.Decorator(

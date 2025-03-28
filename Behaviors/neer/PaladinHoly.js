@@ -24,7 +24,6 @@ export class PaladinHolyBehavior extends Behavior {
   name = "Holy Paladin";
   context = BehaviorContext.Any;
   specialization = Specialization.Paladin.Holy;
-  version = wow.GameVersion.Retail;
   static settings = [
     {
       header: "Emergency Healing",

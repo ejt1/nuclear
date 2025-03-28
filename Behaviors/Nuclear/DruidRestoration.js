@@ -14,7 +14,6 @@ import { WoWDispelType } from "@/Enums/Auras";
 export class DruidRestorationBehavior extends Behavior {
   context = BehaviorContext.Any;
   specialization = Specialization.Druid.Restoration;
-  version = wow.GameVersion.Retail;
   name = "Resto Druid"
 
   build() {

@@ -27,7 +27,6 @@ export class PriestDiscipline extends Behavior {
   name = "Priest (Discipline) PVE";
   context = BehaviorContext.Any; // PVP or PVE
   specialization = Specialization.Priest.Discipline;
-  version = wow.GameVersion.Retail;
 
   build() {
     return new bt.Selector(

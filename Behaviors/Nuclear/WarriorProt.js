@@ -9,7 +9,6 @@ import { PowerType } from "@/Enums/PowerType";
 export class WarriorProtectionBehavior extends Behavior {
   context = BehaviorContext.Any;
   specialization = Specialization.Warrior.Protection;
-  version = wow.GameVersion.Retail;
 
   build() {
     return new bt.Selector(

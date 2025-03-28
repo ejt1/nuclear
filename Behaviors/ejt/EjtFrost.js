@@ -40,7 +40,6 @@ export class FrostMageBehavior extends Behavior {
   name = "Ejt's Frost";
   context = BehaviorContext.Any;
   specialization = Specialization.Mage.Frost;
-  version = wow.GameVersion.Retail;
 
   build() {
     return new bt.Selector(

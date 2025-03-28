@@ -19,7 +19,6 @@ export class ShamanRestorationBehavior extends Behavior {
   name = "Restoration Shaman";
   context = BehaviorContext.Any;
   specialization = Specialization.Shaman.Restoration;
-  version = wow.GameVersion.Retail;
   lastHealingStreamTotemCast = 0;
   lastHealingRainCast = 0;
   lastHealingStreamTotemCast = 0;

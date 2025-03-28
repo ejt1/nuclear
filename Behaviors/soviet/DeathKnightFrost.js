@@ -25,7 +25,6 @@ export class DeathKnightFrostBehavior extends Behavior {
   name = "Frost DK PVE";
   context = BehaviorContext.Any; // PVP ?
   specialization = Specialization.DeathKnight.Frost;
-  version = wow.GameVersion.Retail;
   static settings = [
     {type: "checkbox", uid: "FrostDKUseSmackyHands", text: "Use Smacky Hands", default: true},
   ];

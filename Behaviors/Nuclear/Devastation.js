@@ -24,7 +24,6 @@ export class EvokerDevastationBehavior extends Behavior {
   name = "Devastation Evoker";
   context = BehaviorContext.Any;
   specialization = Specialization.Evoker.Devastation;
-  version = wow.GameVersion.Retail;
 
   static settings = [
     {

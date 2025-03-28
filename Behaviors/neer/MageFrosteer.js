@@ -19,7 +19,6 @@ export class FrostMageBehavior extends Behavior {
   name = "Frost Mageeer";
   context = BehaviorContext.Any;
   specialization = Specialization.Mage.Frost;
-  version = wow.GameVersion.Retail;
 
   static settings = [
     {

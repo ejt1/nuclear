@@ -21,7 +21,6 @@ export class HunterBeastMasteryBehavior extends Behavior {
   name = "Beast Mastery Hunter";
   context = BehaviorContext.Any;
   specialization = Specialization.Hunter.BeastMastery;
-  version = wow.GameVersion.Retail;
   static settings = [
     {
       header: "Defensive",

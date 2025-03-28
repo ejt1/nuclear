@@ -11,7 +11,6 @@ export class HunterInitialBehavior extends Behavior {
   name = "Initial Hunter";
   context = BehaviorContext.Any;
   specialization = Specialization.Hunter.Initial;
-  version = wow.GameVersion.Retail;
   static settings = [
   ];
 

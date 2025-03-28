@@ -10,7 +10,6 @@ import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 export class MageFireBehavior extends Behavior {
   context = BehaviorContext.Any;
   specialization = Specialization.Mage.Fire;
-  version = wow.GameVersion.Retail;
   name = "Basic Ass Fire"
 
   build() {

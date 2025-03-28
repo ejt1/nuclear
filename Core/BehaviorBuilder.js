@@ -102,9 +102,6 @@ export default class BehaviorBuilder {
       console.error(`${name} invalid specialization`);
       return false;
     }
-    if (o.version != wow.gameVersion) {
-      return false;
-    }
     if (!o.build || !(o.build instanceof Function)) {
       console.error(`${name} missing build() function`);
       return false;

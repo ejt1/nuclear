@@ -20,7 +20,6 @@ export class PaladinHolyPvP extends Behavior {
   name = "Paladin (Holy) PVP";
   context = BehaviorContext.Any;
   specialization = Specialization.Paladin.Holy;
-  version = wow.GameVersion.Retail;
 
   build() {
     return new bt.Decorator(

@@ -20,7 +20,6 @@ export class DeathKnightUnholy extends Behavior {
   name = "Death Knight (Unholy) PvP";
   context = BehaviorContext.Any; // PvP or PvE
   specialization = Specialization.DeathKnight.Unholy
-  version = wow.GameVersion.Retail;
 
   build() {
     return new bt.Selector(

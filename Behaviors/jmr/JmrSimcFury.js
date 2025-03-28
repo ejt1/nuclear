@@ -10,7 +10,6 @@ import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 export class WarriorFuryNewBehavior extends Behavior {
   context = BehaviorContext.Any;
   specialization = Specialization.Warrior.Fury;
-  version = wow.GameVersion.Retail;
   name = "Jmr SimC Warrior Fury";
 
   build() {

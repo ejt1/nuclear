@@ -20,7 +20,6 @@ export class RogueOutlawBehavior extends Behavior {
   name = "Outlaw Rogue";
   context = BehaviorContext.Any;
   specialization = Specialization.Rogue.Combat;
-  version = wow.GameVersion.Retail;
   static settings = [
     {
     }

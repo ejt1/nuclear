@@ -12,7 +12,6 @@ export class EvokerAugmentationBehavior extends Behavior {
   name = "Augmentation Evoker";
   context = BehaviorContext.Any;
   specialization = Specialization.Evoker.Augmentation;
-  version = wow.GameVersion.Retail;
 
   build() {
     return new bt.Decorator(

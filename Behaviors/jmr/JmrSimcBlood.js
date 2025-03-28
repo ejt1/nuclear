@@ -11,7 +11,6 @@ import Settings from "@/Core/Settings";
 export class DeathKnightBloodBehavior extends Behavior {
   context = BehaviorContext.Any;
   specialization = Specialization.DeathKnight.Blood;
-  version = wow.GameVersion.Retail;
   name = "Jmr Blood DK";
 
   static settings = [

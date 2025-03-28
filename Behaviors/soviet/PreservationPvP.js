@@ -22,7 +22,6 @@ export class EvokerPVPPreservationBehavior extends Behavior {
   name = "PVP Preservation Evoker";
   context = BehaviorContext.Any;
   specialization = Specialization.Evoker.Preservation;
-  version = wow.GameVersion.Retail;
   static settings = [
     {
       header: "Single Target Healing",

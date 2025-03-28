@@ -11,7 +11,6 @@ import { drawNgonAroundTarget } from '@/Extra/DrawingUtils';
 export class RogueAssassinationNewBehavior extends Behavior {
   context = BehaviorContext.Any;
   specialization = Specialization.Rogue.Assassination;
-  version = wow.GameVersion.Retail;
   name = "Jmr SimC Rogue Assassination";
 
   constructor() {

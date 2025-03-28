@@ -23,7 +23,6 @@ export class PaladinProtectionBehavior extends Behavior {
   name = "Protection Paladin";
   context = BehaviorContext.Any;
   specialization = Specialization.Paladin.Protection;
-  version = wow.GameVersion.Retail;
   static settings = [
     { type: "slider", uid: "ProtectionPaladinWoGPercent", text: "Word of Glory Percent", min: 0, max: 100, default: 70 },
     { type: "slider", uid: "ProtectionPaladinArdentADPercent", text: "Ardent Defender Percent", min: 0, max: 100, default: 25 }

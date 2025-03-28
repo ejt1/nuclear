@@ -28,7 +28,6 @@ export class DeathKnightUnholy extends Behavior {
   name = "Death Knight (Unholy) PVE";
   context = BehaviorContext.Any; // PvP or PvE
   specialization = Specialization.DeathKnight.Unholy
-  version = wow.GameVersion.Retail;
   static settings = [
     {type: "checkbox", uid: "UnholyDKUseSmackyHands", text: "Use Smacky Hands", default: true},
   ];

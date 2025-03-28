@@ -17,7 +17,6 @@ export class JMRRETPALA extends Behavior {
   name = "JMR Retribution Paladin";
   context = BehaviorContext.Any; // PVP or PVE
   specialization = Specialization.Paladin.Retribution;
-  version = wow.GameVersion.Retail;
 
   static settings = [
     {header: "Jmr Ret Settings"},

@@ -1,7 +1,3 @@
-
-// define the retail first then override with classic
-// this makes it so intellisense picks up the specializations
-
 const Specialization = {
   Invalid: -1,
   None: 0,
@@ -85,38 +81,5 @@ const Specialization = {
     Initial: 1446,
   }
 };
-
-if (wow.gameVersion == wow.GameVersion.Classic) {
-  Specialization.DeathKnight.Blood = 398;
-  Specialization.DeathKnight.Frost = 399;
-  Specialization.DeathKnight.Unholy = 400;
-  Specialization.Druid.Balance = 283;
-  Specialization.Druid.Feral = 281;
-  Specialization.Druid.Restoration = 282;
-  Specialization.Hunter.BeastMastery = 361;
-  Specialization.Hunter.Marksmanship = 363;
-  Specialization.Hunter.Survival = 362;
-  Specialization.Mage.Arcane = 81;
-  Specialization.Mage.Fire = 41;
-  Specialization.Mage.Frost = 61;
-  Specialization.Paladin.Holy = 382;
-  Specialization.Paladin.Protection = 383;
-  Specialization.Paladin.Retribution = 381;
-  Specialization.Priest.Discipline = 201;
-  Specialization.Priest.Holy = 202;
-  Specialization.Priest.Shadow = 203;
-  Specialization.Rogue.Assassination = 182;
-  Specialization.Rogue.Combat = 181;
-  Specialization.Rogue.Sublety = 183;
-  Specialization.Shaman.Elemental = 261;
-  Specialization.Shaman.Enhancement = 263;
-  Specialization.Shaman.Restoration = 262;
-  Specialization.Warlock.Affliction = 302;
-  Specialization.Warlock.Demonology = 303;
-  Specialization.Warlock.Destruction = 301;
-  Specialization.Warrior.Arms = 161;
-  Specialization.Warrior.Fury = 164;
-  Specialization.Warrior.Protection = 163;
-}
 
 export default Specialization;

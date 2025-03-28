@@ -16,7 +16,6 @@ export class JMRPROTECTIONPALA extends Behavior {
   name = "JMR Protection Paladin";
   context = BehaviorContext.Any; // PVP or PVE
   specialization = Specialization.Paladin.Protection;
-  version = wow.GameVersion.Retail;
 
   static rotationEnabled = true;
   static hpgCount = 0;

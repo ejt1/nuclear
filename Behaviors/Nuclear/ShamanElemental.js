@@ -18,7 +18,6 @@ export class ShamanElementalBehavior extends Behavior {
   name = "Shaman Elemental"
   context = BehaviorContext.Any;
   specialization = Specialization.Shaman.Elemental;
-  version = wow.GameVersion.Retail;
 
   build() {
     return new bt.Decorator(

@@ -12,7 +12,6 @@ export class PaladinRetributionBehavior extends Behavior {
   name = "Retri Paladin";
   context = BehaviorContext.Any;
   specialization = Specialization.Paladin.Retribution;
-  version = wow.GameVersion.Retail;
 
   build() {
     return new bt.Decorator(

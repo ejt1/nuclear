@@ -15,7 +15,6 @@ const auras = {
 export class DruidGuardianBehavior extends Behavior {
   context = BehaviorContext.Any;
   specialization = Specialization.Druid.Guardian;
-  version = wow.GameVersion.Retail;
 
   build() {
     return new bt.Selector(

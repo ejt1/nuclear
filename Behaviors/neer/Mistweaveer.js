@@ -26,7 +26,6 @@ export class MonkMistweaverBehavior extends Behavior {
   name = "Mistweaveer";
   context = BehaviorContext.Any;
   specialization = Specialization.Monk.Mistweaver;
-  version = wow.GameVersion.Retail;
 
   static settings = [
     {

@@ -8,7 +8,6 @@ import { me } from "../../Core/ObjectManager";
 export class WarriorFuryBehavior extends Behavior {
   context = BehaviorContext.Any;
   specialization = Specialization.Warrior.Fury;
-  version = wow.GameVersion.Retail;
   name = "Fury Warrior";
 
   build() {

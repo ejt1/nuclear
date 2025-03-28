@@ -10,7 +10,6 @@ import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 export class MageArcaneBehavior extends Behavior {
   context = BehaviorContext.Any;
   specialization = Specialization.Mage.Arcane;
-  version = wow.GameVersion.Retail;
   name = "Basic Ass Arcane";
 
   build() {
