@@ -8,6 +8,7 @@ import EvokerCommon from "@/Behaviors/EvokerCommon";
 import { defaultCombatTargeting as Combat, defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 import { PowerType } from "@/Enums/PowerType";
 import Specialization from "@/Enums/Specialization";
+import Spell from "@/Core/Spell";
 
 const auras = {
   dragonRage: 375087,
@@ -18,12 +19,16 @@ const auras = {
   iridescenceBlue: 386399,
   shatteringStar: 370452,
   tipTheScales: 370553,
+  deepBreath: 433874,
 };
 
 export class EvokerDevastationBehavior extends Behavior {
-  name = "Devastation Evoker";
+  name = "PVE Devastation Evoker";
   context = BehaviorContext.Any;
   specialization = Specialization.Evoker.Devastation;
+
+  // Static variable to store the Deep Breath target
+  static deepBreathTarget = null;
 
   static settings = [
     {
@@ -47,6 +52,14 @@ export class EvokerDevastationBehavior extends Behavior {
       common.waitForNotSitting(),
       common.waitForNotMounted(),
       new bt.Action(() => EvokerCommon.handleEmpoweredSpell()),
+      // Deep Breath cancellation check
+      new bt.Decorator(
+        () => this.shouldCancelDeepBreath(),
+        new bt.Action(() => {
+          me.cancelAura(auras.deepBreath);
+          return bt.Status.Success;
+        })
+      ),
       common.waitForCastOrChannel(),
       spell.cast("Renewing Blaze", on => me,
         req => Settings.EvokerDevastationUseRenewingBlaze && (me.pctHealth < 50 || combat.targets.length > 2)
@@ -85,16 +98,28 @@ export class EvokerDevastationBehavior extends Behavior {
 
   outsideDragonRageRotation() {
     return new bt.Selector(
-      spell.cast("Deep Breath",
-        on => {
+      new bt.Sequence(
+        // Store the Deep Breath target and cast
+        new bt.Action(() => {
           const bestTarget = EvokerCommon.findBestDeepBreathTarget();
-          return bestTarget.unit ? bestTarget.unit.position : null;
-        },
-        req => {
-          if (!Settings.EvokerDevastationUseDeepBreath) return false;
-          const bestTarget = EvokerCommon.findBestDeepBreathTarget();
-          return combat.targets.length > 2 && bestTarget.count >= Settings.EvokerDevastationDeepBreathMinTargets;
-        }
+          if (bestTarget.unit) {
+            // Store the target in our static variable
+            EvokerDevastationBehavior.deepBreathTarget = bestTarget.unit;
+            return bt.Status.Success;
+          }
+          return bt.Status.Failure;
+        }),
+        spell.cast("Deep Breath",
+          on => {
+            const bestTarget = EvokerCommon.findBestDeepBreathTarget();
+            return bestTarget.unit ? bestTarget.unit.position : null;
+          },
+          req => {
+            if (!Settings.EvokerDevastationUseDeepBreath) return false;
+            const bestTarget = EvokerCommon.findBestDeepBreathTarget();
+            return combat.targets.length > 2 && bestTarget.count >= Settings.EvokerDevastationDeepBreathMinTargets;
+          }
+        )
       ),
       spell.cast("Dragonrage", on => me.target, req => me.target && Combat.burstToggle),
       spell.cast("Shattering Star", on => me.target, req => this.shouldCastShatteringStar()),
@@ -132,5 +157,21 @@ export class EvokerDevastationBehavior extends Behavior {
     if (targetCount >= 5) return 3;
     if (targetCount >= 3) return 2;
     return 1;
+  }
+
+  shouldCancelDeepBreath() {
+    const deepBreath = me.getAuraByMe(auras.deepBreath);
+    if (!deepBreath) {
+      return false;
+    }
+    // Check if we have a stored Deep Breath target and are within 1 yards
+    if (EvokerDevastationBehavior.deepBreathTarget &&
+      me.distanceTo(EvokerDevastationBehavior.deepBreathTarget) < 1) {
+      // Clear the stored target once we cancel
+      EvokerDevastationBehavior.deepBreathTarget = null;
+      return true;
+    }
+
+    return false;
   }
 }
