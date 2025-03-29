@@ -9,18 +9,21 @@ import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 import {DispelPriority} from "@/Data/Dispels"
 import {WoWDispelType} from "@/Enums/Auras";
 import spellBlacklist from "@/Data/PVPData";
-import colors from "@/Enums/Colors";
 
 const auras = {
   painSuppression: 33206,
   powerOfTheDarkSide: 198068,
-  purgeTheWicked: 204213,
+  shadowWordPain: 589,
   powerWordShield: 17,
   atonement: 194384,
   surgeOfLight: 114255,
   premonitionPiety: 428930,
   premonitionSolace: 428934,
   premonitionInsight: 428933,
+  harshDiscipline: 373183,
+  twilightEquilibriumHolyAmp: 390706,
+  twilightEquilibriumShadowAmp: 390707,
+  wealAndWoe: 390787,
 };
 
 export class PriestDiscipline extends Behavior {
@@ -29,6 +32,7 @@ export class PriestDiscipline extends Behavior {
   specialization = Specialization.Priest.Discipline;
 
   build() {
+    console.info(`Welcome to: ${this.name} rotation. Pain suppression / Power word Barrier are to be used by you.`);
     return new bt.Selector(
         new bt.Decorator(
           ret => !spell.isGlobalCooldown(),
@@ -86,6 +90,7 @@ export class PriestDiscipline extends Behavior {
       spell.cast("Mass Dispel", on => this.findMassDispelTarget(), ret => this.findMassDispelTarget() !== undefined),
       spell.cast("Premonition", on => me, ret => this.shouldCastPremonition(h.getPriorityTarget())),
       spell.cast("Shadow Word: Death", on => this.findDeathThePolyTarget(), ret => this.findDeathThePolyTarget() !== undefined),
+      spell.cast("Evangelism", on => me, ret => me.inCombat() && this.getAtonementCount() > 3 && this.minAtonementDuration() < 4000),
       //spell.cast("Power Word: Barrier", on => h.getPriorityTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(40) && me.inCombat),
       spell.cast("Power Word: Shield", on => h.getPriorityTarget(), ret => h.getPriorityTarget()?.effectiveHealthPercent < 90 && !this.hasShield(h.getPriorityTarget()) && !me.hasVisibleAura("Rapture")),
       spell.cast("Power Word: Radiance", on => me, ret => this.shouldCastRadiance()),
@@ -108,10 +113,23 @@ export class PriestDiscipline extends Behavior {
     );
   }
 
-  // Damage Rotation
   damageRotation() {
     return new bt.Selector(
-      spell.cast("Shadow Word: Pain", on => this.currentOrBestTarget(), ret => !this.hasPurgeTheWicked(this.currentOrBestTarget())),
+      // Buff Management: Prioritize spells based on active buffs
+      spell.cast("Penance", on => this.currentOrBestTarget(), ret => me.hasAura(auras.harshDiscipline)),
+      spell.cast("Penance", on => this.currentOrBestTarget(), ret => me.hasAura(auras.powerOfTheDarkSide)),
+      spell.cast("Mind Blast", on => this.currentOrBestTarget(), ret => me.hasAura(auras.twilightEquilibriumShadowAmp)),
+      spell.cast("Smite", on => this.currentOrBestTarget(), ret => me.hasAura(auras.twilightEquilibriumHolyAmp)),
+      spell.cast("Smite", on => this.currentOrBestTarget(), ret => me.hasAura(auras.wealAndWoe)),
+
+      // Schism: Cast on cooldown if the target doesn't have the debuff
+      spell.cast("Schism", on => this.currentOrBestTarget(), ret => !this.currentOrBestTarget().hasAura("Schism") && me.inCombat),
+
+      // Ultimate Penitence
+      spell.cast("Ultimate Penitence", on => this.currentOrBestTarget(), ret => me.inCombat() && this.getAtonementCount() > 5),
+
+      // Core Rotation Spells
+      spell.cast("Shadow Word: Pain", on => this.currentOrBestTarget(), ret => !this.hasShadowWordPain(this.currentOrBestTarget())),
       spell.cast("Power Word: Radiance", on => me, ret => (spell.getCooldown("Voidwraith").timeleft < 1.5 || spell.getCooldown("Shadowfiend").timeleft < 1.5 || me.hasVisibleAura("Shadow Covenant")) && spell.getCharges("Power Word: Radiance") === 2),
       spell.cast("Shadowfiend", on => this.currentOrBestTarget(), ret => me.inCombat()),
       spell.cast("Voidwraith", on => this.currentOrBestTarget(), ret => me.inCombat()),
@@ -120,12 +138,10 @@ export class PriestDiscipline extends Behavior {
       spell.cast("Mindgames", on => me.targetUnit, ret => me.targetUnit?.effectiveHealthPercent < 50),
       spell.cast("Mind Blast", on => this.currentOrBestTarget(), ret => true),
       spell.cast("Penance", on => this.hasswpTarget(), ret => this.hasswpTarget() !== undefined),
-      spell.cast("Penance", on => this.currentOrBestTarget(), ret => this.hasPurgeTheWicked(this.currentOrBestTarget())),
+      spell.cast("Penance", on => this.currentOrBestTarget(), ret => this.hasShadowWordPain(this.currentOrBestTarget())),
       spell.cast("Halo", on => me, ret => this.getEnemiesInRange(40) >= 3),
       spell.cast("Smite", on => this.currentOrBestTarget(), ret => me.hasVisibleAura("Shadow Covenant")),
-      //spell.cast("Shadow Word: Pain", on => this.findswpTarget(), ret => this.findswpTarget() !== undefined),
-      // shadow word pain on findswpTarget if number of targets with swp is less than 4
-      spell.cast("Shadow Word: Pain", on => this.findswpTarget(), ret => this.findswpTarget() !== undefined && this.hasswpTarget() !== undefined && this.hasswpTarget().length < 4),
+      spell.cast("Shadow Word: Pain", on => this.findswpTarget(), ret => this.findswpTarget() !== undefined),
       spell.cast("Smite", on => this.currentOrBestTarget(), ret => true)
     );
   }
@@ -232,7 +248,7 @@ export class PriestDiscipline extends Behavior {
       (priorityTarget.effectiveHealthPercent >= 55 &&
         this.hasAtonement(priorityTarget) &&
         currentTarget != null &&
-        this.hasPurgeTheWicked(currentTarget));
+        this.hasShadowWordPain(currentTarget));
   }
 
   getPenanceTarget() {
@@ -248,7 +264,7 @@ export class PriestDiscipline extends Behavior {
     } else if (priorityTarget.effectiveHealthPercent >= 55 &&
       this.hasAtonement(priorityTarget) &&
       currentTarget != null &&
-      this.hasPurgeTheWicked(currentTarget)) {
+      this.hasShadowWordPain(currentTarget)) {
       return currentTarget;
     }
 
@@ -295,7 +311,7 @@ export class PriestDiscipline extends Behavior {
     const enemies = me.getEnemies();
 
     for (const enemy of enemies) {
-      if ((!this.hasPurgeTheWicked(enemy) || enemy.getAuraByMe(auras.purgeTheWicked).remaining < 4000) && enemy.inCombatWithMe) {
+      if ((!this.hasShadowWordPain(enemy) || enemy.getAuraByMe(auras.shadowWordPain).remaining < 4000) && enemy.inCombatWithMe) {
         return enemy;
       }
     }
@@ -307,7 +323,7 @@ export class PriestDiscipline extends Behavior {
     const enemies = me.getEnemies();
 
     for (const enemy of enemies) {
-      if (this.hasPurgeTheWicked(enemy) && me.inCombatWith(enemy) && enemy.effectiveHealthPercent > 10) {
+      if (this.hasShadowWordPain(enemy) && me.inCombatWith(enemy) && enemy.effectiveHealthPercent > 10) {
         return enemy;
       }
     }
@@ -364,11 +380,11 @@ export class PriestDiscipline extends Behavior {
   }
 
 
-  hasPurgeTheWicked(target) {
+  hasShadowWordPain(target) {
     if (!target) {
       return false;
     }
-    return target.hasAura(auras.purgeTheWicked);
+    return target.hasAura(auras.shadowWordPain);
   }
 
   shouldCastWithHealthAndNotPainSupp(health) {
@@ -386,5 +402,22 @@ export class PriestDiscipline extends Behavior {
 
   getEnemiesInRange(range) {
     return combat.targets.filter(unit => me.distanceTo(unit) < range).length;
+  }
+
+  getAtonementCount() {
+    return h.friends.All.filter(friend => this.hasAtonement(friend)).length;
+  }
+
+  minAtonementDuration() {
+    let minDuration = Infinity;
+    for (const friend of h.friends.All) {
+      if (this.hasAtonement(friend)) {
+        const duration = friend.getAuraByMe(auras.atonement).remaining;
+        if (duration < minDuration) {
+          minDuration = duration;
+        }
+      }
+    }
+    return minDuration === Infinity ? 0 : minDuration;
   }
 }
