@@ -6,7 +6,7 @@ import spell from "@/Core/Spell";
 import { me } from "@/Core/ObjectManager";
 import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 
-export class HunterInitialBehavior extends Behavior {
+export class DemonHunterHavocBehavior extends Behavior {
   name = "Demon Hunter [Havoc]";
   context = BehaviorContext.Any;
   specialization = Specialization.DemonHunter.Havoc;
@@ -20,10 +20,11 @@ export class HunterInitialBehavior extends Behavior {
       new bt.Decorator(
         ret => !spell.isGlobalCooldown(),
         new bt.Selector(
-          spell.cast("Eye Beam", on => me, req => !me.isMoving()),
+          spell.cast("Eye Beam", on => me, req => !me.isMoving() && combat.targets.filter(t => me.isFacing(t, 90)).length > 0),
           spell.cast("Blade Dance", on => combat.bestTarget, req => combat.getUnitsAroundUnit(me, 10) > 0),
-          spell.cast("Sigil of Flame", on => combat.bestTarget, req => combat.getUnitsAroundUnit(combat.bestTarget, 10) > 1),
+          spell.cast("Sigil of Flame", on => combat.bestTarget, req => combat.getUnitsAroundUnit(combat.bestTarget, 10) > 0),
           spell.cast("Chaos Strike", on => combat.bestTarget),
+          spell.cast("Immolation Aura", on => me, req => combat.bestTarget && me.isWithinMeleeRange(combat.bestTarget)),
           spell.cast("Demon's Bite", on => combat.bestTarget),
           spell.cast("Throw Glaive", on => combat.bestTarget),
           common.waitForTarget(),
