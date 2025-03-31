@@ -58,8 +58,8 @@ class DebugWindow {
       }
 
       if (imgui.beginTabItem("Behaviors")) {
-        if (nuclear.rootBehavior) {
-          renderBehaviorTree(nuclear.rootBehavior);
+        if (nuclear.behaviorRoot) {
+          renderBehaviorTree(nuclear.behaviorRoot);
         }
         imgui.endTabItem();
       }
