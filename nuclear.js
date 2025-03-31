@@ -2,6 +2,7 @@ import { BehaviorContext } from "./Core/Behavior";
 import BehaviorBuilder from "./Core/BehaviorBuilder";
 import objMgr, { me } from "./Core/ObjectManager";
 import { flagsComponents } from "./Core/Util";
+import colors from "./Enums/Colors";
 import { defaultHealTargeting } from "./Targeting/HealTargeting";
 import { defaultCombatTargeting } from "./Targeting/CombatTargeting";
 import commandListener from '@/Core/CommandListener'
@@ -20,7 +21,10 @@ class Nuclear extends wow.EventListener {
     if (!this.gameReady()) {
       return;
     }
-    if (this.error) { return; }
+    if (this.error) {
+      imgui.getBackgroundDrawList()?.addText("ERROR", { x: 10, y: 10 }, colors.red);
+      return;
+    }
 
     try {
       defaultHealTargeting?.update();
