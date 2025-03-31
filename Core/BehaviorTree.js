@@ -95,6 +95,76 @@ export class GroupComposite extends Composite {
   }
 
   /**
+   * Inserts a child node at a specific index in the children list.
+   * @param {Composite} child - The child node to insert.
+   * @param {number} index - The index at which to insert (clamped to valid range).
+   */
+  insertChild(child, index) {
+    const clampedIndex = Math.max(0, Math.min(index, this.children.length));
+    this.children.splice(clampedIndex, 0, child);
+  }
+
+  /**
+   * Removes a child node from the children list.
+   * @param {Composite} child - The child node to remove.
+   * @returns {boolean} True if the child was removed, false if not found.
+   */
+  removeChild(child) {
+    const index = this.children.indexOf(child);
+    if (index !== -1) {
+      this.children.splice(index, 1);
+      if (index <= this.activeChildIndex) {
+        this.activeChildIndex = Math.max(-1, this.activeChildIndex - 1);
+      }
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Removes a child node at a specific index from the children list.
+   * @param {number} index - The index of the child to remove.
+   * @returns {boolean} True if a child was removed, false if index was invalid.
+   */
+  removeChildAt(index) {
+    if (index >= 0 && index < this.children.length) {
+      this.children.splice(index, 1);
+      if (index <= this.activeChildIndex) {
+        this.activeChildIndex = Math.max(-1, this.activeChildIndex - 1);
+      }
+      return true;
+    }
+    return false;
+  }
+
+  /**
+   * Removes all child nodes that match a condition.
+   * @param {function(Composite): boolean} predicate - Function that returns true for children to remove.
+   * @returns {number} The number of children removed.
+   */
+  removeChildrenByCondition(predicate) {
+    let removedCount = 0;
+    for (let i = this.children.length - 1; i >= 0; i--) {
+      if (predicate(this.children[i])) {
+        this.children.splice(i, 1);
+        if (i <= this.activeChildIndex) {
+          this.activeChildIndex = Math.max(-1, this.activeChildIndex - 1);
+        }
+        removedCount++;
+      }
+    }
+    return removedCount;
+  }
+
+  /**
+   * Removes all child nodes from the children list.
+   */
+  clearChildren() {
+    this.children.length = 0;
+    this.activeChildIndex = -1;
+  }
+
+  /**
    * Resets the active child index.
    */
   reset() {
