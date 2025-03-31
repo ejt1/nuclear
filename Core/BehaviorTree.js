@@ -402,3 +402,34 @@ export class Condition extends Action {
     return this.condition(context) ? Status.Success : Status.Failure;
   }
 }
+
+/**
+ * Executes all children every tick, regardless of their status.
+ * @extends GroupComposite
+ */
+export class RunAll extends GroupComposite {
+  /**
+   * Creates a new RunAll node.
+   * @param {...(string|Composite)} args - Optional name (string) followed by child nodes.
+   */
+  constructor(...args) {
+    super(...args);
+    if (!this.name) this.name = "RunAll";
+  }
+
+  /** @inheritdoc */
+  tick(context) {
+    let hasRunning = false;
+    let hasSuccess = false;
+
+    for (let i = 0; i < this.children.length; i++) {
+      const status = this.children[i].execute({ ...context, depth: (context.depth || 0) + 1 });
+      if (status === Status.Running) hasRunning = true;
+      else if (status === Status.Success) hasSuccess = true;
+    }
+
+    if (hasRunning) return Status.Running;
+    if (hasSuccess) return Status.Success;
+    return Status.Failure;
+  }
+}
