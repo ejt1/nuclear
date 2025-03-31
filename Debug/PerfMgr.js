@@ -1,9 +1,9 @@
 class PerfMgr {
-  /** @type {Map<string, object>} */
-  renderTimes;
-
   constructor() {
+    /** @type {Map<string, object>} */
     this.renderTimes = new Map();
+    /** @type {Boolean} */
+    this.enabled = false;
   }
 
   begin(name) {
@@ -35,6 +35,9 @@ class PerfMgr {
   }
 
   render() {
+    if (!this.enabled) {
+      return;
+    }
     let perfWindowFlags = imgui.WindowFlags.None;
     perfWindowFlags |= imgui.WindowFlags.NoBackground;
     perfWindowFlags |= imgui.WindowFlags.NoCollapse;

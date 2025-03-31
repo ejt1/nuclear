@@ -2,10 +2,12 @@ import nuclear from '@/nuclear';
 import objMgr from '../Core/ObjectManager';
 import Settings from "../Core/Settings";
 import { renderBehaviorTree } from './BehaviorTreeDebug';
+import PerfMgr from './PerfMgr';
 
 class DebugWindow {
   constructor() {
     this.show = new imgui.MutableVariable(false);
+    this.displayPerfMgr = new imgui.MutableVariable(false);
     this.selected = null;
     this.selectedSpell = null;
   }
@@ -29,6 +31,10 @@ class DebugWindow {
     if (!imgui.begin("Debug", open)) {
       imgui.end();
       return;
+    }
+
+    if (imgui.checkbox("Display Performance", this.displayPerfMgr)) {
+      PerfMgr.enabled = this.displayPerfMgr.value;
     }
 
     if (imgui.beginTabBar("debugTabs")) {
