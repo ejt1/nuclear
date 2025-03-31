@@ -1,5 +1,7 @@
+import nuclear from '@/nuclear';
 import objMgr from '../Core/ObjectManager';
 import Settings from "../Core/Settings";
+import { renderBehaviorTree } from './BehaviorTreeDebug';
 
 class DebugWindow {
   constructor() {
@@ -52,6 +54,13 @@ class DebugWindow {
 
       if (imgui.beginTabItem("Party Info")) {
         this.renderPartyInfo();
+        imgui.endTabItem();
+      }
+
+      if (imgui.beginTabItem("Behaviors")) {
+        if (nuclear.rootBehavior) {
+          renderBehaviorTree(nuclear.rootBehavior);
+        }
         imgui.endTabItem();
       }
     }
@@ -288,7 +297,7 @@ class DebugWindow {
 
   renderPartyInfo() {
     const party = wow.Party.currentParty;
-    if (!party){
+    if (!party) {
       imgui.text("No party");
       return;
     }

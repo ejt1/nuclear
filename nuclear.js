@@ -5,6 +5,7 @@ import { flagsComponents } from "./Core/Util";
 import { defaultHealTargeting } from "./Targeting/HealTargeting";
 import { defaultCombatTargeting } from "./Targeting/CombatTargeting";
 import commandListener from '@/Core/CommandListener'
+import { renderBehaviorTree } from "./Debug/BehaviorTreeDebug";
 
 export let availableBehaviors = [];
 
@@ -24,10 +25,12 @@ class Nuclear extends wow.EventListener {
     try {
       defaultHealTargeting?.update();
       defaultCombatTargeting?.update();
-      this.rootBehavior?.tick();
+      if (this.behaviorRoot) {
+        this.behaviorRoot.execute(this.behaviorContext);
+      }
     } catch (e) {
       this.error = true;
-      this.rootBehavior = null;
+      this.behaviorRoot = null;
       console.error(`${e.message}`);
       console.error(`${e.stack}`);
     }
@@ -39,7 +42,8 @@ class Nuclear extends wow.EventListener {
       console.info('Rebuilding behaviors');
 
       const { root, settings } = this.builder.build(wow.SpecializationInfo.activeSpecializationId, BehaviorContext.Normal);
-      this.rootBehavior = root;
+      this.behaviorRoot = root;
+      this.behaviorContext = {};
       this.behaviorSettings = settings;
       availableBehaviors = this.builder.behaviors;
       defaultHealTargeting?.reset();

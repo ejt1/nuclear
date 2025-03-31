@@ -3,6 +3,7 @@ import Specialization from '../Enums/Specialization';
 import * as bt from './BehaviorTree';
 import Settings from "./Settings";
 import nuclearWindow from '../GUI/NuclearWindow';
+import { enableDebug } from '@/Debug/BehaviorTreeDebug';
 
 const kBehaviorPath = __rootDir + '/behaviors';
 
@@ -19,9 +20,9 @@ export default class BehaviorBuilder {
   }
 
   build(spec, context) {
-    const root = new bt.Selector();
+    const root = new bt.Selector("Root");
     const selectedBehaviorName = Settings[`profile${spec}`];
-
+    
     let behaviors;
     let behaviorSettings = [];
 
@@ -44,13 +45,14 @@ export default class BehaviorBuilder {
 
     console.debug(`Built ${behaviors.length} composites`);
     behaviors.forEach(v => root.addChild(v.build()));
+    enableDebug(root);
 
     nuclearWindow.initializeSettings();
 
     return { root, settings: behaviorSettings };
   }
 
-  getComposites(spec, context){
+  getComposites(spec, context) {
     return this.behaviors.filter(v => v.specialization == spec && ((v.context & context) == context));
   }
 

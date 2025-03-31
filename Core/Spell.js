@@ -66,7 +66,7 @@ class Spell extends wow.EventListener {
 
     let spellToCast = arguments[0];
     const rest = Array.prototype.slice.call(arguments, 1);
-    const sequence = new bt.Sequence();
+    const sequence = new bt.Sequence(`Cast: ${spellToCast.toString()}`);
 
     // Default options
     let options = {
@@ -363,7 +363,7 @@ class Spell extends wow.EventListener {
    * @returns {bt.Sequence} - A behavior tree sequence that handles the interrupt logic.
    */
   interrupt(spellNameOrId, interruptPlayersOnly = false) {
-    return new bt.Sequence(
+    return new bt.Sequence(`Interrupt using ${spellNameOrId.toString()}`,
       new bt.Action(() => {
         // Early return if interrupt mode is set to "None"
         if (Settings.InterruptMode === "None") {
