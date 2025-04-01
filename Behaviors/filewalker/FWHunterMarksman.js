@@ -157,8 +157,8 @@ export class HunterMarksmanshipBehavior extends Behavior {
                                          !me.hasAura("Precise Shots") && 
                                          me.hasAura("Lock and Load")),
       spell.cast("Aimed Shot", req => !me.hasAura("Precise Shots") || 
-                                     (this.getCurrentTarget().hasAuraByMe("Spotter's Mark") && 
-                                      me.hasAura("Moving Target"))),
+                                      
+                                      me.hasAura("Lock and Load") || me.hasAura("Moving Target") || me.hasAura("Deathblow")),
       spell.cast("Explosive Shot", req => !this.has4PieceBonus()),
       spell.cast("Black Arrow", req => !this.hasTalent("Headshot")),
       spell.cast("Steady Shot")
