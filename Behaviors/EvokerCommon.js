@@ -14,6 +14,7 @@ class EvokerCommon {
   static setDesiredEmpowerLevel(desiredEmpowerLevel) {
     return new bt.Action(() => {
       this._desiredEmpowerLevel = desiredEmpowerLevel;
+      // Store the timestamp when we started empowering
       return bt.Status.Success;
     });
   }
@@ -34,13 +35,23 @@ class EvokerCommon {
   static findBestDeepBreathTarget()  {
     return combat.targets.reduce((best, mainUnit) => {
       const unitsInRange = combat.targets.filter(target =>
-        target.distanceTo(mainUnit) <= target.distanceTo(me) &&
+        target.distanceTo(mainUnit) <= 30 && // Fixed distance check
         me.isFacing(target, 30)
       ).length;
 
       return unitsInRange > best.count ? { unit: mainUnit, count: unitsInRange } : best;
     }, { unit: null, count: 0 });
   };
+  
+  // Helper to detect if we're currently empowering a specific spell
+  static isEmpowering(spellName) {
+    if (!me.isCastingOrChanneling) return false;
+    
+    const currentSpell = spell.getSpell(me.spellInfo.spellChannelId);
+    if (!currentSpell) return false;
+    
+    return currentSpell.name === spellName;
+  }
 }
 
 export default EvokerCommon;
