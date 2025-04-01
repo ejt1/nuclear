@@ -21,41 +21,16 @@ class EvokerCommon {
   }
 
   static handleEmpoweredSpell() {
-    // If we don't have a desired empower level set, there's nothing to handle
-    if (this._desiredEmpowerLevel === undefined) {
-      return bt.Status.Failure;
-    }
-
-    // Get current empower info
-    const currentSpellId = me.spellInfo.spellChannelId;
-    const currentSpell = spell.getSpell(currentSpellId);
-    const currentEmpowerLevel = me.spellInfo.empowerLevel || 0;
-    
-    // If we're not currently empowering a spell, fail
-    if (!currentSpell || !me.isCastingOrChanneling) {
-      this._desiredEmpowerLevel = undefined;
-      return bt.Status.Failure;
-    }
-    
-    // Calculate how long we've been empowering
-    const empowerTime = Date.now() - (this._empowerStartTime || 0);
-    
-    // Release conditions:
-    // 1. We've reached our desired empower level
-    // 2. We've been empowering for at least a minimum time per level (roughly 500ms per level)
-    // 3. We're at max empower level (3) regardless of desired level
-    if (currentEmpowerLevel >= this._desiredEmpowerLevel || 
-        empowerTime >= (this._desiredEmpowerLevel * 500) || 
-        currentEmpowerLevel >= 3) {
-      
-      currentSpell.cast(me.targetUnit);
-      this._desiredEmpowerLevel = undefined;
-      this._empowerStartTime = undefined;
+    if (this._desiredEmpowerLevel !== undefined && me.spellInfo.empowerLevel === this._desiredEmpowerLevel) {
+      const currentSpellId = me.spellInfo.spellChannelId;
+      const currentSpell = spell.getSpell(currentSpellId);
+      if (currentSpell) {
+        currentSpell.cast(me.targetUnit);
+        this._desiredEmpowerLevel = undefined;
+      }
       return bt.Status.Success;
     }
-    
-    // Continue holding for more empower
-    return bt.Status.Running;
+    return bt.Status.Failure;
   }
 
   static findBestDeepBreathTarget()  {
