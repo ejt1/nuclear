@@ -15,7 +15,6 @@ class EvokerCommon {
     return new bt.Action(() => {
       this._desiredEmpowerLevel = desiredEmpowerLevel;
       // Store the timestamp when we started empowering
-      this._empowerStartTime = Date.now();
       return bt.Status.Success;
     });
   }
