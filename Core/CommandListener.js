@@ -107,7 +107,7 @@ class CommandListener extends wow.EventListener {
         return;
       }
 
-      Spell.cast(spellInfo.spellName, targetFunction).tick();
+      Spell.cast(spellInfo.spellName, targetFunction).tick({});
     }
   }
 
