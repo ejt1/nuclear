@@ -157,6 +157,7 @@ export class VengeanceDemonHunterBehavior extends Behavior {
             new bt.Selector(
               this.aldrachiReaverRotation(),
               this.felScarredRotation(),
+              this.defaultRotation()
             ),
             
           )
@@ -374,7 +375,7 @@ export class VengeanceDemonHunterBehavior extends Behavior {
   }
   defaultRotation() {
     return new bt.Decorator(
-      // () => this.isAldrachiReaver(),
+      () => this.isDefaultRotation(),
       new bt.Selector(
         // Use Reaver's Glaive when we have 20 stacks of Art of the Glaive
         // Spell.cast("Reaver's Glaive", this.getCurrentTarget, () => this.canUseReaversGlaive()),
@@ -469,6 +470,10 @@ export class VengeanceDemonHunterBehavior extends Behavior {
 
   isFelScarred() {
     return this.hasTalent(VengeanceDemonHunterBehavior.HERO_TALENTS.FEL_SCARRED);
+  }
+
+  isDefaultRotation() {
+    return true;
   }
   
   // Returns the current hero talent path or null if none is detected
