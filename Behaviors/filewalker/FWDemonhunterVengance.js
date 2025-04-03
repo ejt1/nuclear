@@ -157,8 +157,8 @@ export class VengeanceDemonHunterBehavior extends Behavior {
             new bt.Selector(
               this.aldrachiReaverRotation(),
               this.felScarredRotation(),
-              this.defaultRotation()
-            )
+            ),
+            
           )
         )
       )
@@ -374,20 +374,21 @@ export class VengeanceDemonHunterBehavior extends Behavior {
   }
   defaultRotation() {
     return new bt.Decorator(
+      () => this.isAldrachiReaver(),
       new bt.Selector(
-        // Use Metamorphosis after Fel Devastation cycle
-        Spell.cast('Metamorphosis', () => me, () => 
-          Settings.VengUseMetamorphosis && 
-          !me.hasAura('Metamorphosis') && 
-          Spell.getTimeSinceLastCast('Fel Devastation') < 5000),
+        // Use Reaver's Glaive when we have 20 stacks of Art of the Glaive
+        // Spell.cast("Reaver's Glaive", this.getCurrentTarget, () => this.canUseReaversGlaive()),
+        Spell.cast("Reaver's Glaive", this.getCurrentTarget, () => this.getArtOfTheGlaiveProc()),
         
-        // Handle any Empowered abilities during Metamorphosis
+        // Check for Reaver's Glaive empowerment
         new bt.Decorator(
-          () => me.hasAura('Metamorphosis'),
+          () => me.hasAura("Reaver's Glaive"),
           new bt.Selector(
-            // Priority to empowered abilities
-            Spell.cast('Fel Devastation', this.getCurrentTarget, () => this.getFury() >= 50),
-            Spell.cast('Immolation Aura')
+            // Use Fracture Empowered by Reaver's Glaive
+            Spell.cast('Fracture', this.getCurrentTarget),
+            
+            // Use Soul Cleave Empowered by Reaver's Glaive
+            Spell.cast('Soul Cleave', this.getCurrentTarget, () => this.getFury() >= 30)
           )
         ),
         
@@ -420,12 +421,8 @@ export class VengeanceDemonHunterBehavior extends Behavior {
             )
           )),
         
-        // Sigil of Flame (special logic for Illuminated Sigils)
-        Spell.cast('Sigil of Flame', this.getCurrentTarget, () => 
-          Settings.VengUseSigils && (
-            !Spell.isSpellKnown('Illuminated Sigils') || 
-            !me.hasAura('Student of Suffering')
-          )),
+        // Sigil of Flame
+        Spell.cast('Sigil of Flame', this.getCurrentTarget, () => Settings.VengUseSigils),
         
         // Immolation Aura
         Spell.cast('Immolation Aura'),
@@ -439,9 +436,9 @@ export class VengeanceDemonHunterBehavior extends Behavior {
         Spell.cast('Fracture', this.getCurrentTarget, () => 
           Spell.getCharges('Fracture') > 1.7),
         
-        // Felblade for Fury generation (higher threshold for Fel-Scarred)
+        // Felblade for Fury generation
         Spell.cast('Felblade', this.getCurrentTarget, () => 
-          this.getFury() < 130),
+          this.getFury() < Settings.VengFelbladeThreshold),
         
         // Soul Cleave to spend Fury
         Spell.cast('Soul Cleave', this.getCurrentTarget, () => this.getFury() >= 30),
@@ -453,7 +450,7 @@ export class VengeanceDemonHunterBehavior extends Behavior {
         Spell.cast('Throw Glaive', this.getCurrentTarget),
         
         // Regular auto-attacks
-        new bt.Action(() => bt.Status.Failure)
+        new bt.Action(() => bt.Status.Success)
       )
     );
   }
