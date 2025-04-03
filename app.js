@@ -11,6 +11,7 @@ import Autolooter from './Extra/Autolooter';
 import AntiAFK from './Extra/AntiAFK';
 import General from './Extra/General';
 import commandListener from './Core/CommandListener';
+import colors from './Enums/Colors';
 
 let pauseCore = false;
 
@@ -24,6 +25,7 @@ nuclear.initialize().then(() => {
     }
 
     if (pauseCore) {
+      imgui.getBackgroundDrawList()?.addText("PAUSED", {x: 20, y: 20}, colors.red);
       return;
     }
 
