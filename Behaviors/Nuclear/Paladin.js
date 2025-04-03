@@ -8,8 +8,8 @@ import { MovementFlags } from "@/Enums/Flags";
 import { DispelPriority } from "@/Data/Dispels";
 import { WoWDispelType } from "@/Enums/Auras";
 
-export class PaladinRetributionBehavior extends Behavior {
-  name = "Retri Paladin";
+export class NuclearPaladinRetributionBehavior extends Behavior {
+  name = "Nuclear Retribution";
   context = BehaviorContext.Any;
   specialization = Specialization.Paladin.Retribution;
 
