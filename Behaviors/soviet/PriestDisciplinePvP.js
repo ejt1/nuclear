@@ -12,7 +12,7 @@ import spellBlacklist from "@/Data/PVPData";
 const auras = {
   painSuppression: 33206,
   powerOfTheDarkSide: 198068,
-  purgeTheWicked: 204213,
+  shadowWordPain: 589,
   powerWordShield: 17,
   atonement: 194384,
   surgeOfLight: 114255,
@@ -72,6 +72,7 @@ export class PriestDisciplinePvP extends Behavior {
       spell.cast("Void Shift", on => h.getPriorityPVPHealTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(24)),
       spell.cast("Mass Dispel", on => this.findMassDispelTarget(), ret => this.findMassDispelTarget() !== undefined),
       spell.cast("Premonition", on => me, ret => this.shouldCastPremonition(h.getPriorityPVPHealTarget())),
+      spell.cast("Evangelism", on => me, ret => me.inCombat && this.getAtonementCount() > 3 && this.minAtonementDuration() < 4000),
       spell.cast("Shadow Word: Death", on => this.findDeathThePolyTarget(), ret => this.findDeathThePolyTarget() !== undefined),
       spell.cast("Power Word: Barrier", on => h.getPriorityPVPHealTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(45)),
       spell.cast("Power Word: Shield", on => h.getPriorityPVPHealTarget(), ret => h.getPriorityPVPHealTarget()?.pctHealth < 89 && !this.hasShield(h.getPriorityPVPHealTarget())),
@@ -92,7 +93,7 @@ export class PriestDisciplinePvP extends Behavior {
   damageRotation() {
     return new bt.Selector(
       spell.cast("Shadow Word: Death", on => this.findShadowWordDeathTarget(), ret => this.findShadowWordDeathTarget() !== undefined),
-      spell.cast("Shadow Word: Pain", ret => me.targetUnit && !this.hasPurgeTheWicked(me.targetUnit)),
+      spell.cast("Shadow Word: Pain", ret => me.targetUnit && !this.hasShadowWordPain(me.targetUnit)),
       spell.cast("Mindgames", on => me.targetUnit, ret => me.targetUnit?.pctHealth < 50),
       spell.cast("Penance", on => me.targetUnit, ret => me.hasAura(auras.powerOfTheDarkSide)),
       spell.cast("Mind Blast", on => me.targetUnit, ret => true),
@@ -185,11 +186,11 @@ export class PriestDisciplinePvP extends Behavior {
   }
 
 
-  hasPurgeTheWicked(target) {
+  hasShadowWordPain(target) {
     if (!target) {
       return false;
     }
-    return target.hasAura(auras.purgeTheWicked);
+    return target.hasAura(auras.shadowWordPain);
   }
 
   shouldCastWithHealthAndNotPainSupp(health) {
@@ -214,6 +215,23 @@ export class PriestDisciplinePvP extends Behavior {
   // todo - probably move this somewhere useful rather than here?
   isNotDeadAndInLineOfSight(friend) {
     return friend && !friend.deadOrGhost && me.withinLineOfSight(friend);
+  }
+
+  getAtonementCount() {
+    return h.friends.All.filter(friend => this.hasAtonement(friend)).length;
+  }
+
+  minAtonementDuration() {
+    let minDuration = Infinity;
+    for (const friend of h.friends.All) {
+      if (this.hasAtonement(friend)) {
+        const duration = friend.getAuraByMe(auras.atonement).remaining;
+        if (duration < minDuration) {
+          minDuration = duration;
+        }
+      }
+    }
+    return minDuration === Infinity ? 0 : minDuration;
   }
 
 }

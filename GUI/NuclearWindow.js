@@ -128,7 +128,8 @@ class NuclearWindow {
         } else if (option.type === "combobox") {
           this.state[option.uid].value = settingValue !== undefined ? settingValue : option.default;
           if (imgui.beginCombo(option.text, this.state[option.uid].value)) {
-            option.options.forEach(item => {
+            const optionsArray = option.options || option.values;
+            optionsArray.forEach(item => {
               const isSelected = (item === this.state[option.uid].value);
               if (imgui.selectable(item, isSelected)) {
                 const oldValue = this.state[option.uid].value;
