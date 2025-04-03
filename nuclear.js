@@ -22,7 +22,12 @@ class Nuclear extends wow.EventListener {
       return;
     }
     if (this.error) {
-      imgui.getBackgroundDrawList()?.addText("ERROR", { x: 10, y: 10 }, colors.red);
+      const text = "ERROR\n".repeat(5);
+      const displaySize = imgui.io.displaySize;
+      const center = {x: displaySize.x / 2, y: displaySize.y / 2};
+      const textSize = imgui.calcTextSize(text);
+      const adjusted = {x: center.x - textSize.x / 2, y: center.y - textSize.y / 2};
+      imgui.getBackgroundDrawList()?.addText(text, adjusted, colors.red);
       return;
     }
 

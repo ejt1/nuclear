@@ -36,8 +36,8 @@ class AlwaysSucceed extends bt.Composite {
 
 // TODO: need a way to detect previous spell used (prev_gcd) to fully implement the action lists
 // TODO: add ice lances when any target is frozen
-export class FrostMageBehavior extends Behavior {
-  name = "Ejt's Frost";
+export class NuclearFrostMageBehavior extends Behavior {
+  name = "Nuclear Frost";
   context = BehaviorContext.Any;
   specialization = Specialization.Mage.Frost;
 

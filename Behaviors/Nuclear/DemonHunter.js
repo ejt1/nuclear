@@ -12,8 +12,8 @@ const auras = {
   fieryBrand: 207771,
 }
 
-export class DemonhunterVengeanceBehavior extends Behavior {
-  name = "Demon Hunter Vengeance"
+export class NuclearDemonhunterVengeanceBehavior extends Behavior {
+  name = "Nuclear Vengeance"
   context = BehaviorContext.Any;
   specialization = Specialization.DemonHunter.Vengeance;
 

@@ -8,8 +8,8 @@ import Specialization from '@/Enums/Specialization';
 import { defaultCombatTargeting as combat } from '@/Targeting/CombatTargeting';
 import { defaultHealTargeting as heal } from '@/Targeting/HealTargeting';
 
-export class EvokerAugmentationBehavior extends Behavior {
-  name = "Augmentation Evoker";
+export class NuclearEvokerAugmentationBehavior extends Behavior {
+  name = "Nuclear Augmentation";
   context = BehaviorContext.Any;
   specialization = Specialization.Evoker.Augmentation;
 
