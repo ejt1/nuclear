@@ -76,7 +76,8 @@ export class DeathKnightUnholy extends Behavior {
       spell.cast("Dark Transformation", ret => true),
       spell.cast("Unholy Assault", ret => true),
       spell.cast("Apocalypse", ret => true, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) >= 4),
-    );
+    )
+      ;
   }
 
   // Sustained Damage
@@ -292,8 +293,6 @@ export class DeathKnightUnholy extends Behavior {
   }
 
 
-
-
   shouldDeathCoil(minPowerForCoil) {
     return me.power > minPowerForCoil || (me.power > (minPowerForCoil - 20) && me.hasAura(auras.suddenDoom));
   }
@@ -314,10 +313,10 @@ export class DeathKnightUnholy extends Behavior {
   }
 
   useAbomLimb() {
-    if (Settings.UnholyDKUseSmackyHands === true) {
-      return spell.cast("Abomination Limb", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit));
-    }
-    return bt.Status.Failure;
+    return new bt.Decorator(
+      req => Settings.UnholyDKUseSmackyHands === true,
+      spell.cast("Abomination Limb", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit))
+    )
   }
 
   shouldCastOutbreak() {
