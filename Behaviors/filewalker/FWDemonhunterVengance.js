@@ -156,7 +156,8 @@ export class VengeanceDemonHunterBehavior extends Behavior {
             // Main rotation selector
             new bt.Selector(
               this.aldrachiReaverRotation(),
-              this.felScarredRotation()
+              this.felScarredRotation(),
+              this.defaultRotation()
             )
           )
         )
@@ -279,7 +280,7 @@ export class VengeanceDemonHunterBehavior extends Behavior {
         Spell.cast('Throw Glaive', this.getCurrentTarget),
         
         // Regular auto-attacks
-        new bt.Action(() => bt.Status.Failure)
+        new bt.Action(() => bt.Status.Success)
       )
     );
   }
@@ -288,6 +289,91 @@ export class VengeanceDemonHunterBehavior extends Behavior {
   felScarredRotation() {
     return new bt.Decorator(
       () => this.isFelScarred(),
+      new bt.Selector(
+        // Use Metamorphosis after Fel Devastation cycle
+        Spell.cast('Metamorphosis', () => me, () => 
+          Settings.VengUseMetamorphosis && 
+          !me.hasAura('Metamorphosis') && 
+          Spell.getTimeSinceLastCast('Fel Devastation') < 5000),
+        
+        // Handle any Empowered abilities during Metamorphosis
+        new bt.Decorator(
+          () => me.hasAura('Metamorphosis'),
+          new bt.Selector(
+            // Priority to empowered abilities
+            Spell.cast('Fel Devastation', this.getCurrentTarget, () => this.getFury() >= 50),
+            Spell.cast('Immolation Aura')
+          )
+        ),
+        
+        // Use The Hunt if talented
+        Spell.cast('The Hunt', this.getCurrentTarget, () => Spell.isSpellKnown('The Hunt')),
+        
+        // Use Sigil of Spite if talented
+        Spell.cast('Sigil of Spite', this.getCurrentTarget, () => 
+          Settings.VengUseSigils && Spell.isSpellKnown('Sigil of Spite')),
+        
+        // Fiery Brand if no targets have it
+        Spell.cast('Fiery Brand', this.getCurrentTarget, () => 
+          this.getCurrentTarget() && !this.getCurrentTarget().hasAuraByMe('Fiery Brand')),
+        
+        // Soul Carver with Fiery Brand synergy
+        Spell.cast('Soul Carver', this.getCurrentTarget, () => 
+          !Settings.VengPreferFieryBrand || (
+            this.getCurrentTarget() && 
+            this.getCurrentTarget().hasAuraByMe('Fiery Brand') && 
+            this.getRemainingTime(this.getCurrentTarget(), 'Fiery Brand') > 3000
+          )),
+        
+        // Fel Devastation with Fiery Brand synergy
+        Spell.cast('Fel Devastation', this.getCurrentTarget, () => 
+          this.getFury() >= 50 && (
+            !Settings.VengPreferFieryBrand || (
+              this.getCurrentTarget() && 
+              this.getCurrentTarget().hasAuraByMe('Fiery Brand') && 
+              this.getRemainingTime(this.getCurrentTarget(), 'Fiery Brand') > 2000
+            )
+          )),
+        
+        // Sigil of Flame (special logic for Illuminated Sigils)
+        Spell.cast('Sigil of Flame', this.getCurrentTarget, () => 
+          Settings.VengUseSigils && (
+            !Spell.isSpellKnown('Illuminated Sigils') || 
+            !me.hasAura('Student of Suffering')
+          )),
+        
+        // Immolation Aura
+        Spell.cast('Immolation Aura'),
+        
+        // Spirit Bomb with enough soul fragments and targets
+        Spell.cast('Spirit Bomb', this.getCurrentTarget, () => 
+          Settings.VengSpiritBombThreshold > 0 && 
+          this.getEnemyCount() >= Settings.VengSpiritBombThreshold),
+        
+        // Fracture if close to max charges
+        Spell.cast('Fracture', this.getCurrentTarget, () => 
+          Spell.getCharges('Fracture') > 1.7),
+        
+        // Felblade for Fury generation (higher threshold for Fel-Scarred)
+        Spell.cast('Felblade', this.getCurrentTarget, () => 
+          this.getFury() < 130),
+        
+        // Soul Cleave to spend Fury
+        Spell.cast('Soul Cleave', this.getCurrentTarget, () => this.getFury() >= 30),
+        
+        // Fracture for Soul Fragments and Fury
+        Spell.cast('Fracture', this.getCurrentTarget),
+        
+        // Throw Glaive as filler
+        Spell.cast('Throw Glaive', this.getCurrentTarget),
+        
+        // Regular auto-attacks
+        new bt.Action(() => bt.Status.Success)
+      )
+    );
+  }
+  defaultRotation() {
+    return new bt.Decorator(
       new bt.Selector(
         // Use Metamorphosis after Fel Devastation cycle
         Spell.cast('Metamorphosis', () => me, () => 
