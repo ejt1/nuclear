@@ -92,4 +92,45 @@ export const interrupts = {
   445207: "Piercing Wail",
   449455: "Howling Fear",
   429422: "Stone Bolt",
+
+  // PHASE 2 MYTHIC+ TWW
+
+  // Operation: Floodgate
+  1214468: "Trickshot",
+  462771: "Surveying Beam",
+
+  // The Rookery - none are in the list that neer gave me.
+  427404: "Localized Storm",
+  430812: "Attracting Shadows",
+  1214523: "Feasting Void",
+  1214628: "Unleash Darkness",
+
+  // Priory of the Sacred Flame
+  424420: "Cinderblast",
+  444743: "Fireball Volley",
+
+  // Darkflame Cleft
+  425536: "Mole Frenzy",
+  424322: "Explosive Flame",
+  426295: "Flaming Tether",
+  422541: "Drain Light",
+
+  // Cinderbrew Meadery
+  441242: "Free Samples?",
+  441351: "Bee-stial Wrath",
+  440687: "Honey Volley",
+
+  // The Motherlode
+  269302: "Toxic Blades",
+  263202: "Rock Lance",
+  268702: "Furious Quake",
+
+  // Mechagon Workshop
+  301088: "Detonate",
+  293827: "Giga-Wallop",
+
+  // Theater of Pain
+  342675: "Bone Spear",
+  330868: "Necrotic Bolt Volley",
+  341969: "Withering Discharge",
 };
