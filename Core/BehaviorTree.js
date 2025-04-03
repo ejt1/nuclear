@@ -61,6 +61,12 @@ export class Composite {
     }
     return status;
   }
+
+  checkValidChild(child) {
+    if (!(child instanceof Composite)) {
+      throw new Error(`Trying to add child which does not extend Composite`);
+    }
+  }
 }
 
 /**
@@ -82,6 +88,9 @@ export class GroupComposite extends Composite {
     super(name);
     /** @type {Composite[]} */
     this.children = children;
+    for (const child of this.children) {
+      this.checkValidChild(child);
+    }
     /** @type {number} */
     this.activeChildIndex = -1;
   }
@@ -91,6 +100,7 @@ export class GroupComposite extends Composite {
    * @param {Composite} child - The child node to add.
    */
   addChild(child) {
+    this.checkValidChild(child);
     this.children.push(child);
   }
 
@@ -100,6 +110,7 @@ export class GroupComposite extends Composite {
    * @param {number} index - The index at which to insert (clamped to valid range).
    */
   insertChild(child, index) {
+    this.checkValidChild(child);
     const clampedIndex = Math.max(0, Math.min(index, this.children.length));
     this.children.splice(clampedIndex, 0, child);
   }
@@ -212,6 +223,7 @@ export class Decorator extends Composite {
    */
   constructor(condition, child, name) {
     super(name);
+    this.checkValidChild(child);
     /** @type {Function} */
     this.condition = condition;
     /** @type {Composite} */
