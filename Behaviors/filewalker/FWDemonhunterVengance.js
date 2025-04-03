@@ -1,248 +1,415 @@
 import { Behavior, BehaviorContext } from '@/Core/Behavior';
 import * as bt from '@/Core/BehaviorTree';
 import Specialization from '@/Enums/Specialization';
-import common from '@/Core/Common';
-import spell from '@/Core/Spell';
+import Common from '@/Core/Common';
+import Spell from '@/Core/Spell';
 import Settings from '@/Core/Settings';
 import { PowerType } from "@/Enums/PowerType";
 import { me } from '@/Core/ObjectManager';
 import { defaultCombatTargeting as combat } from '@/Targeting/CombatTargeting';
 
-//STATUS : NEEDS TESTING
-
-const auras = {
-  demonSpikes: 203819,
-  metamorphosis: 187827,
-  fieryBrand: 207771,
-  soulFragments: 203981,
-  immolationAura: 258920,
-  felblade: 232893,
-  infernalStrike: 189110,
-  soulCarver: 207407,
-  fracture: 263642,
-  spiritBomb: 247454,
-  bulwark: 326853,
-  feastingStrike: 391378,
-  frailty: 247456
-};
-
 export class VengeanceDemonHunterBehavior extends Behavior {
   name = 'FW Vengeance Demon Hunter';
   context = BehaviorContext.Any;
   specialization = Specialization.DemonHunter.Vengeance;
-  version = wow.GameVersion.Retail;
+  version = wow.gameVersion;
 
-  static settings = [
+  // Hero Talent detection constants
+  static HERO_TALENTS = {
+    ALDRACHI_REAVER: "Art of the Glaive", // Top talent for Aldrachi Reaver
+    FEL_SCARRED: "Demonsurge",            // Top talent for Fel-Scarred
+  };
+
+        static settings = [
     {
-      header: 'Vengeance Settings',
+      header: 'Vengeance Demon Hunter Settings',
       options: [
-        { type: 'checkbox', uid: 'DHVengeanceUseCooldown', text: 'Use Defensive Cooldowns', default: true },
-        { type: 'checkbox', uid: 'DHVengeanceUseOffensiveCooldown', text: 'Use Offensive Cooldowns', default: true },
-        { type: 'slider', uid: 'DHVengeanceDemonSpikesThreshold', text: 'Demon Spikes HP Threshold', default: 80, min: 1, max: 100 },
-        { type: 'slider', uid: 'DHVengeanceFieryBrandThreshold', text: 'Fiery Brand HP Threshold', default: 60, min: 1, max: 100 },
-        { type: 'slider', uid: 'DHVengeanceMetamorphosisThreshold', text: 'Metamorphosis HP Threshold', default: 40, min: 1, max: 100 },
-        { type: 'slider', uid: 'DHVengeanceSoulCleaveSoulFragments', text: 'Soul Cleave Min Soul Fragments', default: 3, min: 0, max: 5 },
+        { 
+          uid: 'VengUseMetamorphosis', 
+          text: 'Use Metamorphosis', 
+          type: 'checkbox', 
+          default: true 
+        },
+        { 
+          uid: 'VengAOEThreshold', 
+          text: 'AOE Threshold', 
+          type: 'slider', 
+          min: 2, 
+          max: 8, 
+          default: 3, 
+          description: 'Number of enemies needed to use AOE abilities' 
+        },
+        { 
+          uid: 'VengSpiritBombThreshold', 
+          text: 'Spirit Bomb Min Targets', 
+          type: 'slider', 
+          min: 0, 
+          max: 8, 
+          default: 6,
+          description: 'Minimum number of targets to use Spirit Bomb (0 to disable)' 
+        },
+        { 
+          uid: 'VengFelbladeThreshold', 
+          text: 'Felblade Fury Threshold', 
+          type: 'slider', 
+          min: 10, 
+          max: 150, 
+          default: 80,
+          description: 'Use Felblade when below this Fury amount' 
+        },
+        { 
+          uid: 'VengUseSigils', 
+          text: 'Use Sigils', 
+          type: 'checkbox', 
+          default: true 
+        },
+        {
+          uid: 'VengPreferFieryBrand',
+          text: 'Optimize for Fiery Brand',
+          type: 'checkbox',
+          default: true,
+          description: 'Optimize Fel Devastation and Soul Carver usage with Fiery Brand'
+        }
       ],
     },
+    {
+      header: 'Defensive Settings',
+      options: [
+        { 
+          uid: 'VengDefensiveThreshold', 
+          text: 'Defensive Cooldown Health %', 
+          type: 'slider', 
+          min: 20, 
+          max: 90, 
+          default: 60 
+        },
+        { 
+          uid: 'VengDemonSpikesCharges', 
+          text: 'Demon Spikes Min Charges', 
+          type: 'slider', 
+          min: 0, 
+          max: 2, 
+          default: 1,
+          description: 'Minimum charges to keep on Demon Spikes' 
+        },
+        { 
+          uid: 'VengDemonSpikesThreshold', 
+          text: 'Demon Spikes Health %', 
+          type: 'slider', 
+          min: 20, 
+          max: 100, 
+          default: 85 
+        },
+        { 
+          uid: 'VengFieryBrandThreshold', 
+          text: 'Fiery Brand Health %', 
+          type: 'slider', 
+          min: 20, 
+          max: 100, 
+          default: 70 
+        },
+        { 
+          uid: 'VengMetamorphosisThreshold', 
+          text: 'Metamorphosis Health %', 
+          type: 'slider', 
+          min: 20, 
+          max: 80, 
+          default: 50 
+        }
+      ]
+    }
   ];
 
   build() {
     return new bt.Selector(
-      common.waitForNotMounted(),
-      common.waitForNotSitting(),
-      new bt.Action(() => (this.getCurrentTarget() === null ? bt.Status.Success : bt.Status.Failure)),
-      common.waitForTarget(),
-      common.waitForFacing(),
-      common.waitForCastOrChannel(),
-      
-      new bt.Decorator(
-        ret => !spell.isGlobalCooldown(),
-        new bt.Selector(
-          spell.interrupt('Disrupt'),
-          // Move defensiveCooldowns here to ensure it runs
-          this.defensiveCooldowns(),
+      Common.waitForCastOrChannel(),
+      Common.waitForNotMounted(),
+      new bt.Action(() => {
+        if (!this.getCurrentTarget()) return bt.Status.Success;
+        
+        // Log detected hero talent path for debugging (only once when target changes)
+        if (this._lastTarget !== this.getCurrentTarget()) {
+          this._lastTarget = this.getCurrentTarget();
+          const heroTalent = this.detectHeroTalent();
+          if (heroTalent) {
+            console.info(`Detected Hero Talent: ${heroTalent}`);
+          } else {
+            console.info("No Hero Talent detected. Using default rotation.");
+          }
+        }
+        
+        return bt.Status.Failure;
+      }),
+      Common.waitForTarget(),
+      Common.waitForFacing(),
+      Common.ensureAutoAttack(),
 
-          new bt.Decorator(
-            req => this.enemiesAroundMe(8) >= 3,
+      new bt.Selector(
+        this.defensives(),
+        
+        new bt.Decorator(
+          () => !Spell.isGlobalCooldown(),
+          new bt.Selector(
+            // Interrupt with priority
+            Spell.interrupt('Disrupt'),
+            
+            // Main rotation selector
             new bt.Selector(
-              this.aoe()
+              this.aldrachiReaverRotation(),
+              this.felScarredRotation()
             )
-          ),
+          )
+        )
+      )
+    );
+  }
 
-          new bt.Decorator(
-            req => this.enemiesAroundMe(8) < 3,
-            new bt.Selector(
-              this.singleTarget()
-            )
-          ),
+  // Defensive cooldown usage
+  defensives() {
+    return new bt.Decorator(
+      () => !Spell.isGlobalCooldown(),
+      new bt.Selector(
+        // Demon Spikes for physical damage mitigation
+        Spell.cast('Demon Spikes', () => me, () => 
+          me.pctHealth <= Settings.VengDemonSpikesThreshold && 
+          !me.hasAura('Demon Spikes') && 
+          Spell.getCharges('Demon Spikes') > Settings.VengDemonSpikesCharges),
+        
+        // Fiery Brand for major damage reduction
+        Spell.cast('Fiery Brand', this.getCurrentTarget, () => 
+          me.pctHealth <= Settings.VengFieryBrandThreshold && 
+          this.getCurrentTarget() && 
+          !this.getCurrentTarget().hasAuraByMe('Fiery Brand')),
+        
+        // Metamorphosis for emergency damage reduction and healing
+        Spell.cast('Metamorphosis', () => me, () => 
+          Settings.VengUseMetamorphosis && 
+          me.pctHealth <= Settings.VengMetamorphosisThreshold && 
+          !me.hasAura('Metamorphosis')),
+        
+        // Fel Devastation for healing when low health
+        Spell.cast('Fel Devastation', this.getCurrentTarget, () => 
+          me.pctHealth <= Settings.VengDefensiveThreshold && 
+          this.getFury() >= 50),
+        
+        // Soul Cleave for emergency healing
+        Spell.cast('Soul Cleave', this.getCurrentTarget, () => 
+          me.pctHealth <= Settings.VengDefensiveThreshold && 
+          this.getFury() >= 30)
+      )
+    );
+  }
+
+  // Aldrachi Reaver rotation
+  aldrachiReaverRotation() {
+    return new bt.Decorator(
+      () => this.isAldrachiReaver(),
+      new bt.Selector(
+        // Use Reaver's Glaive when we have 20 stacks of Art of the Glaive
+        // Spell.cast("Reaver's Glaive", this.getCurrentTarget, () => this.canUseReaversGlaive()),
+        Spell.cast("Reaver's Glaive", this.getCurrentTarget, () => this.getArtOfTheGlaiveProc()),
+        
+        // Check for Reaver's Glaive empowerment
+        new bt.Decorator(
+          () => me.hasAura("Reaver's Glaive"),
+          new bt.Selector(
+            // Use Fracture Empowered by Reaver's Glaive
+            Spell.cast('Fracture', this.getCurrentTarget),
+            
+            // Use Soul Cleave Empowered by Reaver's Glaive
+            Spell.cast('Soul Cleave', this.getCurrentTarget, () => this.getFury() >= 30)
+          )
         ),
-      ),
+        
+        // Use The Hunt if talented
+        Spell.cast('The Hunt', this.getCurrentTarget, () => Spell.isSpellKnown('The Hunt')),
+        
+        // Use Sigil of Spite if talented
+        Spell.cast('Sigil of Spite', this.getCurrentTarget, () => 
+          Settings.VengUseSigils && Spell.isSpellKnown('Sigil of Spite')),
+        
+        // Fiery Brand if no targets have it
+        Spell.cast('Fiery Brand', this.getCurrentTarget, () => 
+          this.getCurrentTarget() && !this.getCurrentTarget().hasAuraByMe('Fiery Brand')),
+        
+        // Soul Carver with Fiery Brand synergy
+        Spell.cast('Soul Carver', this.getCurrentTarget, () => 
+          !Settings.VengPreferFieryBrand || (
+            this.getCurrentTarget() && 
+            this.getCurrentTarget().hasAuraByMe('Fiery Brand') && 
+            this.getRemainingTime(this.getCurrentTarget(), 'Fiery Brand') > 3000
+          )),
+        
+        // Fel Devastation with Fiery Brand synergy
+        Spell.cast('Fel Devastation', this.getCurrentTarget, () => 
+          this.getFury() >= 50 && (
+            !Settings.VengPreferFieryBrand || (
+              this.getCurrentTarget() && 
+              this.getCurrentTarget().hasAuraByMe('Fiery Brand') && 
+              this.getRemainingTime(this.getCurrentTarget(), 'Fiery Brand') > 2000
+            )
+          )),
+        
+        // Sigil of Flame
+        Spell.cast('Sigil of Flame', this.getCurrentTarget, () => Settings.VengUseSigils),
+        
+        // Immolation Aura
+        Spell.cast('Immolation Aura'),
+        
+        // Spirit Bomb with enough soul fragments and targets
+        Spell.cast('Spirit Bomb', this.getCurrentTarget, () => 
+          Settings.VengSpiritBombThreshold > 0 && 
+          this.getEnemyCount() >= Settings.VengSpiritBombThreshold),
+        
+        // Fracture if close to max charges
+        Spell.cast('Fracture', this.getCurrentTarget, () => 
+          Spell.getCharges('Fracture') > 1.7),
+        
+        // Felblade for Fury generation
+        Spell.cast('Felblade', this.getCurrentTarget, () => 
+          this.getFury() < Settings.VengFelbladeThreshold),
+        
+        // Soul Cleave to spend Fury
+        Spell.cast('Soul Cleave', this.getCurrentTarget, () => this.getFury() >= 30),
+        
+        // Fracture for Soul Fragments and Fury
+        Spell.cast('Fracture', this.getCurrentTarget),
+        
+        // Throw Glaive as filler
+        Spell.cast('Throw Glaive', this.getCurrentTarget),
+        
+        // Regular auto-attacks
+        new bt.Action(() => bt.Status.Failure)
+      )
     );
   }
 
-  singleTarget() {
-    return new bt.Selector(
-      // Keep Sigil of Flame up
-      spell.cast('Sigil of Flame', this.getCurrentTarget, () => 
-        !this.getCurrentTarget().hasAura('Sigil of Flame')),
-      
-      // Use Fracture to generate Soul Fragments and Fury
-      spell.cast('Fracture', this.getCurrentTarget, () => 
-        me.hasAura('Fracture') && this.getSoulFragments() < 5),
-      
-      // Use Fel Devastation when available - strong damage and healing
-      spell.cast('Fel Devastation', this.getCurrentTarget, () => 
-        this.getFury() >= 50),
-      
-      // Use Spirit Bomb if we have enough Soul Fragments and the talent
-      spell.cast('Spirit Bomb', this.getCurrentTarget, () => 
-        me.hasAura('Spirit Bomb') && 
-        this.getSoulFragments() >= 4),
-      
-      // Use Soul Cleave to consume Soul Fragments for healing and damage
-      spell.cast('Soul Cleave', this.getCurrentTarget, () => 
-        this.getFury() >= 30 && 
-        this.getSoulFragments() >= Settings.DHVengeanceSoulCleaveSoulFragments),
-      
-      // Use Immolation Aura for AoE damage and Fury generation
-      spell.cast('Immolation Aura', on => me),
-      
-      // Use Felblade to generate Fury and close distance
-      spell.cast('Felblade', this.getCurrentTarget, () => 
-        me.hasAura('Felblade') && this.getFury() < 80),
-      
-      // Infernal Strike for mobility and AoE damage
-      spell.cast('Infernal Strike', this.getCurrentTarget, () => 
-        spell.getCharges('Infernal Strike') >= 1),
-      
-      // Use Fel Devastation for damage and healing
-      spell.cast('Fel Devastation', this.getCurrentTarget, () => 
-        this.getFury() >= 50),
-      
-      // Throw Glaive as filler
-      spell.cast('Throw Glaive', this.getCurrentTarget),
-      
-      // Shear as basic generator if not using Fracture
-      spell.cast('Shear', this.getCurrentTarget, () => 
-        !me.hasAura('Fracture')),
-      
-      // Soul Cleave as Fury dump
-      spell.cast('Soul Cleave', this.getCurrentTarget, () => 
-        this.getFury() >= 30),
+  // Fel-Scarred rotation
+  felScarredRotation() {
+    return new bt.Decorator(
+      () => this.isFelScarred(),
+      new bt.Selector(
+        // Use Metamorphosis after Fel Devastation cycle
+        Spell.cast('Metamorphosis', () => me, () => 
+          Settings.VengUseMetamorphosis && 
+          !me.hasAura('Metamorphosis') && 
+          Spell.getTimeSinceLastCast('Fel Devastation') < 5000),
+        
+        // Handle any Empowered abilities during Metamorphosis
+        new bt.Decorator(
+          () => me.hasAura('Metamorphosis'),
+          new bt.Selector(
+            // Priority to empowered abilities
+            Spell.cast('Fel Devastation', this.getCurrentTarget, () => this.getFury() >= 50),
+            Spell.cast('Immolation Aura')
+          )
+        ),
+        
+        // Use The Hunt if talented
+        Spell.cast('The Hunt', this.getCurrentTarget, () => Spell.isSpellKnown('The Hunt')),
+        
+        // Use Sigil of Spite if talented
+        Spell.cast('Sigil of Spite', this.getCurrentTarget, () => 
+          Settings.VengUseSigils && Spell.isSpellKnown('Sigil of Spite')),
+        
+        // Fiery Brand if no targets have it
+        Spell.cast('Fiery Brand', this.getCurrentTarget, () => 
+          this.getCurrentTarget() && !this.getCurrentTarget().hasAuraByMe('Fiery Brand')),
+        
+        // Soul Carver with Fiery Brand synergy
+        Spell.cast('Soul Carver', this.getCurrentTarget, () => 
+          !Settings.VengPreferFieryBrand || (
+            this.getCurrentTarget() && 
+            this.getCurrentTarget().hasAuraByMe('Fiery Brand') && 
+            this.getRemainingTime(this.getCurrentTarget(), 'Fiery Brand') > 3000
+          )),
+        
+        // Fel Devastation with Fiery Brand synergy
+        Spell.cast('Fel Devastation', this.getCurrentTarget, () => 
+          this.getFury() >= 50 && (
+            !Settings.VengPreferFieryBrand || (
+              this.getCurrentTarget() && 
+              this.getCurrentTarget().hasAuraByMe('Fiery Brand') && 
+              this.getRemainingTime(this.getCurrentTarget(), 'Fiery Brand') > 2000
+            )
+          )),
+        
+        // Sigil of Flame (special logic for Illuminated Sigils)
+        Spell.cast('Sigil of Flame', this.getCurrentTarget, () => 
+          Settings.VengUseSigils && (
+            !Spell.isSpellKnown('Illuminated Sigils') || 
+            !me.hasAura('Student of Suffering')
+          )),
+        
+        // Immolation Aura
+        Spell.cast('Immolation Aura'),
+        
+        // Spirit Bomb with enough soul fragments and targets
+        Spell.cast('Spirit Bomb', this.getCurrentTarget, () => 
+          Settings.VengSpiritBombThreshold > 0 && 
+          this.getEnemyCount() >= Settings.VengSpiritBombThreshold),
+        
+        // Fracture if close to max charges
+        Spell.cast('Fracture', this.getCurrentTarget, () => 
+          Spell.getCharges('Fracture') > 1.7),
+        
+        // Felblade for Fury generation (higher threshold for Fel-Scarred)
+        Spell.cast('Felblade', this.getCurrentTarget, () => 
+          this.getFury() < 130),
+        
+        // Soul Cleave to spend Fury
+        Spell.cast('Soul Cleave', this.getCurrentTarget, () => this.getFury() >= 30),
+        
+        // Fracture for Soul Fragments and Fury
+        Spell.cast('Fracture', this.getCurrentTarget),
+        
+        // Throw Glaive as filler
+        Spell.cast('Throw Glaive', this.getCurrentTarget),
+        
+        // Regular auto-attacks
+        new bt.Action(() => bt.Status.Failure)
+      )
     );
   }
 
-  aoe() {
-    return new bt.Selector(
-      // Sigil of Flame for AoE damage and slow
-      spell.cast('Sigil of Flame', this.getCurrentTarget),
-      
-      // Immolation Aura for AoE damage and Fury generation
-      spell.cast('Immolation Aura', on => me),
-      
-      // Use Spirit Bomb if we have enough Soul Fragments and the talent - higher priority in AoE
-      spell.cast('Spirit Bomb', this.getCurrentTarget, () => 
-        me.hasAura('Spirit Bomb') && 
-        this.getSoulFragments() >= 3),
-      
-      // Infernal Strike for mobility and AoE damage
-      spell.cast('Infernal Strike', this.getCurrentTarget, () => 
-        spell.getCharges('Infernal Strike') >= 1),
-      
-      // Use Fel Devastation for AoE damage and healing
-      spell.cast('Fel Devastation', this.getCurrentTarget, () => 
-        this.getFury() >= 50),
-      
-      // Use Fracture to generate Soul Fragments and Fury
-      spell.cast('Fracture', this.getCurrentTarget, () => 
-        me.hasAura('Fracture') && this.getSoulFragments() < 5),
-      
-      // Soul Cleave for AoE damage and soul fragment consumption
-      spell.cast('Soul Cleave', this.getCurrentTarget, () => 
-        this.getFury() >= 30 && 
-        this.getSoulFragments() >= Settings.DHVengeanceSoulCleaveSoulFragments),
-      
-      // Use Felblade to generate Fury
-      spell.cast('Felblade', this.getCurrentTarget, () => 
-        me.hasAura('Felblade') && this.getFury() < 60),
-      
-      // Throw Glaive for AoE damage
-      spell.cast('Throw Glaive', this.getCurrentTarget),
-      
-      // Shear as basic generator if not using Fracture
-      spell.cast('Shear', this.getCurrentTarget, () => 
-        !me.hasAura('Fracture')),
-      
-      // Soul Cleave as Fury dump
-      spell.cast('Soul Cleave', this.getCurrentTarget, () => 
-        this.getFury() >= 30),
-    );
+  // Helper methods
+  getCurrentTarget() {
+    if (me.targetUnit && me.canAttack(me.targetUnit) && !me.targetUnit.deadOrGhost) {
+      return me.targetUnit;
+    }
+    return combat.bestTarget;
   }
 
-  defensiveCooldowns() {
-    return new bt.Selector(
-      // Demon Spikes for physical damage mitigation
-      spell.cast('Demon Spikes', on => me, () => 
-        me.pctHealth <= Settings.DHVengeanceDemonSpikesThreshold && 
-        !me.hasAura('Demon Spikes') && 
-        this.useDefensiveCooldowns() &&
-        spell.getCharges('Demon Spikes') >= 1),
-      
-      // Fiery Brand for major damage reduction on a single target
-      spell.cast('Fiery Brand', this.getCurrentTarget, () => 
-        me.pctHealth <= Settings.DHVengeanceFieryBrandThreshold && 
-        !this.getCurrentTarget().hasAura('Fiery Brand') && 
-        this.useDefensiveCooldowns()),
-      
-      // Metamorphosis for emergency damage reduction and healing
-      spell.cast('Metamorphosis', on => me, () => 
-        me.pctHealth <= Settings.DHVengeanceMetamorphosisThreshold && 
-        !me.hasAura('Metamorphosis') && 
-        this.useDefensiveCooldowns()),
-      
-      // Soul Barrier for shield if talented
-      spell.cast('Soul Barrier', on => me, () => 
-        me.hasAura('Soul Barrier') && 
-        me.pctHealth <= 70 && 
-        this.getSoulFragments() >= 2 && 
-        this.useDefensiveCooldowns()),
-      
-      // Bulk Extraction to generate Soul Fragments in emergencies
-      spell.cast('Bulk Extraction', on => me, () => 
-        me.hasAura('Bulk Extraction') && 
-        me.pctHealth <= 50 && 
-        this.getSoulFragments() <= 1 && 
-        this.useDefensiveCooldowns()),
-      
-      // Soul Cleave for emergency healing (higher priority during defensiveCooldowns)
-      spell.cast('Soul Cleave', this.getCurrentTarget, () => 
-        this.getFury() >= 30 && 
-        me.pctHealth <= 60 && 
-        this.getSoulFragments() >= 1),
-      
-      // Offensive cooldowns that also have defensive value (Metamorphosis can be both)
-      spell.cast('Metamorphosis', on => me, () => 
-        this.useOffensiveCooldowns() && 
-        !this.useDefensiveCooldowns() && 
-        !me.hasAura('Metamorphosis')),
-      
-      // Fel Devastation for healing and damage
-      spell.cast('Fel Devastation', this.getCurrentTarget, () => 
-        this.getFury() >= 50 && 
-        me.pctHealth <= 70),
-    );
+  isAldrachiReaver() {
+    return this.hasTalent(VengeanceDemonHunterBehavior.HERO_TALENTS.ALDRACHI_REAVER);
+  }
+
+  isFelScarred() {
+    return this.hasTalent(VengeanceDemonHunterBehavior.HERO_TALENTS.FEL_SCARRED);
+  }
+  
+  // Returns the current hero talent path or null if none is detected
+  detectHeroTalent() {
+    if (this.hasTalent(VengeanceDemonHunterBehavior.HERO_TALENTS.ALDRACHI_REAVER)) {
+      return "Aldrachi Reaver";
+    } else if (this.hasTalent(VengeanceDemonHunterBehavior.HERO_TALENTS.FEL_SCARRED)) {
+      return "Fel-Scarred";
+    } else {
+      return null; // No hero talent detected
+    }
   }
 
   hasTalent(talentName) {
-    return me.hasAura(talentName);
-  }
-
-  useDefensiveCooldowns() {
-    return Settings.DHVengeanceUseCooldown;
-  }
-
-  useOffensiveCooldowns() {
-    return Settings.DHVengeanceUseOffensiveCooldown;
+    // We check in three different ways to be thorough:
+    // 1. Direct spell knowledge check
+    // 2. Aura presence check (many talents apply passive auras)
+    // 3. Spell book check for abilities granted by talents
+    return Spell.isSpellKnown(talentName) || 
+           me.hasAura(talentName) ||
+           (talentName === VengeanceDemonHunterBehavior.HERO_TALENTS.ALDRACHI_REAVER && 
+            Spell.isSpellKnown("Reaver's Glaive")) ||
+           (talentName === VengeanceDemonHunterBehavior.HERO_TALENTS.FEL_SCARRED && 
+            Spell.isSpellKnown("Demonsurge"));
   }
 
   getFury() {
@@ -250,61 +417,38 @@ export class VengeanceDemonHunterBehavior extends Behavior {
   }
 
   getSoulFragments() {
-    const aura = me.getAura('Soul Fragments');
-    return aura ? aura.stacks : 0;
+    // Soul Fragments are now physical orbs, not an aura
+    // We can track them through various game mechanics
+    // For gameplay purposes, we can use distance-based detection
+    // or infer from related abilities
+    
+    // Count nearby soul fragments as entities
+    const soulFragments = me.getUnitsAroundCount(15).filter(unit => 
+      unit.entryId === 177795 || // Soul Fragment entity ID
+      unit.name === "Soul Fragment" || 
+      unit.name.includes("Soul Fragment")
+    ).length;
+    
+    return soulFragments || 0; // Return 0 if none found
   }
 
-  getCurrentTarget() {
-    const targetPredicate = unit => common.validTarget(unit) && me.isFacing(unit);
-    const target = me.target;
-    if (target !== null && targetPredicate(target)) {
-      return target;
-    }
-    return combat.targets.find(targetPredicate) || null;
+  getArtOfTheGlaiveProc() {
+    // Check for Art of the Glaive aura stacks
+    return Spell.getSpell("Throw Glaive").overrideId == 442294 ? true : false;
+  }
+  
+  canUseReaversGlaive() {
+    // Check if we have 20 stacks of Art of the Glaive
+    return this.getArtOfTheGlaiveStacks() >= 20 && this.isAldrachiReaver();
   }
 
-  getAuraRemainingTime(auraName) {
-    const aura = me.getAura(auraName);
+  getRemainingTime(unit, auraName) {
+    if (!unit) return 0;
+    const aura = unit.getAuraByMe(auraName);
     return aura ? aura.remaining : 0;
   }
 
-  getDebuffRemainingTime(debuffName) {
-    const target = this.getCurrentTarget();
-    if (!target) return 0;
-    const debuff = target.getAura(debuffName);
-    return debuff ? debuff.remaining : 0;
-  }
-
-  getDebuffStacks(debuffName) {
-    const target = this.getCurrentTarget();
-    if (!target) return 0;
-    const debuff = target.getAura(debuffName);
-    return debuff ? debuff.stacks : 0;
-  }
-
-  enemiesAroundMe(range) {
-    return me.getUnitsAroundCount(range);
-  }
-
-  enemiesAroundTarget(range) {
-    const target = this.getCurrentTarget();
-    return target ? target.getUnitsAroundCount(range) : 0;
-  }
-  
-  /**
-   * Checks if we're in Metamorphosis form
-   * @returns {boolean} - True if Metamorphosis is active
-   */
-  isMetamorphosisActive() {
-    return me.hasAura('Metamorphosis');
-  }
-  
-  /**
-   * Checks if target has the Frailty debuff from Spirit Bomb
-   * @returns {boolean} - True if target has Frailty debuff
-   */
-  hasFrailty() {
-    const target = this.getCurrentTarget();
-    return target && target.hasAura('Frailty');
+  getEnemyCount() {
+    return me.getUnitsAroundCount(8);
   }
 }
