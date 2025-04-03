@@ -193,7 +193,7 @@ export class Action extends Composite {
     try {
       return this.runner ? this.runner(context) : Status.Failure;
     } catch (e) {
-      console.error(`Action ${this.name} failed: ${e.message}`);
+      console.error(`Action ${this.name} failed: ${e}`);
       return Status.Failure;
     }
   }
