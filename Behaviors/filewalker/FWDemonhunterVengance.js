@@ -374,7 +374,7 @@ export class VengeanceDemonHunterBehavior extends Behavior {
   }
   defaultRotation() {
     return new bt.Decorator(
-      () => this.isAldrachiReaver(),
+      // () => this.isAldrachiReaver(),
       new bt.Selector(
         // Use Reaver's Glaive when we have 20 stacks of Art of the Glaive
         // Spell.cast("Reaver's Glaive", this.getCurrentTarget, () => this.canUseReaversGlaive()),
