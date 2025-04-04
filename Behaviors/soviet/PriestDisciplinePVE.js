@@ -84,7 +84,6 @@ export class PriestDiscipline extends Behavior {
     return new bt.Selector(
       new bt.Action(() => {
         this.healTarget = h.getPriorityTarget();
-        console.info("healTarget set to:", this.healTarget?.name || "undefined"); // Debugging
         return bt.Status.Failure; // Proceed to next child
       }),
       spell.cast("Power Word: Life", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 50 && me.inCombat()),
