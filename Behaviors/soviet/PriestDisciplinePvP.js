@@ -1,12 +1,12 @@
-import {Behavior, BehaviorContext} from "@/Core/Behavior";
+import { Behavior, BehaviorContext } from "@/Core/Behavior";
 import * as bt from '@/Core/BehaviorTree';
 import Specialization from '@/Enums/Specialization';
 import common from '@/Core/Common';
 import spell from "@/Core/Spell";
-import {me} from "@/Core/ObjectManager";
-import {defaultHealTargeting as h} from "@/Targeting/HealTargeting";
-import {DispelPriority} from "@/Data/Dispels"
-import {WoWDispelType} from "@/Enums/Auras";
+import { me } from "@/Core/ObjectManager";
+import { defaultHealTargeting as h } from "@/Targeting/HealTargeting";
+import { DispelPriority } from "@/Data/Dispels";
+import { WoWDispelType } from "@/Enums/Auras";
 import spellBlacklist from "@/Data/PVPData";
 
 const auras = {
@@ -23,8 +23,11 @@ const auras = {
 
 export class PriestDisciplinePvP extends Behavior {
   name = "Priest (Discipline) PVP";
-  context = BehaviorContext.Any; // PVP or PVE
+  context = BehaviorContext.Any;
   specialization = Specialization.Priest.Discipline;
+
+  // Define healTarget as a class property
+  healTarget = null;
 
   build() {
     return new bt.Decorator(
@@ -39,7 +42,7 @@ export class PriestDisciplinePvP extends Behavior {
         this.applyAtonement(),
         common.waitForTarget(),
         common.waitForFacing(),
-        this.damageRotation(),
+        this.damageRotation()
       )
     );
   }
@@ -54,7 +57,6 @@ export class PriestDisciplinePvP extends Behavior {
     });
   }
 
-  // Atonement Application
   applyAtonement() {
     return new bt.Selector(
       spell.cast("Power Word: Shield", on => this.findFriendWithoutAtonement(), ret => this.findFriendWithoutAtonement() !== undefined),
@@ -62,34 +64,36 @@ export class PriestDisciplinePvP extends Behavior {
     );
   }
 
-  // Healing Rotation
   healRotation() {
     return new bt.Selector(
-      spell.cast("Power Word: Life", on => h.getPriorityPVPHealTarget(), ret => h.getPriorityPVPHealTarget()?.pctHealth < 50),
+      new bt.Action(() => {
+        this.healTarget = h.getPriorityPVPHealTarget();
+        return bt.Status.Failure; // Proceed to next child
+      }),
+      spell.cast("Power Word: Life", on => this.healTarget, ret => this.healTarget?.pctHealth < 50),
       spell.cast("Desperate Prayer", on => me, ret => me.pctHealth < 40),
-      spell.cast("Pain Suppression", on => h.getPriorityPVPHealTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(34)),
-      spell.cast("Rapture", on => h.getPriorityPVPHealTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(55)),
-      spell.cast("Void Shift", on => h.getPriorityPVPHealTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(24)),
+      spell.cast("Pain Suppression", on => this.healTarget, ret => this.shouldCastWithHealthAndNotPainSupp(this.healTarget, 34)),
+      spell.cast("Rapture", on => this.healTarget, ret => this.shouldCastWithHealthAndNotPainSupp(this.healTarget, 55)),
+      spell.cast("Void Shift", on => this.healTarget, ret => this.shouldCastWithHealthAndNotPainSupp(this.healTarget, 24)),
       spell.cast("Mass Dispel", on => this.findMassDispelTarget(), ret => this.findMassDispelTarget() !== undefined),
-      spell.cast("Premonition", on => me, ret => this.shouldCastPremonition(h.getPriorityPVPHealTarget())),
-      spell.cast("Evangelism", on => me, ret => me.inCombat && this.getAtonementCount() > 3 && this.minAtonementDuration() < 4000),
+      spell.cast("Premonition", on => me, ret => this.shouldCastPremonition(this.healTarget)),
+      spell.cast("Evangelism", on => me, ret => me.inCombat() && this.getAtonementCount() > 3 && this.minAtonementDuration() < 4000),
       spell.cast("Shadow Word: Death", on => this.findDeathThePolyTarget(), ret => this.findDeathThePolyTarget() !== undefined),
-      spell.cast("Power Word: Barrier", on => h.getPriorityPVPHealTarget(), ret => this.shouldCastWithHealthAndNotPainSupp(45)),
-      spell.cast("Power Word: Shield", on => h.getPriorityPVPHealTarget(), ret => h.getPriorityPVPHealTarget()?.pctHealth < 89 && !this.hasShield(h.getPriorityPVPHealTarget())),
-      spell.cast("Power Word: Radiance", on => h.getPriorityPVPHealTarget(), ret => this.shouldCastRadiance(2)),
-      spell.cast("Flash Heal", on => h.getPriorityPVPHealTarget(), ret => h.getPriorityPVPHealTarget()?.pctHealth < 85 && me.hasAura(auras.surgeOfLight)),
+      spell.cast("Power Word: Barrier", on => this.healTarget, ret => this.shouldCastWithHealthAndNotPainSupp(this.healTarget, 45)),
+      spell.cast("Power Word: Shield", on => this.healTarget, ret => this.healTarget?.pctHealth < 89 && !this.hasShield(this.healTarget)),
+      spell.cast("Power Word: Radiance", on => this.healTarget, ret => this.shouldCastRadiance(this.healTarget, 2)),
+      spell.cast("Flash Heal", on => this.healTarget, ret => this.healTarget?.pctHealth < 85 && me.hasAura(auras.surgeOfLight)),
       spell.dispel("Purify", true, DispelPriority.High, true, WoWDispelType.Magic),
       spell.dispel("Dispel Magic", false, DispelPriority.High, true, WoWDispelType.Magic),
-      spell.cast("Penance", on => h.getPriorityPVPHealTarget(), ret => h.getPriorityPVPHealTarget()?.pctHealth < 69),
-      spell.cast("Power Word: Radiance", on => h.getPriorityPVPHealTarget(), ret => this.shouldCastRadiance(1)),
-      spell.cast("Penance", on => h.getPriorityPVPHealTarget(), ret => h.getPriorityPVPHealTarget()?.pctHealth < 79),
-      spell.cast("Flash Heal", on => h.getPriorityPVPHealTarget(), ret => h.getPriorityPVPHealTarget()?.pctHealth < 55),
+      spell.cast("Penance", on => this.healTarget, ret => this.healTarget?.pctHealth < 69),
+      spell.cast("Power Word: Radiance", on => this.healTarget, ret => this.shouldCastRadiance(this.healTarget, 1)),
+      spell.cast("Penance", on => this.healTarget, ret => this.healTarget?.pctHealth < 79),
+      spell.cast("Flash Heal", on => this.healTarget, ret => this.healTarget?.pctHealth < 55),
       spell.dispel("Purify", true, DispelPriority.Medium, true, WoWDispelType.Magic),
-      spell.dispel("Dispel Magic", false, DispelPriority.Medium, true, WoWDispelType.Magic),
+      spell.dispel("Dispel Magic", false, DispelPriority.Medium, true, WoWDispelType.Magic)
     );
   }
 
-  // Damage Rotation
   damageRotation() {
     return new bt.Selector(
       spell.cast("Shadow Word: Death", on => this.findShadowWordDeathTarget(), ret => this.findShadowWordDeathTarget() !== undefined),
@@ -103,116 +107,91 @@ export class PriestDisciplinePvP extends Behavior {
 
   findFriendWithoutAtonement() {
     const friends = me.getFriends();
-
     for (const friend of friends) {
       if (this.isNotDeadAndInLineOfSight(friend) && !this.hasAtonement(friend)) {
         return friend;
       }
     }
-
     return undefined;
   }
 
   findMassDispelTarget() {
     const enemies = me.getEnemies();
-
     for (const enemy of enemies) {
       if (enemy.hasAura("Ice Block") || enemy.hasAura("Divine Shield")) {
         return enemy;
       }
     }
-
-    return undefined
+    return undefined;
   }
 
   findShadowWordDeathTarget() {
     const enemies = me.getEnemies();
-
     for (const enemy of enemies) {
       if (enemy.pctHealth < 20) {
         return enemy;
       }
     }
-
-    return undefined
+    return undefined;
   }
 
   findDeathThePolyTarget() {
     const enemies = me.getEnemies();
-
     for (const enemy of enemies) {
       if (enemy.isCastingOrChanneling && enemy.isPlayer()) {
         const spellInfo = enemy.spellInfo;
         const target = spellInfo ? spellInfo.spellTargetGuid : null;
-
         if (enemy.spellInfo) {
           const onBlacklist = spellBlacklist[enemy.spellInfo.spellCastId];
           const castRemains = enemy.spellInfo.castEnd - wow.frameTime;
           if (target && target.equals(me.guid) && onBlacklist && castRemains < 1000) {
-            return enemy; // Return the enemy as the target for Shadow Word: Death
+            return enemy;
           }
         }
       }
     }
-
-    return undefined; // No valid target found
+    return undefined;
   }
 
   shouldCastPremonition(target) {
     if (!target) {
-      return false
+      return false;
     }
     if (me.hasAura(auras.premonitionInsight) || me.hasAura(auras.premonitionSolace) || me.hasAura(auras.premonitionPiety)) {
       return false;
     }
-    if (target.pctHealth < 50 || target.timeToDeath() < 3) {
-      return true;
-    }
+    return target.pctHealth < 50 || target.timeToDeath() < 3;
   }
 
-  // Helper to check if a target has Atonement applied by the player
   hasAtonement(target) {
-    if (!target) {
-      return false;
-    }
-    return target.hasAuraByMe(auras.atonement);
+    return target?.hasAuraByMe(auras.atonement) || false;
   }
 
   hasShield(target) {
-    if (!target) {
-      return false;
-    }
-    return target.hasAuraByMe(auras.powerWordShield);
+    return target?.hasAuraByMe(auras.powerWordShield) || false;
   }
-
 
   hasShadowWordPain(target) {
+    return target?.hasAura(auras.shadowWordPain) || false;
+  }
+
+  shouldCastWithHealthAndNotPainSupp(target, health) {
     if (!target) {
       return false;
     }
-    return target.hasAura(auras.shadowWordPain);
-  }
-
-  shouldCastWithHealthAndNotPainSupp(health) {
-    const healTarget = h.getPriorityPVPHealTarget()
-    if (!healTarget) {
+    if (target.hasAura("Ice Block") || target.hasAura("Divine Shield")) {
       return false;
     }
-    if (healTarget.hasAura("Ice Block") || healTarget.hasAura("Divine Shield")) {
-      return false;
-    }
-    return (healTarget.pctHealth < health || healTarget.timeToDeath() < 3) && !healTarget.hasAuraByMe(auras.painSuppression);
+    return (target.pctHealth < health || target.timeToDeath() < 3) && !target.hasAuraByMe(auras.painSuppression);
   }
 
-  shouldCastRadiance(charges) {
-    const healTarget = h.getPriorityPVPHealTarget();
-    if (!healTarget) {
+  shouldCastRadiance(target, charges) {
+    if (!target) {
       return false;
     }
-    return healTarget.pctHealth < 75 && spell.getCharges("Power Word: Radiance") === charges;
+    return target.pctHealth < 75 && spell.getCharges("Power Word: Radiance") === charges;
   }
 
-  // todo - probably move this somewhere useful rather than here?
   isNotDeadAndInLineOfSight(friend) {
     return friend && !friend.deadOrGhost && me.withinLineOfSight(friend);
   }
@@ -233,6 +212,4 @@ export class PriestDisciplinePvP extends Behavior {
     }
     return minDuration === Infinity ? 0 : minDuration;
   }
-
 }
-
