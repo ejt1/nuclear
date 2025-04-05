@@ -212,7 +212,7 @@ export class OutlawRogueBehavior extends Behavior {
    * (talent.hidden_opportunity|combo_points.deficit>=2+talent.improved_ambush+buff.broadside.up)&energy>=50
    */
   ambushCondition() {
-    const comboPointsDeficit = 6 - me.powerByType(PowerType.ComboPoints);
+    const comboPointsDeficit = 7 - me.powerByType(PowerType.ComboPoints);
     const minDeficit = 2 + 
                       (Spell.isSpellKnown("Improved Ambush") ? 1 : 0) + 
                       (me.hasAura("Broadside") ? 1 : 0);
@@ -319,19 +319,19 @@ export class OutlawRogueBehavior extends Behavior {
         const comboPointDeficit = 6 - me.powerByType(PowerType.ComboPoints);
         
         return Spell.isSpellKnown("Fan the Hammer") && 
-               me.hasAura("Opportunity") && 
+               (me.hasAura("Opportunity") || !me.targetUnit.hasAura("Pistol Shot")) && 
                (comboPointDeficit >= comboPointsGenerated || me.powerByType(PowerType.ComboPoints) <= (Spell.isSpellKnown("Ruthlessness") ? 1 : 0));
       }),
       
-      // Non-Fan the Hammer Opportunity usage
-      Spell.cast("Pistol Shot", () => {
-        return !Spell.isSpellKnown("Fan the Hammer") && 
-               me.hasAura("Opportunity") && 
-               (me.powerByType(PowerType.Energy) < (me.maxPowerByType(PowerType.Energy) - me.powerByType(PowerType.Energy) * 1.5) || 
-                (6 - me.powerByType(PowerType.ComboPoints)) <= 1 + (me.hasAura("Broadside") ? 1 : 0) || 
-                Spell.isSpellKnown("Quick Draw") || 
-                (Spell.isSpellKnown("Audacity") && !me.hasAura("Audacity")));
-      }),
+    //   // Non-Fan the Hammer Opportunity usage
+    //   Spell.cast("Pistol Shot", () => {
+    //     return !Spell.isSpellKnown("Fan the Hammer") && (!me.targetUnit.hasAura(185763) ||
+    //            me.hasAura("Opportunity")) && 
+    //            (me.powerByType(PowerType.Energy) < (me.maxPowerByType(PowerType.Energy) - me.powerByType(PowerType.Energy) * 1.5) || 
+    //             (7 - me.powerByType(PowerType.ComboPoints)) <= 1 + (me.hasAura("Broadside") ? 1 : 0) || 
+    //             Spell.isSpellKnown("Quick Draw") || 
+    //             (Spell.isSpellKnown("Audacity") && !me.hasAura("Audacity")));
+    //   }),
       
       // Pool for Ambush with Hidden Opportunity
       new bt.Action(() => {
@@ -595,7 +595,7 @@ export class OutlawRogueBehavior extends Behavior {
    * @returns {boolean} True if we should use finishers
    */
   finishCondition() {
-    const maxComboPoints = 6; // Assuming the max is always 6, adjust if needed
+    const maxComboPoints = me.maxPowerByType(PowerType.ComboPoints); // Assuming the max is always 6, adjust if needed
     
     // Base deduction: 1 point
     let deduction = 1;
@@ -732,5 +732,22 @@ export class OutlawRogueBehavior extends Behavior {
            me.hasAura("Ruthless Precision") || 
            me.hasAura("Skull and Crossbones") || 
            me.hasAura("True Bearing");
+  }
+
+  debugPistolShotState() {
+    // Only log occasionally to prevent spam
+    const now = Date.now();
+    if (!this.lastDebugTime || now - this.lastDebugTime > 5000) {
+      console.info(`--- Outlaw Debug State ---`);
+      console.info(`Combo Points: ${me.powerByType(PowerType.ComboPoints)}/6`);
+      console.info(`Energy: ${me.powerByType(PowerType.Energy)}/${me.maxPowerByType(PowerType.Energy)}`);
+      console.info(`Opportunity: ${me.hasAura("Opportunity") ? `${me.getAura("Opportunity").stacks} stacks, ${Math.floor(me.getAura("Opportunity").remaining / 1000)}s remaining` : "Not active"}`);
+      console.info(`Audacity: ${me.hasAura("Audacity") ? `${Math.floor(me.getAura("Audacity").remaining / 1000)}s remaining` : "Not active"}`);
+      console.info(`Fan the Hammer: ${Spell.isSpellKnown("Fan the Hammer") ? "Known" : "Not known"}`);
+      console.info(`Quick Draw: ${Spell.isSpellKnown("Quick Draw") ? "Known" : "Not known"}`);
+      console.info(`Finish Condition: ${this.finishCondition() ? "True" : "False"}`);
+      this.lastDebugTime = now;
+    }
+    return bt.Status.Failure; // Always fail so rotation continues
   }
 }
