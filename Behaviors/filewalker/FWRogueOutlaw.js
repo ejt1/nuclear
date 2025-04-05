@@ -319,19 +319,19 @@ export class OutlawRogueBehavior extends Behavior {
         const comboPointDeficit = 6 - me.powerByType(PowerType.ComboPoints);
         
         return Spell.isSpellKnown("Fan the Hammer") && 
-               me.hasAura("Opportunity") && 
+               (me.hasAura("Opportunity") || !me.targetUnit.hasAura("Pistol Shot")) && 
                (comboPointDeficit >= comboPointsGenerated || me.powerByType(PowerType.ComboPoints) <= (Spell.isSpellKnown("Ruthlessness") ? 1 : 0));
       }),
       
-      // Non-Fan the Hammer Opportunity usage
-      Spell.cast("Pistol Shot", () => {
-        return !Spell.isSpellKnown("Fan the Hammer") && 
-               me.hasAura("Opportunity") && 
-               (me.powerByType(PowerType.Energy) < (me.maxPowerByType(PowerType.Energy) - me.powerByType(PowerType.Energy) * 1.5) || 
-                (6 - me.powerByType(PowerType.ComboPoints)) <= 1 + (me.hasAura("Broadside") ? 1 : 0) || 
-                Spell.isSpellKnown("Quick Draw") || 
-                (Spell.isSpellKnown("Audacity") && !me.hasAura("Audacity")));
-      }),
+    //   // Non-Fan the Hammer Opportunity usage
+    //   Spell.cast("Pistol Shot", () => {
+    //     return !Spell.isSpellKnown("Fan the Hammer") && (!me.targetUnit.hasAura(185763) ||
+    //            me.hasAura("Opportunity")) && 
+    //            (me.powerByType(PowerType.Energy) < (me.maxPowerByType(PowerType.Energy) - me.powerByType(PowerType.Energy) * 1.5) || 
+    //             (7 - me.powerByType(PowerType.ComboPoints)) <= 1 + (me.hasAura("Broadside") ? 1 : 0) || 
+    //             Spell.isSpellKnown("Quick Draw") || 
+    //             (Spell.isSpellKnown("Audacity") && !me.hasAura("Audacity")));
+    //   }),
       
       // Pool for Ambush with Hidden Opportunity
       new bt.Action(() => {
