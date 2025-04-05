@@ -182,25 +182,25 @@ export class BalanceDruidBehavior extends Behavior {
                me.powerByType(PowerType.LunarPower) > 90;
       }),
       
-      // // Moon cycle spells
-      // spell.cast('New Moon', this.getCurrentTarget, () => 
-      //   this.astralPowerDeficit() > this.passiveAsp() + this.energizeAmount('New Moon') || 
-      //   spell.getCooldown('Celestial Alignment').timeleft > 15000
-      // ),
+      // Moon cycle spells
+      spell.cast('New Moon', this.getCurrentTarget, () => me.hasAura("New Moon") && (
+        this.astralPowerDeficit() > this.passiveAsp() + this.energizeAmount('New Moon') || 
+        spell.getCooldown('Celestial Alignment').timeleft > 15000)
+      ),
       
-      // spell.cast('Half Moon', this.getCurrentTarget, () => 
-      //   this.astralPowerDeficit() > this.passiveAsp() + this.energizeAmount('Half Moon') && 
-      //   (this.lunarRemains() > spell.getSpell('Half Moon').castTime || 
-      //    this.solarRemains() > spell.getSpell('Half Moon').castTime) || 
-      //   spell.getCooldown('Celestial Alignment').timeleft > 15000
-      // ),
+      spell.cast('Half Moon', this.getCurrentTarget, () => me.hasAura("Half Moon") && (
+        this.astralPowerDeficit() > this.passiveAsp() + this.energizeAmount('Half Moon') && 
+        (this.lunarRemains() > spell.getSpell('Half Moon').castTime || 
+         this.solarRemains() > spell.getSpell('Half Moon').castTime) || 
+        spell.getCooldown('Celestial Alignment').timeleft > 15000 )
+      ),
       
-      // spell.cast('Full Moon', this.getCurrentTarget, () => 
-      //   this.astralPowerDeficit() > this.passiveAsp() + this.energizeAmount('Full Moon') && 
-      //   (this.lunarRemains() > spell.getSpell('Full Moon').castTime || 
-      //    this.solarRemains() > spell.getSpell('Full Moon').castTime) || 
-      //   spell.getCooldown('Celestial Alignment').timeleft > 15000
-      // ),
+      spell.cast('Full Moon', this.getCurrentTarget, () => me.hasAura("Full Moon") && (
+        this.astralPowerDeficit() > this.passiveAsp() + this.energizeAmount('Full Moon') && 
+        (this.lunarRemains() > spell.getSpell('Full Moon').castTime || 
+         this.solarRemains() > spell.getSpell('Full Moon').castTime) || 
+        spell.getCooldown('Celestial Alignment').timeleft > 15000)
+      ),
       
       // actions.st+=/starsurge,if=buff.starweavers_weft.up|buff.touch_the_cosmos.up
       spell.cast('Starsurge', this.getCurrentTarget, () => 
