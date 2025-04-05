@@ -95,7 +95,7 @@ export const DeathKnightHeroTalent = {
   };
   
   // Combined enum for all classes
-  export const HeroTalentEnum = {
+  export const HeroTalents = {
     DeathKnight: DeathKnightHeroTalent,
     DemonHunter: DemonHunterHeroTalent,
     Druid: DruidHeroTalent,
