@@ -894,7 +894,7 @@ export class HavocDemonHunterBehavior extends Behavior {
   }
 
   getCurrentTarget() {
-    const targetPredicate = unit => common.validTarget(unit) && me.isFacing(unit);
+    const targetPredicate = unit => common.validTarget(unit) && me.isFacing(unit) && target.distanceTo(unit) <=20;
     const target = me.target;
     if (target !== null && targetPredicate(target)) {
       return target;
