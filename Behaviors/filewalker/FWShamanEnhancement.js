@@ -33,7 +33,7 @@ const auras = {
 };
 
 export class EnhancementShamanNewBehavior extends Behavior {
-  name = 'Enhancement Shaman New';
+  name = 'FW Enhancement Shaman';
   context = BehaviorContext.Any;
   specialization = Specialization.Shaman.Enhancement;
   version = wow.GameVersion.Retail;
@@ -85,7 +85,7 @@ export class EnhancementShamanNewBehavior extends Behavior {
           // Precombat buffs
           spell.cast('Lightning Shield', on => me, req => !me.hasAura('Lightning Shield')),
           spell.cast('Windfury Weapon', on => me, req => !me.hasAura('Windfury Weapon')),
-          // spell.cast('Flametongue Weapon', on => me, req => !me.hasAura('Flametongue Weapon')),
+          spell.cast('Flametongue Weapon', on => me, req => !me.hasAura('Flametongue Weapon')),
           spell.cast('Skyfury', on => me, req => !me.hasAura('Skyfury')),
           
           // Defensive actions
@@ -444,7 +444,8 @@ export class EnhancementShamanNewBehavior extends Behavior {
       spell.cast('Elemental Blast', this.getCurrentTarget, req =>
         (!this.hasTalent('Elemental Spirits') || 
          (this.hasTalent('Elemental Spirits') && 
-          (spell.getCharges('Elemental Blast') === spell.getMaxCharges('Elemental Blast') || this.feralSpiritActive() >= 2))) &&
+          (spell.getSpell('Elemental Blast').charges.charges === spell.getSpell('Elemental Blast').charges.maxcharges || 
+           this.feralSpiritActive() >= 2))) &&
         me.getAuraStacks(auras.maelstromweapon) === 10 &&
         (!this.hasTalent('Crashing Storms') || this.getEnemiesInRange(8) <= 3)
       ),
@@ -981,6 +982,12 @@ export class EnhancementShamanNewBehavior extends Behavior {
         !me.hasAura('Whirling Air')
       ),
       
+      spell.cast('Elemental Blast', this.getCurrentTarget, req => 
+        ((!this.hasTalent('Overflowing Maelstrom') && me.getAuraStacks(auras.maelstromweapon) >= 5) ||
+         (me.getAuraStacks(auras.maelstromweapon) >= 9)) && 
+        this.getChargesFractional('Elemental Blast') >= 1.8
+      ),
+
       spell.cast('Elemental Blast', this.getCurrentTarget, req =>
         me.getAuraStacks(auras.maelstromweapon) >= 10 &&
         (!me.hasAura('Primordial Storm') || this.getAuraRemainingTime('Primordial Storm') > 4000)
@@ -1532,6 +1539,22 @@ export class EnhancementShamanNewBehavior extends Behavior {
     }
     combatStartTime = 0;
     currentCombatTime = 0;
+  }
+
+  getChargesFractional(spellName) {
+    const spell = spell.getSpell(spellName);
+    if (!spell || !spell.charges) return 0;
+    
+    const currentCharges = spell.charges.charges || 0;
+    const maxCharges = spell.charges.maxCharges || 0;
+    
+    if (currentCharges >= maxCharges) return currentCharges;
+    
+    const remainingTime = spell.charges.start + spell.charges.duration - wow.frameTime;
+    const chargeDuration = spell.charges.duration;
+    const fractionalPart = 1 - (remainingTime / chargeDuration);
+    
+    return currentCharges + fractionalPart;
   }
   
 }
