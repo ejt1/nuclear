@@ -50,11 +50,11 @@ export class BalanceDruidBehavior extends Behavior {
         spell.interrupt('Solar Beam'),
         this.preCombatCooldowns(),
 
-        new bt.Decorator(
-          req => this.enemiesAroundTarget(5) >= 2,
-          this.multiTarget(),
-            new bt.Action(() => bt.Status.Success)
-        ),
+        // new bt.Decorator(
+        //   req => this.enemiesAroundTarget(5) >= 2,
+        //   this.multiTarget(),
+        //     new bt.Action(() => bt.Status.Success)
+        // ),
 
         new bt.Decorator(
           req => this.enemiesAroundTarget(5) <= 1,
@@ -97,13 +97,35 @@ export class BalanceDruidBehavior extends Behavior {
         this.inLunar() && this.lunarRemains() < spell.getSpell('Starfire').castTime && !this.cdCondition()
       ),
       
-      // DOT maintenance
-      spell.cast('Sunfire', this.getCurrentTarget, () => 
-        this.getDebuffRemainingTime('Sunfire') < 3000 || 
-        (this.getDebuffRemainingTime('Sunfire') < 7000 && 
-          ((this.hasTalent('Keeper of the Grove') && spell.getCooldown('Force of Nature').ready) || 
-           (this.hasTalent('Elunes Chosen') && this.cdCondition())))
-      ),
+      // DOT maintenance with stricter conditions
+      spell.cast('Sunfire', this.getCurrentTarget, () => {
+        // Only refresh Sunfire if it's about to expire OR special conditions are met
+        const debuffRemaining = this.getDebuffRemainingTime('Sunfire');
+        
+        // About to expire - less than 3 seconds left
+        if (debuffRemaining < 3000) {
+          return true;
+        }
+        
+        // Refreshable (< 7 seconds) AND special talents/conditions
+        if (debuffRemaining < 7000) {
+          // Only refresh if we have Keeper of the Grove AND Force of Nature is ready
+          if (this.hasTalent('Keeper of the Grove') && spell.getCooldown('Force of Nature').ready) {
+            return true;
+          }
+          
+          // OR if we have Elune's Chosen AND we're about to use major cooldowns
+          if (this.hasTalent('Elunes Chosen') && this.cdCondition()) {
+            return true;
+          }
+          
+          // Otherwise, don't refresh yet
+          return false;
+        }
+        
+        // Default behavior - don't cast Sunfire
+        return false;
+      }),
       
       spell.cast('Moonfire', this.getCurrentTarget, () => 
         this.getDebuffRemainingTime('Moonfire') < 3000 && 
@@ -228,77 +250,104 @@ export class BalanceDruidBehavior extends Behavior {
         me.hasAura("Touch the Cosmos")
       ),
       
-      // actions.aoe+=/moonfire,target_if=refreshable&(target.time_to_die-remains)>6
-      spell.cast('Moonfire', this.getCurrentTarget, () => 
-        this.getDebuffRemainingTime('Moonfire') < 6000 && 
-        (!this.hasTalent('Treants of the Moon') || 
-         this.enemiesAroundTarget(10) > 6 || 
-         (spell.getCooldown('Force of Nature').timeleft > 3000 && !me.hasAura('Harmony of the Grove')))
-      ),
+      // Moonfire with refined logic
+      spell.cast('Moonfire', this.getCurrentTarget, () => {
+        const debuffRemaining = this.getDebuffRemainingTime('Moonfire');
+        const targetCount = this.enemiesAroundTarget(10);
+        
+        // Don't refresh on too many targets
+        if (targetCount > 6 && debuffRemaining > 3000) {
+          return false;
+        }
+        
+        // About to expire (less than 6 seconds)
+        if (debuffRemaining < 6000) {
+          // Additional checks for multi-target
+          if (!this.hasTalent('Treants of the Moon') || 
+              targetCount > 6 || 
+              (spell.getCooldown('Force of Nature').timeleft > 3000 && !me.hasAura('Harmony of the Grove'))) {
+            return true;
+          }
+        }
+        
+        return false;
+      }),
       
-      // actions.aoe+=/sunfire,target_if=refreshable&(target.time_to_die-remains)>6-(spell_targets%2)
-      spell.cast('Sunfire', this.getCurrentTarget, () => 
-        this.getDebuffRemainingTime('Sunfire') < (6000 - (this.enemiesAroundTarget(10) % 2) * 1000)
-      ),
+      // Sunfire with refined logic
+      spell.cast('Sunfire', this.getCurrentTarget, () => {
+        const debuffRemaining = this.getDebuffRemainingTime('Sunfire');
+        const targetCount = this.enemiesAroundTarget(10);
+        
+        // Calculate dynamic refresh threshold based on target count
+        // The formula translates to: 6 - (targetCount % 2) seconds
+        const refreshThreshold = 6000 - ((targetCount % 2) * 1000);
+        
+        // Only refresh if below the dynamic threshold
+        if (debuffRemaining < refreshThreshold) {
+          // Additional check to prevent over-prioritization
+          if (me.powerByType(PowerType.LunarPower) < 80 || debuffRemaining < 3000) {
+            return true;
+          }
+        }
+        
+        return false;
+      }),
       
-      // actions.aoe+=/wrath,if=variable.enter_lunar&(eclipse.in_none|variable.eclipse_remains<cast_time)
+      // Eclipse building spells
       spell.cast('Wrath', this.getCurrentTarget, () => 
         this.enterLunar() && 
         (this.inNoEclipse() || Math.max(this.solarRemains(), this.lunarRemains()) < spell.getSpell('Wrath').castTime)
       ),
       
-      // actions.aoe+=/starfire,if=!variable.enter_lunar&(eclipse.in_none|variable.eclipse_remains<cast_time)
       spell.cast('Starfire', this.getCurrentTarget, () => 
         !this.enterLunar() && 
         (this.inNoEclipse() || Math.max(this.solarRemains(), this.lunarRemains()) < spell.getSpell('Starfire').castTime)
       ),
       
-      // actions.aoe+=/stellar_flare,target_if=refreshable&(target.time_to_die-remains-target>7+spell_targets)
+      // Stellar Flare with target count limit
       spell.cast('Stellar Flare', this.getCurrentTarget, () => {
         const targetCount = this.enemiesAroundTarget(10);
-        return this.getDebuffRemainingTime('Stellar Flare') < 7000 && 
-               targetCount < (11 - (this.hasTalent('Umbral Intensity') ? 1 : 0) - 
-                             (this.hasTalent('Astral Smolder') ? 2 : 0) - 
-                             (this.hasTalent('Lunar Calling') ? 1 : 0));
+        const debuffRemaining = this.getDebuffRemainingTime('Stellar Flare');
+        
+        // Calculate the target threshold based on talents
+        const targetThreshold = 11 - 
+                               (this.hasTalent('Umbral Intensity') ? 1 : 0) - 
+                               (this.hasTalent('Astral Smolder') ? 2 : 0) - 
+                               (this.hasTalent('Lunar Calling') ? 1 : 0);
+        
+        return debuffRemaining < 7000 && targetCount < targetThreshold;
       }),
       
-      // actions.aoe+=/force_of_nature
+      // Force of Nature
       spell.cast('Force of Nature', this.getCurrentTarget),
       
-      // actions.aoe+=/fury_of_elune,if=eclipse.in_eclipse
+      // Fury of Elune during eclipse
       spell.cast('Fury of Elune', this.getCurrentTarget, () => this.inEclipse()),
       
-      // actions.aoe+=/call_action_list,name=pre_cd
+      // Cooldowns
       this.preCombatCooldowns(),
+      this.Cooldowns(),
       
-      // actions.aoe+=/celestial_alignment,if=variable.cd_condition
-      // actions.aoe+=/incarnation,if=variable.cd_condition
-      this.castCooldowns(),
-      
-      // actions.aoe+=/warrior_of_elune,if=!talent.lunar_calling&buff.eclipse_solar.remains<7|talent.lunar_calling
+      // Warrior of Elune with proper timing
       spell.cast('Warrior of Elune', () => 
         (!this.hasTalent('Lunar Calling') && this.solarRemains() < 7000) || 
         this.hasTalent('Lunar Calling')
       ),
       
-      // actions.aoe+=/starfire,if=(!talent.lunar_calling&spell_targets.starfire=1)&(buff.eclipse_solar.up&buff.eclipse_solar.remains<action.starfire.cast_time|eclipse.in_none)
-      spell.cast('Starfire', this.getCurrentTarget, () => 
-        (!this.hasTalent('Lunar Calling') && this.enemiesAroundTarget(10) === 1) && 
-        ((this.inSolar() && this.solarRemains() < spell.getSpell('Starfire').castTime) || this.inNoEclipse())
-      ),
-      
-      // actions.aoe+=/starfall,if=buff.starweavers_warp.up|buff.touch_the_cosmos.up
+      // Starfall with procs
       spell.cast('Starfall', this.getCurrentTarget, () => 
         me.hasAura('Starweaver\'s Warp') || me.hasAura('Touch the Cosmos')
       ),
       
-      // actions.aoe+=/starsurge,if=buff.starweavers_weft.up
+      // Starsurge with proc
       spell.cast('Starsurge', this.getCurrentTarget, () => me.hasAura('Starweaver\'s Weft')),
       
-      // actions.aoe+=/starfall
-      spell.cast('Starfall', this.getCurrentTarget),
+      // Starfall as main spender for AoE
+      spell.cast('Starfall', this.getCurrentTarget, () => 
+        me.powerByType(PowerType.LunarPower) >= 50 && this.enemiesAroundTarget(10) >= 3
+      ),
       
-      // actions.aoe+=/convoke_the_spirits
+      // Convoke with conditions
       spell.cast('Convoke the Spirits', this.getCurrentTarget, () => 
         (!me.hasAura('Dreamstate') && !me.hasAura('Umbral Embrace') && 
          (this.enemiesAroundTarget(10) < 7 || this.enemiesAroundTarget(10) === 1)) && 
@@ -308,31 +357,27 @@ export class BalanceDruidBehavior extends Behavior {
           spell.getCooldown('Force of Nature').timeleft > 15000))
       ),
       
-      // actions.aoe+=/new_moon
+      // Moon cycle
       spell.cast('New Moon', this.getCurrentTarget),
-      
-      // actions.aoe+=/half_moon
       spell.cast('Half Moon', this.getCurrentTarget),
-      
-      // actions.aoe+=/full_moon
       spell.cast('Full Moon', this.getCurrentTarget),
       
-      // actions.aoe+=/wild_mushroom,if=!prev_gcd.1.wild_mushroom&!dot.fungal_growth.ticking
+      // Wild Mushroom
       spell.cast('Wild Mushroom', this.getCurrentTarget, () => 
         !this.prevGcd('Wild Mushroom') && !this.getCurrentTarget().hasAura('Fungal Growth')
       ),
       
-      // actions.aoe+=/force_of_nature,if=!hero_tree.keeper_of_the_grove
+      // Force of Nature without Keeper of the Grove
       spell.cast('Force of Nature', this.getCurrentTarget, () => !this.hasTalent('Keeper of the Grove')),
       
-      // actions.aoe+=/starfire,if=talent.lunar_calling|buff.eclipse_lunar.up&spell_targets.starfire>3-(talent.umbral_intensity|talent.soul_of_the_forest)
+      // Starfire for AoE
       spell.cast('Starfire', this.getCurrentTarget, () => {
         const targetThreshold = 3 - (this.hasTalent('Umbral Intensity') || this.hasTalent('Soul of the Forest') ? 1 : 0);
         return this.hasTalent('Lunar Calling') || 
                (this.inLunar() && this.enemiesAroundTarget(10) > targetThreshold);
       }),
       
-      // actions.aoe+=/wrath
+      // Wrath as default filler
       spell.cast('Wrath', this.getCurrentTarget)
     );
   }
@@ -401,22 +446,23 @@ export class BalanceDruidBehavior extends Behavior {
 // Subroutinen für benötigte Bedingungen und Parameter
 enterLunar() {
   // If we're already in an eclipse, return based on current eclipse
-  if (this.inSolar()) return true;
-  if (this.inLunar()) return false;
+  if (this.inSolar()) return true;  // In Solar, we should cast Wrath to benefit from it
+  if (this.inLunar()) return false; // In Lunar, we should cast Starfire to benefit from it
   
-  // Check target count - enter Lunar Eclipse (cast Wrath) for 1-2 targets,
-  // enter Solar Eclipse (cast Starfire) for 3+ targets
+  // If we're not in any eclipse (have Dreamstate), we need to determine which one to enter:
+  // - For 3+ targets: Cast Wrath to enter LUNAR Eclipse (good for AoE)
+  // - For 1-2 targets: Cast Starfire to enter SOLAR Eclipse (good for ST)
   const targetCount = this.enemiesAroundTarget(10);
   
-  // Return true if we should enter Lunar Eclipse (1-2 targets)
-  // Return false if we should enter Solar Eclipse (3+ targets)
-  return targetCount < 3;
+  // Return true if we should cast Wrath (to enter Lunar Eclipse)
+  // Return false if we should cast Starfire (to enter Solar Eclipse)
+  return targetCount >= 3;
 }
 
 inEclipse() {
   const lunareclipse = me.auras.find(aura => aura.name.includes("Eclipse (Lunar)") && aura.remaining > 1000) !== undefined;
   const solareclipse = me.auras.find(aura => aura.name.includes("Eclipse (Solar)") && aura.remaining > 1000) !== undefined;
-  const eclipse = solareclipse || lunareclipse !== null ? true : false;
+  const eclipse = (solareclipse || lunareclipse) !== null ? true : false;
   return eclipse;
 }
 
