@@ -15,20 +15,10 @@ const auras = {
   lunareclipse : 48518,
 };
 
-class AlwaysSucceed extends bt.Composite {
-  constructor() {
-    super();
 
-    
-  }
-
-  tick() {
-    return bt.Status.Success;
-  }
-}
 
 export class BalanceDruidBehavior extends Behavior {
-  name = 'Balance Druid';
+  name = 'FW Balance Druid';
   context = BehaviorContext.Any;
   specialization = Specialization.Druid.Balance;
   version = wow.GameVersion.Retail;
@@ -43,7 +33,7 @@ export class BalanceDruidBehavior extends Behavior {
   ];
 
   build() {
-    
+    console.debug("Use Cooldowns: "+ Settings.DruidBalanceUseCooldown);
     return new bt.Selector(
       common.waitForNotMounted(),
       common.waitForNotSitting(),
@@ -59,7 +49,7 @@ export class BalanceDruidBehavior extends Behavior {
         this.preCombatCooldowns(),
 
         new bt.Decorator(
-          req => this.enemiesAroundTarget(5) >= 5,
+          req => this.enemiesAroundTarget(5) >= 4,
           this.multiTarget(),
             new bt.Action(() => bt.Status.Success)
         ),
@@ -80,79 +70,164 @@ export class BalanceDruidBehavior extends Behavior {
   st() {
     return new bt.Selector(
       // actions.st=warrior_of_elune,if=talent.lunar_calling|!talent.lunar_calling&variable.eclipse_remains<=7
-      spell.cast('Warrior of Elune', this.getCurrentTarget, () => this.hasTalent('Lunar Calling') || (!this.hasTalent('Lunar Calling') && (this.solarRemains() <= 7000 || this.lunarRemains <= 7000))),
-  
-     // actions.st+=/starsurge,if=astral_power.deficit<variable.passive_asp+action.wrath.energize_amount+(action.starfire.energize_amount+variable.passive_asp)*(buff.eclipse_solar.remains<(gcd.max*3))
-     spell.cast('Starsurge', this.getCurrentTarget, () =>
-      this.astralPowerDeficit() < this.passiveAsp() + this.energizeAmount('Wrath') +
-      ((this.energizeAmount('Starfire') + this.passiveAsp()) * (this.solarRemains() < (this.getGCD() * 3) ? 1 : 0))
-    ),
-
+      spell.cast('Warrior of Elune', () => 
+        this.hasTalent('Lunar Calling') || 
+        (!this.hasTalent('Lunar Calling') && Math.max(this.solarRemains(), this.lunarRemains()) <= 7000)
+      ),
+      
       // actions.st+=/wrath,if=variable.enter_lunar&eclipse.in_eclipse&variable.eclipse_remains<cast_time&!variable.cd_condition
-      spell.cast('Wrath', this.getCurrentTarget, req => this.inSolar() && this.solarRemains() >= spell.getSpell('Wrath').castTime),
-  
+      spell.cast('Wrath', this.getCurrentTarget, () => 
+        this.enterLunar() && 
+        this.inEclipse() && 
+        Math.max(this.solarRemains(), this.lunarRemains()) < spell.getSpell('Wrath').castTime && 
+        !this.cdCondition()
+      ),
+      
       // actions.st+=/starfire,if=!variable.enter_lunar&eclipse.in_eclipse&variable.eclipse_remains<cast_time&!variable.cd_condition
-      spell.cast('Starfire', this.getCurrentTarget, req => this.inLunar() && this.lunarRemains() >= spell.getSpell('Starfire').castTime),
-  
+      spell.cast('Starfire', this.getCurrentTarget, () => 
+        !this.enterLunar() && 
+        this.inEclipse() && 
+        Math.max(this.solarRemains(), this.lunarRemains()) < spell.getSpell('Starfire').castTime && 
+        !this.cdCondition()
+      ),
+      
       // actions.st+=/sunfire,target_if=remains<3|refreshable&(hero_tree.keeper_of_the_grove&cooldown.force_of_nature.ready|hero_tree.elunes_chosen&variable.cd_condition)
-      spell.cast('Sunfire', this.getCurrentTarget, req => (this.getDebuffRemainingTime('Sunfire') < 3000 && ((this.hasTalent('Keeper of the Grove') && this.getCooldown('Force of Nature').ready) || (this.hasTalent('Elunes Chosen') && this.hasCooldownsReady())))),
-  
+      spell.cast('Sunfire', this.getCurrentTarget, () => 
+        this.getDebuffRemainingTime('Sunfire') < 3000 || 
+        (this.getDebuffRemainingTime('Sunfire') < 7000 && 
+          ((this.hasTalent('Keeper of the Grove') && spell.getCooldown('Force of Nature').ready) || 
+           (this.hasTalent('Elunes Chosen') && this.cdCondition())))
+      ),
+      
       // actions.st+=/moonfire,target_if=remains<3&(!talent.treants_of_the_moon|cooldown.force_of_nature.remains>3&!buff.harmony_of_the_grove.up)
-      spell.cast('Moonfire', this.getCurrentTarget, req => this.getDebuffRemainingTime('Moonfire') > 3000 && (!this.hasTalent('Treants of the Moon') || (spell.getCooldown('Force of Nature').remaining > 3000 && !me.hasAura('Harmony of the Grove')))),
-  
+      spell.cast('Moonfire', this.getCurrentTarget, () => 
+        this.getDebuffRemainingTime('Moonfire') < 3000 && 
+        (!this.hasTalent('Treants of the Moon') || 
+         (spell.getCooldown('Force of Nature').timeleft > 3000 && !me.hasAura('Harmony of the Grove')))
+      ),
+      
       // actions.st+=/call_action_list,name=pre_cd
       this.preCombatCooldowns(),
-  
-      this.Cooldowns(),  
+      this.castCooldowns(), 
       
-      // // actions.st+=/wrath,if=variable.enter_lunar&(eclipse.in_none|variable.eclipse_remains<cast_time)
-      spell.cast('Wrath', this.getCurrentTarget, () => this.inNoEclipse() || this.solarRemains() > spell.getSpell('Wrath').castTime),
-  
-      // // actions.st+=/starfire,if=!variable.enter_lunar&(eclipse.in_none|variable.eclipse_remains<cast_time)
-      spell.cast('Starfire', this.getCurrentTarget, () => this.inNoEclipse() || this.lunarRemains() > spell.getSpell('Starfire').castTime),
-  
+      // actions.st+=/wrath,if=variable.enter_lunar&(eclipse.in_none|variable.eclipse_remains<cast_time)
+      spell.cast('Wrath', this.getCurrentTarget, () => 
+        this.enterLunar() && 
+        (this.inNoEclipse() || Math.max(this.solarRemains(), this.lunarRemains()) < spell.getSpell('Wrath').castTime)
+      ),
+      
+      // actions.st+=/starfire,if=!variable.enter_lunar&(eclipse.in_none|variable.eclipse_remains<cast_time)
+      spell.cast('Starfire', this.getCurrentTarget, () => 
+        !this.enterLunar() && 
+        (this.inNoEclipse() || Math.max(this.solarRemains(), this.lunarRemains()) < spell.getSpell('Starfire').castTime)
+      ),
+      
       // actions.st+=/starsurge,if=variable.cd_condition&astral_power.deficit>variable.passive_asp+action.force_of_nature.energize_amount
-      spell.cast('Starsurge', this.getCurrentTarget, () => this.cdCondition() && this.astralPowerDeficit() > this.passiveAsp() + this.energizeAmount('Force of Nature')),
-  
-      // actions.st+=/force_of_nature
+      spell.cast('Starsurge', this.getCurrentTarget, () => 
+        this.cdCondition() && 
+        this.astralPowerDeficit() > this.passiveAsp() + this.energizeAmount('Force of Nature')
+      ),
+      
+      // actions.st+=/force_of_nature (simplified condition)
       spell.cast('Force of Nature', this.getCurrentTarget),
-  
+      
       // actions.st+=/fury_of_elune,if=5+variable.passive_asp<astral_power.deficit
-      spell.cast('Fury of Elune', this.getCurrentTarget, () => 5 + this.passiveAsp() < this.astralPowerDeficit()),
-  
+      spell.cast('Fury of Elune', this.getCurrentTarget, () => 
+        5 + this.passiveAsp() < this.astralPowerDeficit()
+      ),
+      
       // actions.st+=/starfall,if=buff.starweavers_warp.up
-      spell.cast('Starfall', this.getCurrentTarget, () => me.hasAura('Starweaver\'s Warp')),
-  
+      spell.cast('Starfall', this.getCurrentTarget, () => 
+        me.hasAura('Starweaver\'s Warp')
+      ),
+      
       // actions.st+=/starsurge,if=talent.starlord&buff.starlord.stack<3
-      spell.cast('Starsurge', this.getCurrentTarget, () => this.hasTalent('Starlord') && me.getAuraStacks('Starlord') < 3),
-  
+      spell.cast('Starsurge', this.getCurrentTarget, () => 
+        this.hasTalent('Starlord') && me.getAuraStacks('Starlord') < 3
+      ),
+      
       // actions.st+=/sunfire,target_if=refreshable
-      spell.cast('Sunfire', this.getCurrentTarget, () => !this.getCurrentTarget().hasAura('Sunfire') && this.getDebuffRemainingTime('Sunfire') > 3000),
-  
+      spell.cast('Sunfire', this.getCurrentTarget, () => 
+        this.getDebuffRemainingTime('Sunfire') < 7000
+      ),
+      
       // actions.st+=/moonfire,target_if=refreshable&(!talent.treants_of_the_moon|cooldown.force_of_nature.remains>3&!buff.harmony_of_the_grove.up)
-      spell.cast('Moonfire', this.getCurrentTarget, () => !this.getCurrentTarget().hasAura('Sunfire') && this.getDebuffRemainingTime('Moonfire') > 3000 && (!this.hasTalent('Treants of the Moon') || (spell.getCooldown('Force of Nature').timeleft > 3000 && !me.hasAura('Harmony of the Grove')))),
-  
-      // actions.st+=/stellar_flare,target_if=refreshable
-      spell.cast('Stellar Flare', this.getCurrentTarget, () => !this.getCurrentTarget().hasAura('Stellar Flare') && this.getDebuffRemainingTime('Stellar Flare') < 2500),
-  
+      spell.cast('Moonfire', this.getCurrentTarget, () => 
+        this.getDebuffRemainingTime('Moonfire') < 7000 && 
+        (!this.hasTalent('Treants of the Moon') || 
+         (spell.getCooldown('Force of Nature').timeleft > 3000 && !me.hasAura('Harmony of the Grove')))
+      ),
+      
+      // actions.st+=/starsurge,if=cooldown.convoke_the_spirits.remains<gcd.max*2&variable.convoke_condition&astral_power.deficit<50
+      spell.cast('Starsurge', this.getCurrentTarget, () => 
+        spell.getCooldown('Convoke the Spirits').timeleft < this.getGCD() * 2 && 
+        this.convokeCondition() && 
+        this.astralPowerDeficit() < 50
+      ),
+      
       // actions.st+=/convoke_the_spirits,if=variable.convoke_condition
-      spell.cast('Convoke the Spirits', this.getCurrentTarget, () => spell.getCooldown('Convoke the Spirits').ready),
-  
-      // actions.st+=/new_moon
-      spell.cast('New Moon', this.getCurrentTarget),
-  
-      // actions.st+=/half_moon
-      spell.cast('Half Moon', this.getCurrentTarget),
-  
-      // actions.st+=/full_moon
-      spell.cast('Full Moon', this.getCurrentTarget),
-  
-      // actions.st+=/wild_mushroom
-      spell.cast('Wild Mushroom', this.getCurrentTarget, () => this.dotRemains('Fungal Growth') < 2000),
-  
+      spell.cast('Convoke the Spirits', this.getCurrentTarget, () => 
+        this.convokeCondition()
+      ),
+      
+      // actions.st+=/stellar_flare,target_if=refreshable&(target.time_to_die-remains-target>7+spell_targets)
+      spell.cast('Stellar Flare', this.getCurrentTarget, () => 
+        this.getDebuffRemainingTime('Stellar Flare') < 7000
+      ),
+      
+      // actions.st+=/starsurge,if=buff.starlord.remains>4&variable.boat_stacks>=3|fight_remains<4
+      spell.cast('Starsurge', this.getCurrentTarget, () => {
+        const starlordRemains = this.getAuraRemainingTime('Starlord');
+        return (starlordRemains > 4000 && this.getBoatStacks() >= 3) || 
+               me.powerByType(PowerType.LunarPower) > 90;
+      }),
+      
+      // // Moon cycle spells
+      // spell.cast('New Moon', this.getCurrentTarget, () => 
+      //   this.astralPowerDeficit() > this.passiveAsp() + this.energizeAmount('New Moon') || 
+      //   spell.getCooldown('Celestial Alignment').timeleft > 15000
+      // ),
+      
+      // spell.cast('Half Moon', this.getCurrentTarget, () => 
+      //   this.astralPowerDeficit() > this.passiveAsp() + this.energizeAmount('Half Moon') && 
+      //   (this.lunarRemains() > spell.getSpell('Half Moon').castTime || 
+      //    this.solarRemains() > spell.getSpell('Half Moon').castTime) || 
+      //   spell.getCooldown('Celestial Alignment').timeleft > 15000
+      // ),
+      
+      // spell.cast('Full Moon', this.getCurrentTarget, () => 
+      //   this.astralPowerDeficit() > this.passiveAsp() + this.energizeAmount('Full Moon') && 
+      //   (this.lunarRemains() > spell.getSpell('Full Moon').castTime || 
+      //    this.solarRemains() > spell.getSpell('Full Moon').castTime) || 
+      //   spell.getCooldown('Celestial Alignment').timeleft > 15000
+      // ),
+      
+      // actions.st+=/starsurge,if=buff.starweavers_weft.up|buff.touch_the_cosmos.up
+      spell.cast('Starsurge', this.getCurrentTarget, () => 
+        me.hasAura('Starweaver\'s Weft') || me.hasAura('Touch the Cosmos')
+      ),
+      
+      // actions.st+=/starsurge,if=astral_power.deficit<variable.passive_asp+action.wrath.energize_amount+(action.starfire.energize_amount+variable.passive_asp)*(buff.eclipse_solar.remains<(gcd.max*3))
+      spell.cast('Starsurge', this.getCurrentTarget, () => 
+        this.astralPowerDeficit() < this.passiveAsp() + this.energizeAmount('Wrath') + 
+        ((this.energizeAmount('Starfire') + this.passiveAsp()) * (this.solarRemains() < (this.getGCD() * 3) ? 1 : 0))
+      ),
+      
+      // actions.st+=/force_of_nature,if=!hero_tree.keeper_of_the_grove
+      spell.cast('Force of Nature', this.getCurrentTarget, () => 
+        !this.hasTalent('Keeper of the Grove')
+      ),
+      
+      // actions.st+=/wild_mushroom,if=!prev_gcd.1.wild_mushroom&dot.fungal_growth.remains<2
+      spell.cast('Wild Mushroom', this.getCurrentTarget, () => 
+        !this.prevGcd('Wild Mushroom') && this.dotRemains('Fungal Growth') < 2000
+      ),
+      
       // actions.st+=/starfire,if=talent.lunar_calling
-      spell.cast('Starfire', this.getCurrentTarget, () => this.hasTalent('Lunar Calling')),
-  
+      spell.cast('Starfire', this.getCurrentTarget, () => 
+        this.hasTalent('Lunar Calling')
+      ),
+      
       // actions.st+=/wrath
       spell.cast('Wrath', this.getCurrentTarget)
     );
@@ -160,14 +235,16 @@ export class BalanceDruidBehavior extends Behavior {
 
   multiTarget() {
     return new bt.Selector(
+      // actions.aoe+=/starfall,if=astral_power.deficit<=variable.passive_asp+6
+      spell.cast('Starfall', this.getCurrentTarget, req => me.powerByType(PowerType.LunarPower) >= 80) || me.hasAura("Touch the Cosmos"),
+
       // actions.st+=/wrath,if=variable.enter_lunar&eclipse.in_eclipse&variable.eclipse_remains<cast_time&!variable.cd_condition
       spell.cast('Wrath', this.getCurrentTarget, () => this.inSolar() && !this.inLunar() && this.solarRemains() > spell.getSpell('Wrath').castTime),
   
       // actions.st+=/starfire,if=!variable.enter_lunar&eclipse.in_eclipse&variable.eclipse_remains<cast_time&!variable.cd_condition
       spell.cast('Starfire', this.getCurrentTarget, () => !this.inSolar() && this.inLunar() && this.lunarRemains() > spell.getSpell('Starfire').castTime),
   
-      // actions.aoe+=/starfall,if=astral_power.deficit<=variable.passive_asp+6
-      spell.cast('Starfall', this.getCurrentTarget, () => this.astralPowerDeficit() <= this.passiveAsp() + 6),
+      
 
       // actions.aoe+=/moonfire,target_if=refreshable&(target.time_to_die-remains)>6
       spell.cast('Moonfire', this.getCurrentTarget, () => this.getDebuffRemainingTime('Moonfire') < 6000),
@@ -186,7 +263,7 @@ export class BalanceDruidBehavior extends Behavior {
 
       // actions.aoe+=/call_action_list,name=pre_cd
       this.preCombatCooldowns(),
-      this.Cooldowns(), 
+      this.castCooldowns(), 
 
       // actions.aoe+=/warrior_of_elune
       spell.cast('Warrior of Elune', this.getCurrentTarget, () => this.hasTalent('Lunar Calling') || this.solarRemains() < 7000),
@@ -228,27 +305,38 @@ export class BalanceDruidBehavior extends Behavior {
     return new bt.Selector(
       spell.cast('Force of Nature', this.getCurrentTarget, () => this.useCooldowns()),
       spell.cast('Berserking', on => me, () => this.useCooldowns()),
+      new bt.Action(() => bt.Status.Failure)
     );
   }
 
-  Cooldowns() {
+  castCooldowns() {
+    console.debug("CA " + me.hasAura(194223) + " Incarn:" + me.hasAura("Incarnation: Chosen of Elune"));
     return new bt.Selector(
-      // actions.st+=/celestial_alignment,if=variable.cd_condition
-      spell.cast('Celestial Alignment', on => me, () => this.useCooldowns()),
-  
-      // actions.st+=/incarnation,if=variable.cd_condition
-      spell.cast('Incarnation: Chosen of Elune', on => me), () => this.useCooldowns(),
-  
-      // actions.st+=/celestial_alignment,if=variable.cd_condition
-      spell.cast('Convoke the Spirits', this.getCurrentTarget, () => this.useCooldowns()),
+      // Only cast Celestial Alignment if it's not already active
+      spell.cast('Celestial Alignment', () => 
+        this.useCooldowns() && 
+        !me.hasAura(194223) &&
+        !me.hasAura('Incarnation: Chosen of Elune')
+      ),
+      
+      // Only cast Incarnation if Celestial Alignment is not active
+      spell.cast('Incarnation: Chosen of Elune', () => 
+        this.useCooldowns() && 
+        !me.hasAura(194223) &&
+        !me.hasAura('Incarnation: Chosen of Elune')
+      ),
+      
+      // Only cast Convoke when in eclipse and when CA/Incarnation is active for maximum benefit
+      spell.cast('Convoke the Spirits', this.getCurrentTarget, () => 
+        this.useCooldowns() && 
+        (me.hasAura(194223) || me.hasAura('Incarnation: Chosen of Elune')) &&
+        this.inEclipse()
+      ),
+      new bt.Action(() => bt.Status.Failure)
     );
   }
   hasTalent(talentName) {
     return me.hasAura(talentName);
-  }
-
-  useCooldowns() {
-    return Settings.BalanceUseCooldown;
   }
 
   findMoonfireTarget() {
@@ -314,7 +402,7 @@ solarRemains() {
 
 lunarRemains() {
   const lunartime = this.getAuraById(auras.lunareclipse);
-  console.debug('Lunar ' +lunartime.remaining)
+  // console.debug('Lunar ' +lunartime.remaining)
   return lunartime.remaining;
 }
 
@@ -322,12 +410,18 @@ getAuraById(spellId) {
   return me.auras.find(aura => aura.spellId === spellId) || 0;
 }
 
+getBoatStacks() {
+  const aura = me.getAura('Balance of All Things');
+  return aura ? aura.stacks : 0;
+}
+
 castTime(spellName) {
+  console.debug("Get Casttime of: " + spellName);
   return spell.getSpell(spellName).castTime;
 }
 
 cdCondition() {
-  return this.useCooldowns();
+  return Settings.DruidBalanceUseCooldown;
 }
 
 astralPowerDeficit() {
@@ -339,7 +433,7 @@ passiveAsp() {
 }
 
 useCooldowns() {
-  return Settings.DruidBalanceUseCooldown === true ? true : false;
+  return Settings.DruidBalanceUseCooldown;
 }
 
 energizeAmount(spellName) {
@@ -352,7 +446,7 @@ convokeCondition() {
 }
 
 prevGcd(spellName) {
-  return spell.previousGcd() === spellName;
+  return spell.getLastSuccessfulSpell() === spellName ? spellName : null;
 }
 
 dotRemains(debuffName) {
