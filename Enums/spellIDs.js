@@ -1,5 +1,5 @@
 // PART 1: DEATH KNIGHT
-const deathKnightSpells = {
+export const deathKnightSpells = {
   // Death Knight - General
   DEATH_GRIP: 49576, // Death Grip
   ANTI_MAGIC_SHELL: 48707, // Anti-Magic Shell
@@ -72,7 +72,7 @@ const deathKnightSpells = {
 };
 
 // PART 2: DEMON HUNTER
-const demonHunterSpells = {
+export const demonHunterSpells = {
   // Demon Hunter - General
   THROW_GLAIVE: 185123, // Throw Glaive
   FEL_RUSH: 195072, // Fel Rush
@@ -125,7 +125,7 @@ const demonHunterSpells = {
 };
 
 // PART 3: DRUID
-const druidSpells = {
+export const druidSpells = {
   // Druid - General
   MOONFIRE: 8921, // Moonfire
   MOONFIRE_DOT: 164812, // Moonfire DoT
@@ -227,7 +227,7 @@ const druidSpells = {
 };
 
 // PART 4: EVOKER
-const evokerSpells = {
+export const evokerSpells = {
   // Evoker - General
   LIVING_FLAME: 361469, // Living Flame
   AZURE_STRIKE: 362969, // Azure Strike
@@ -292,7 +292,7 @@ const evokerSpells = {
 };
 
 // PART 5: HUNTER
-const hunterSpells = {
+export const hunterSpells = {
  // Hunter - General
  ARCANE_SHOT: 185358, // Arcane Shot
  STEADY_SHOT: 56641, // Steady Shot
@@ -362,7 +362,7 @@ const hunterSpells = {
 };
 
 // PART 6: MAGE
-const mageSpells = {
+export const mageSpells = {
   // Mage - General
   FIREBALL: 133, // Fireball
   FROSTBOLT: 116, // Frostbolt
@@ -437,7 +437,7 @@ const mageSpells = {
 };
 
 // PART 7: MONK
-const monkSpells = {
+export const monkSpells = {
   // Monk - General
   TIGER_PALM: 100780, // Tiger Palm
   BLACKOUT_KICK: 100784, // Blackout Kick
@@ -512,7 +512,7 @@ const monkSpells = {
 };
 
 // PART 8: PALADIN
-const paladinSpells = {
+export const paladinSpells = {
   // Paladin - General
   CRUSADER_STRIKE: 35395, // Crusader Strike
   JUDGMENT: 20271, // Judgment
@@ -600,7 +600,7 @@ const paladinSpells = {
 };
 
 // PART 9: PRIEST
-const priestSpells = {
+export const priestSpells = {
   // Priest - General
   SMITE: 585, // Smite
   SHADOW_WORD_PAIN: 589, // Shadow Word: Pain
@@ -686,7 +686,7 @@ const priestSpells = {
 };
 
 // PART 10: ROGUE
-const rogueSpells = {
+export const rogueSpells = {
   // Rogue - General
   SINISTER_STRIKE: 1752, // Sinister Strike
   AMBUSH: 8676, // Ambush
@@ -771,7 +771,7 @@ const rogueSpells = {
 };
 
 // PART 11: SHAMAN
-const shamanSpells = {
+export const shamanSpells = {
   // Shaman - General
   LIGHTNING_BOLT: 188196, // Lightning Bolt
   CHAIN_LIGHTNING: 188443, // Chain Lightning
@@ -853,7 +853,7 @@ const shamanSpells = {
 };
 
 // PART 12: WARLOCK
-const warlockSpells = {
+export const warlockSpells = {
   // Warlock - General
   SHADOW_BOLT: 686, // Shadow Bolt
   CORRUPTION: 172, // Corruption
@@ -939,7 +939,7 @@ const warlockSpells = {
 };
 
 // PART 13: WARRIOR
-const warriorSpells = {
+export const warriorSpells = {
   // Warrior - General
   MORTAL_STRIKE: 12294, // Mortal Strike
   SLAM: 1464, // Slam
