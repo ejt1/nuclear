@@ -1,5 +1,5 @@
 import { me } from "@/Core/ObjectManager";
-import HeroTalents from './HeroTalents';
+import HeroTalents from '@Data//HeroTalents';
 import Specialization from '@/Enums/Specialization';
 
 /**
