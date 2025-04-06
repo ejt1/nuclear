@@ -100,7 +100,7 @@ export class ElementalShamanBehavior extends Behavior {
       )
     );
   }
-}
+
 
 /**
    * Precombat actions
