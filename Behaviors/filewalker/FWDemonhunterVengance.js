@@ -157,7 +157,7 @@ export class VengeanceDemonHunterBehavior extends Behavior {
           this._lastTarget = this.getCurrentTarget();
           const heroTalent = this.detectHeroTalent();
           if (heroTalent) {
-            console.info(`Detected Hero Talent: ${heroTalent}`);
+            // console.info(`Detected Hero Talent: ${heroTalent}`);
           } else {
             console.info("No Hero Talent detected. Using default rotation.");
           }
@@ -171,14 +171,15 @@ export class VengeanceDemonHunterBehavior extends Behavior {
 
       new bt.Selector(
         this.defensives(),
-        this.autoTaunt(),
+        
         
         new bt.Decorator(
           () => !Spell.isGlobalCooldown(),
           new bt.Selector(
             // Interrupt with priority
             Spell.interrupt('Disrupt'),
-            
+            this.autoTaunt(),
+            this.catchLoseEnemies(),
             // Main rotation selector
             new bt.Selector(
               this.aldrachiReaverRotation(),
@@ -201,7 +202,36 @@ export class VengeanceDemonHunterBehavior extends Behavior {
         // Get nearby enemies in combat with us
         const nearbyEnemies = combat.targets.filter(unit => 
           unit instanceof wow.CGUnit && 
-          unit.inCombatWith(me) && 
+          unit.inCombat(me) && 
+          !unit.deadOrGhost && 
+          me.distanceTo(unit) < 30
+        );
+        
+        // Check for enemies that are targeting someone else
+        for (const enemy of nearbyEnemies) {
+          if (enemy.target && !enemy.target.equals(me.guid) )
+          {
+            Spell.cast("Torment", enemy.target);
+            console.info(`GET OVER HERE! ${enemy.unsafeName}`);
+          }
+        }
+        
+        return bt.Status.Failure;
+      })
+    );
+  }
+
+    // Auto taunt functionality
+  catchLoseEnemies() {
+    return new bt.Decorator(
+      () => !Spell.isGlobalCooldown(),
+      new bt.Action(() => {
+        if (!me.inCombat()) return bt.Status.Failure;
+        
+        // Get nearby enemies in combat with us
+        const nearbyEnemies = combat.targets.filter(unit => 
+          unit instanceof wow.CGUnit && 
+          unit.inCombat(me) && 
           !unit.deadOrGhost && 
           me.distanceTo(unit) < 30
         );
@@ -215,7 +245,7 @@ export class VengeanceDemonHunterBehavior extends Behavior {
             
             // Use taunt on this enemy
             if (Spell.getSpell('Throw Glaive').cast(enemy)) {
-              console.info(`Auto-taunting ${enemy.unsafeName} who is targeting someone else`);
+              console.info(`Auto-Glaiving ${enemy.unsafeName} who is targeting someone else`);
               return bt.Status.Success;
             }
           }
