@@ -399,6 +399,8 @@ export class VengeanceDemonHunterBehavior extends Behavior {
         // Use The Hunt if talented
         Spell.cast('The Hunt', this.getCurrentTarget, () => Spell.isSpellKnown('The Hunt')),
         
+        Spell.cast('Soul Sunder', this.getCurrentTarget, () => me.hasAura('Metamorphosis')),
+        
         // Use Sigil of Spite if talented
         Spell.cast('Sigil of Spite', this.getCurrentTarget, () => 
           Settings.VengUseSigils && Spell.isSpellKnown('Sigil of Spite')),
