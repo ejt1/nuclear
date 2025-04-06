@@ -9,10 +9,6 @@ import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 import { defaultHealTargeting as heal } from '@/Targeting/HealTargeting';
 import Settings from "@/Core/Settings";
 
-/**
- * Behavior implementation for Holy Priest
- * This implementation supports multiple hero talent builds
- */
 export class HolyPriestBehavior extends Behavior {
   // Define context, specialization, name, and version
   context = BehaviorContext.Any;
