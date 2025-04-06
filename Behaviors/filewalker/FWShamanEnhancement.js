@@ -403,7 +403,8 @@ export class EnhancementShamanNewBehavior extends Behavior {
                this.isOpeningPhase(),
         this.multiTargetTotemicOpen()
       ),
-      
+      this.useRacials(),
+      this.useTrinkets(),
       spell.cast(444995, this.getCurrentTarget, req => spell.getSpell('Surging Totem').overrideId == 444995),
       
       spell.cast('Ascendance', this.getCurrentTarget, req =>
@@ -554,7 +555,7 @@ export class EnhancementShamanNewBehavior extends Behavior {
       ),
       
       spell.cast('Elemental Blast', this.getCurrentTarget, req =>
-        me.getAuraStacks(auras.maelstromweapon) === 10
+        me.getAuraStacks(auras.maelstromweapon) >= 5
       ),
       
       spell.cast('Lightning Bolt', this.getCurrentTarget, req =>
@@ -832,7 +833,8 @@ export class EnhancementShamanNewBehavior extends Behavior {
         req => this.isOpeningPhase(),
         this.singleTargetOpen()
       ),
-      
+      this.useRacials(),
+      this.useTrinkets(),
       // Primordial Storm management
       spell.cast('Primordial Storm', this.getCurrentTarget, req =>
         me.getAuraStacks(auras.maelstromweapon) >= 10 ||
@@ -910,7 +912,8 @@ export class EnhancementShamanNewBehavior extends Behavior {
         req => this.isOpeningPhase(),
         this.singleTargetTotemicOpen()
       ),
-      
+      this.useRacials(),
+      this.useTrinkets(),
       spell.cast(444995, this.getCurrentTarget, req => spell.getSpell('Surging Totem').overrideId == 444995),
       
       spell.cast('Ascendance', this.getCurrentTarget, req =>
@@ -982,11 +985,17 @@ export class EnhancementShamanNewBehavior extends Behavior {
         !me.hasAura('Whirling Air')
       ),
       
-      spell.cast('Elemental Blast', this.getCurrentTarget, req => 
+      spell.cast('Elemental Blast', this.getCurrentTarget, req =>
         ((!this.hasTalent('Overflowing Maelstrom') && me.getAuraStacks(auras.maelstromweapon) >= 5) ||
          (me.getAuraStacks(auras.maelstromweapon) >= 9)) && 
         this.getChargesFractional('Elemental Blast') >= 1.8
       ),
+      
+           // spell.cast('Elemental Blast', this.getCurrentTarget, req => 
+      //   ((!this.hasTalent('Overflowing Maelstrom') && me.getAuraStacks(auras.maelstromweapon) >= 5) ||
+      //    (me.getAuraStacks(auras.maelstromweapon) >= 9)) && 
+      //   this.getChargesFractional('Elemental Blast') >= 1.8
+      // ),
 
       spell.cast('Elemental Blast', this.getCurrentTarget, req =>
         me.getAuraStacks(auras.maelstromweapon) >= 10 &&
@@ -1226,7 +1235,7 @@ export class EnhancementShamanNewBehavior extends Behavior {
         this.minTalentedCdRemains() >= spell.getCooldown('Berserking').timeleft ||
         (!this.hasTalent('Ascendance') && !this.hasTalent('Feral Spirit') && !this.hasTalent('Doom Winds'))
       )),
-      
+      spell.cast("Berserking", this.getCurrentTarget),
       spell.cast("Fireblood", this.getCurrentTarget, req => me.hasAura('Fireblood') && (
         me.hasAura('Ascendance') || 
         me.hasAura(auras.feralspirits) || 
@@ -1252,6 +1261,7 @@ export class EnhancementShamanNewBehavior extends Behavior {
   
   useTrinkets() {
     return new bt.Selector(
+      common.useEquippedItemByName("Signet of the Priory"),
       // Generic trinket use based on APL logic
       // common.useEquippedTrinket(1, req => 
       //   !this.isTrinketWeird(1) && 
