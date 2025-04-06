@@ -75,6 +75,9 @@ export class EnhancementShamanNewBehavior extends Behavior {
       common.waitForFacing(),
       common.waitForCastOrChannel(),
       
+      this.manageSurgingTotem(),
+
+
       // Precombat actions
       new bt.Decorator(
         ret => !spell.isGlobalCooldown(),
@@ -1565,6 +1568,123 @@ export class EnhancementShamanNewBehavior extends Behavior {
     const fractionalPart = 1 - (remainingTime / chargeDuration);
     
     return currentCharges + fractionalPart;
+  }
+
+  trackTotems() {
+    const activeTotems = [];
+    
+    objMgr.objects.forEach(obj => {
+      if (obj instanceof wow.CGUnit && 
+          obj.createdBy && 
+          me.guid && 
+          obj.createdBy.equals(me.guid)) {
+        
+        // Check if it's any type of totem
+        if (obj.name.includes('Totem')) {
+          // Get health percentage to determine totem lifetime
+          const healthPct = obj.pctHealth;
+          const distanceToPlayer = me.distanceTo(obj);
+          
+          activeTotems.push({
+            guid: obj.guid,
+            name: obj.name,
+            position: obj.position,
+            distance: distanceToPlayer,
+            health: healthPct
+          });
+        }
+      }
+    });
+    
+    return activeTotems;
+  }
+  
+  // Find specifically the Surging Totem and get detailed information
+  getSurgingTotemInfo() {
+    let totemInfo = null;
+    
+    objMgr.objects.forEach(obj => {
+      if (obj instanceof wow.CGUnit && 
+          obj.createdBy && 
+          me.guid && 
+          obj.createdBy.equals(me.guid) && 
+          obj.name === 'Surging Totem') {
+        
+        const distanceToPlayer = me.distanceTo(obj);
+        
+        totemInfo = {
+          guid: obj.guid,
+          position: obj.position,
+          distance: distanceToPlayer,
+          health: obj.pctHealth,
+          entryId: obj.entryId,
+          // Calculate remaining time (approximation based on health)
+          remainingTime: (obj.pctHealth / 100) * 120000 // Assuming 120sec max duration
+        };
+      }
+    });
+    
+    return totemInfo;
+  }
+  
+  // Manage totem relocation
+  manageSurgingTotem() {
+    return new bt.Selector(
+      new bt.Action(() => {
+        // Don't attempt relocation if player is moving
+        if (me.isMoving()) {
+          return bt.Status.Failure;
+        }
+  
+        const totemInfo = this.getSurgingTotemInfo();
+        
+        // If totem is active and far away
+        if (totemInfo && totemInfo.distance > 15) {
+          
+          // Check if we should relocate based on remaining time
+          const shouldRelocate = totemInfo.remainingTime > 30000; // Only relocate if >30 seconds left
+          
+          if (shouldRelocate) {
+            console.info(`Relocating Surging Totem - ${totemInfo.distance.toFixed(1)} yards away, ${(totemInfo.remainingTime/1000).toFixed(1)}s remaining`);
+            
+            // Try to cast the totem again if available
+            const surgingTotem = spell.getSpell('Surging Totem');
+            const totemicRecall = spell.getSpell('Totemic Recall');
+            
+            // First recall existing totems if that ability exists
+            if (totemicRecall && totemicRecall.isKnown && totemicRecall.cooldown.ready) {
+              totemicRecall.cast();
+              return bt.Status.Success;
+            }
+            
+            // If there's no recall ability, try to place a new totem
+            if (surgingTotem && surgingTotem.isKnown && surgingTotem.cooldown.ready) {
+              surgingTotem.cast();
+              return bt.Status.Success;
+            }
+          }
+        }
+        
+        return bt.Status.Failure;
+      })
+    );
+  }
+  
+  // Get the count of active totems by name
+  getTotemCount(totemName) {
+    let count = 0;
+    
+    objMgr.objects.forEach(obj => {
+      if (obj instanceof wow.CGUnit && 
+          obj.createdBy && 
+          me.guid && 
+          obj.createdBy.equals(me.guid) && 
+          obj.name === totemName) {
+        count++;
+      }
+    });
+    
+    return count;
   }
   
 }
