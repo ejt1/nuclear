@@ -6,6 +6,7 @@ import spell from "@/Core/Spell";
 import { me } from "@/Core/ObjectManager";
 import { PowerType } from "@/Enums/PowerType";
 import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
+import Settings from "@/Core/Settings";
 
 export class DruidFeralBehavior extends Behavior {
   context = BehaviorContext.Any;
@@ -203,7 +204,7 @@ export class DruidFeralBehavior extends Behavior {
         return bt.Status.Failure;
       }),
       common.waitForCastOrChannel(),
-      this.precombat(),
+    //   this.precombat(),
       spell.cast("Prowl", () => !me.inCombat() && !me.hasAura("Prowl")),
       spell.cast("Cat Form", () => !me.hasAura("Cat Form") && !this.hasTalent("Fluid Form")),
       spell.cast("Skull Bash", () => this.getCurrentTarget() && this.getCurrentTarget().isCasting),
@@ -213,9 +214,9 @@ export class DruidFeralBehavior extends Behavior {
       // Tigers Fury
       spell.cast("Tiger's Fury", () => {
         const currentTarget = this.getCurrentTarget();
-        return (me.powerDeficit(PowerType.Energy) > 35 || 
-                me.comboPoints == 5 || 
-                (me.comboPoints >= 3 && this.isDoTRefreshable("Rip", currentTarget) && me.hasAura("Bloodtalons"))) && 
+        return (me.powerByType(PowerType.Energy) > 35 || 
+                 me.powerByType(PowerType.ComboPoints) == 5 || 
+                ( me.powerByType(PowerType.ComboPoints) >= 3 && this.isDoTRefreshable("Rip", currentTarget) && me.hasAura("Bloodtalons"))) && 
                (this.getFightRemains() <= 15 || 
                 (spell.getCooldown("Berserk").timeleft > 20 && this.getFightRemains() > 5) || 
                 (spell.getCooldown("Berserk").ready && this.getFightRemains() > 12));
@@ -234,7 +235,7 @@ export class DruidFeralBehavior extends Behavior {
         return target && 
                target.getAuraStacks("Adaptive Swarm Damage") < 3 && 
                (!target.hasAura("Adaptive Swarm Damage") || target.getAuraRemainingTime("Adaptive Swarm Damage") < 2) && 
-               !spell.isInFlight("Adaptive Swarm") && 
+            //    !spell.isInFlight("Adaptive Swarm") && 
                (this.getEnemiesInRange(8) == 1 || !this.hasTalent("Unbridled Swarm")) && 
                (target.hasAura("Rip") || this.hasHeroTalent("Druid of the Claw"));
       }),
@@ -260,7 +261,7 @@ export class DruidFeralBehavior extends Behavior {
       new bt.Decorator(
         () => this.getCurrentTarget() && this.getCurrentTarget().hasAura("Rip"),
         this.cooldown(),
-        new bt.Action(() => bt.Status.Success)
+        new bt.Action(() => bt.Status.Failure)
       ),
       
       // Handle Veinripper specific Rip logic
@@ -271,11 +272,11 @@ export class DruidFeralBehavior extends Behavior {
                this.hasHeroTalent("Wildstalker") && 
                !(this.hasTalent("Raging Fury") && this.hasTalent("Veinripper")) && 
                (me.hasAura("Bloodtalons") || !this.hasTalent("Bloodtalons")) && 
-               ((this.isDoTRefreshable("Rip", target) && me.hasAura("Tiger's Fury") && target.getAuraRemainingTime("Tiger's Fury") > 10 && me.comboPoints >= 3) || 
-                (((me.hasAura("Tiger's Fury") && target.getAuraRemainingTime("Tiger's Fury") < 3 && me.comboPoints == 5) || 
+               ((this.isDoTRefreshable("Rip", target) && me.hasAura("Tiger's Fury") && target.getAuraRemainingTime("Tiger's Fury") > 10 &&  me.powerByType(PowerType.ComboPoints) >= 3) || 
+                (((me.hasAura("Tiger's Fury") && target.getAuraRemainingTime("Tiger's Fury") < 3 &&  me.powerByType(PowerType.ComboPoints) == 5) || 
                   target.getAuraRemainingTime("Tiger's Fury") <= 1) && 
                  me.hasAura("Tiger's Fury") && 
-                 me.comboPoints >= 3 && 
+                  me.powerByType(PowerType.ComboPoints) >= 3 && 
                  target.getAuraRemainingTime("Rip") < spell.getCooldown("Tiger's Fury").timeleft));
       }),
       
@@ -287,7 +288,7 @@ export class DruidFeralBehavior extends Behavior {
                this.hasHeroTalent("Wildstalker") && 
                me.hasAura("Tiger's Fury") && 
                (me.hasAura("Bloodtalons") || !this.hasTalent("Bloodtalons")) && 
-               (me.comboPoints >= 3 && 
+               ( me.powerByType(PowerType.ComboPoints) >= 3 && 
                 this.isDoTRefreshable("Rip", target) && 
                 spell.getCooldown("Tiger's Fury").timeleft > 25 || 
                 me.hasAura("Tiger's Fury") && 
@@ -298,7 +299,7 @@ export class DruidFeralBehavior extends Behavior {
       
       // Finisher at 5 combo points
       new bt.Decorator(
-        () => me.comboPoints == 5,
+        () => me.powerByType(PowerType.ComboPoints) == 5,
         this.finisher(),
         new bt.Action(() => bt.Status.Success)
       ),
@@ -309,7 +310,7 @@ export class DruidFeralBehavior extends Behavior {
               (this.getVariable("time_to_pool") <= 0 || 
               !this.getVariable("need_bt") || 
               this.getVariable("proccing_bt")) && 
-              me.comboPoints < 5,
+               me.powerByType(PowerType.ComboPoints) < 5,
         this.builder(),
         new bt.Action(() => bt.Status.Success)
       ),
@@ -317,7 +318,7 @@ export class DruidFeralBehavior extends Behavior {
       // AoE builder
       new bt.Decorator(
         () => this.getEnemiesInRange(8) >= 2 && 
-              me.comboPoints < 5 && 
+               me.powerByType(PowerType.ComboPoints) < 5 && 
               (this.getVariable("time_to_pool") <= 0 || 
               !this.getVariable("need_bt") || 
               this.getVariable("proccing_bt")),
@@ -348,7 +349,7 @@ precombat() {
   variables() {
     return new bt.Action(() => {
       // Calculate rip duration
-      const baseRipDuration = 4 + (4 * me.comboPoints);
+      const baseRipDuration = 4 + (4 *  me.powerByType(PowerType.ComboPoints));
       const circleModifier = this.hasTalent("Circle of Life and Death") ? 0.8 : 1;
       const veinripperModifier = this.hasTalent("Veinripper") ? 1.25 : 1;
       this.setVariable("rip_duration", baseRipDuration * circleModifier * veinripperModifier);
@@ -401,7 +402,7 @@ precombat() {
       // Set proccing_bt
       this.setVariable("proccing_bt", this.getVariable("need_bt"));
       
-      return bt.Status.Success;
+      return bt.Status.Failure;
     });
   }
 
@@ -422,7 +423,7 @@ precombat() {
   
   getSetting(name) {
     // Check if the setting exists in the Settings object
-    return Settings[name] !== undefined ? Settings[name] : false;
+    return false;
   }
 
   // Cooldown usage
@@ -458,19 +459,19 @@ precombat() {
       // Racial - Berserking
       spell.cast("Berserking", req => me.hasAura("Berserk")),
       
-      // Potion usage
-      new bt.Action(() => {
-        const shouldUsePotion = me.hasAura("Berserk") || 
-                              (this.isBossTarget() && this.getFightRemains() < 32) || 
-                              (!this.getVariable("lastzerk") && this.getVariable("lastconvoke") && 
-                               spell.getCooldown("Convoke the Spirits").timeleft < 10);
+    //   // Potion usage
+    //   new bt.Action(() => {
+    //     const shouldUsePotion = me.hasAura("Berserk") || 
+    //                           (this.isBossTarget() && this.getFightRemains() < 32) || 
+    //                           (!this.getVariable("lastzerk") && this.getVariable("lastconvoke") && 
+    //                            spell.getCooldown("Convoke the Spirits").timeleft < 10);
         
-        if (shouldUsePotion) {
-          // Use potion - would need actual implementation
-          return bt.Status.Success;
-        }
-        return bt.Status.Failure;
-      }),
+    //     if (shouldUsePotion) {
+    //       // Use potion - would need actual implementation
+    //       return bt.Status.Success;
+    //     }
+    //     return bt.Status.Failure;
+    //   }),
       
       // Use non-trinket gear items
       new bt.Action(() => {
@@ -478,54 +479,53 @@ precombat() {
         return bt.Status.Failure;
       }),
       
-      // Use Trinket 1 with buffs
-      new bt.Action(() => {
-        const useTrinket1 = this.hasTrinketBuffs(1) && 
-                          (me.hasAura("Berserk") || 
-                          ((me.hasAura("Tiger's Fury") && spell.getCooldown("Tiger's Fury").timeleft > 25) && 
-                          (spell.getCooldown("Convoke the Spirits").timeleft < 6 || 
-                          (this.hasTrinketBuffs(2) && spell.getCooldown("Convoke the Spirits").timeleft - spell.getCooldown("Trinket2").timeleft > 0) || 
-                          !this.hasTalent("Convoke the Spirits") && spell.getCooldown("Berserk").timeleft - spell.getCooldown("Trinket2").timeleft > 0))) && 
-                          (!this.hasTrinketCooldown(2) || spell.getCooldown("Trinket2").timeleft || this.getTrinketPriority() == 1) || 
-                          this.getTrinketDuration(1) >= this.getFightRemains() && this.isBossTarget();
+    //   // Use Trinket 1 with buffs
+    //   new bt.Action(() => {
+    //     const useTrinket1 = this.hasTrinketBuffs(1) && 
+    //                       (me.hasAura("Berserk") || 
+    //                       ((me.hasAura("Tiger's Fury") && spell.getCooldown("Tiger's Fury").timeleft > 25) && 
+    //                       (spell.getCooldown("Convoke the Spirits").timeleft < 6 || 
+    //                       (this.hasTrinketBuffs(2) && spell.getCooldown("Convoke the Spirits").timeleft - spell.getCooldown("Trinket2").timeleft > 0) || 
+    //                       !this.hasTalent("Convoke the Spirits") && spell.getCooldown("Berserk").timeleft - spell.getCooldown("Trinket2").timeleft > 0))) && 
+    //                       (!this.hasTrinketCooldown(2) || spell.getCooldown("Trinket2").timeleft || this.getTrinketPriority() == 1) || 
+    //                       this.getTrinketDuration(1) >= this.getFightRemains() && this.isBossTarget();
         
-        if (useTrinket1) {
-          common.useEquippedItemByName("Trinket1");
-          return bt.Status.Success;
-        }
-        return bt.Status.Failure;
-      }),
+    //     if (useTrinket1) {
+    //       common.useEquippedItemByName("Trinket1");
+    //       return bt.Status.Success;
+    //     }
+    //     return bt.Status.Failure;
+    //   }),
       
-      // Use Trinket 2 with buffs
-      new bt.Action(() => {
-        const useTrinket2 = this.hasTrinketBuffs(2) && 
-                          (me.hasAura("Berserk") || 
-                          ((me.hasAura("Tiger's Fury") && spell.getCooldown("Tiger's Fury").timeleft > 25) && 
-                          (spell.getCooldown("Convoke the Spirits").timeleft < 6 || 
-                          (this.hasTrinketBuffs(1) && spell.getCooldown("Convoke the Spirits").timeleft - spell.getCooldown("Trinket1").timeleft > 0) || 
-                          !this.hasTalent("Convoke the Spirits") && spell.getCooldown("Berserk").timeleft - spell.getCooldown("Trinket1").timeleft > 0))) && 
-                          (!this.hasTrinketCooldown(1) || spell.getCooldown("Trinket1").timeleft || this.getTrinketPriority() == 2) || 
-                          this.getTrinketDuration(2) >= this.getFightRemains() && this.isBossTarget();
+    //   // Use Trinket 2 with buffs
+    //   new bt.Action(() => {
+    //     const useTrinket2 = this.hasTrinketBuffs(2) && 
+    //                       (me.hasAura("Berserk") || 
+    //                       ((me.hasAura("Tiger's Fury") && spell.getCooldown("Tiger's Fury").timeleft > 25) && 
+    //                       (spell.getCooldown("Convoke the Spirits").timeleft < 6 || 
+    //                       (this.hasTrinketBuffs(1) && spell.getCooldown("Convoke the Spirits").timeleft - spell.getCooldown("Trinket1").timeleft > 0) || 
+    //                       !this.hasTalent("Convoke the Spirits") && spell.getCooldown("Berserk").timeleft - spell.getCooldown("Trinket1").timeleft > 0))) && 
+    //                       (!this.hasTrinketCooldown(1) || spell.getCooldown("Trinket1").timeleft || this.getTrinketPriority() == 2) || 
+    //                       this.getTrinketDuration(2) >= this.getFightRemains() && this.isBossTarget();
         
-        if (useTrinket2) {
-          common.useEquippedItemByName("Trinket2");
-          return bt.Status.Success;
-        }
-        return bt.Status.Failure;
-      }),
+    //     if (useTrinket2) {
+    //       common.useEquippedItemByName("Trinket2");
+    //       return bt.Status.Success;
+    //     }
+    //     return bt.Status.Failure;
+    //   }),
       
       // Feral Frenzy
       spell.cast("Feral Frenzy", on => this.getCurrentTarget(), req => {
-        return me.comboPoints <= 1 + (me.hasAura("Berserk") ? 1 : 0) && 
+        return  me.powerByType(PowerType.ComboPoints) <= 1 + (me.hasAura("Berserk") ? 1 : 0) && 
                (me.hasAura("Tiger's Fury") || !this.hasTalent("Savage Fury") || !this.hasHeroTalent("Wildstalker") || 
                (this.isBossTarget() && this.getFightRemains() < spell.getCooldown("Tiger's Fury").timeleft));
       }),
       
       // Convoke the Spirits
       spell.cast("Convoke the Spirits", on => this.getCurrentTarget(), req => {
-        return (this.isBossTarget() && this.getFightRemains() < 5) || 
-               ((spell.getCooldown("Berserk").timeleft > 45 || me.hasAura("Berserk") || !this.hasTalent("Berserk Heart of the Lion")) && 
-               (me.hasAura("Tiger's Fury") && (me.comboPoints <= 4 || me.hasAura("Berserk") && me.comboPoints <= 3) && 
+        return ((spell.getCooldown("Berserk").timeleft > 45 || me.hasAura("Berserk") || !this.hasTalent("Berserk Heart of the Lion")) && 
+               (me.hasAura("Tiger's Fury") && ( me.powerByType(PowerType.ComboPoints) <= 4 || me.hasAura("Berserk") &&  me.powerByType(PowerType.ComboPoints) <= 3) && 
                (this.getTargetTimeToDie() > 5 - (this.hasTalent("Ashamane's Guidance") ? 1 : 0) || this.isBossTarget())));
       })
     );
@@ -552,8 +552,8 @@ precombat() {
         return this.isDoTRefreshable("Rip", target) && 
                (!this.hasTalent("Primal Wrath") || this.getEnemiesInRange(8) == 1) && 
                (me.hasAura("Bloodtalons") || !this.hasTalent("Bloodtalons")) && 
-               (me.hasAura("Tiger's Fury") || target.getAuraRemainingTime("Rip") < spell.getCooldown("Tiger's Fury").timeleft) && 
-               (target.getAuraRemainingTime("Rip") < this.getFightRemains() || target.getAuraRemainingTime("Rip") < 4 && me.hasAura("Ravage"));
+               (me.hasAura("Tiger's Fury") || target.hasAura("Rip").remaining < spell.getCooldown("Tiger's Fury").timeleft) && 
+               (target.hasAura("Rip").remaining < this.getFightRemains() || target.hasAura("Rip").remaining < 4 && me.hasAura("Ravage"));
       }),
       
       // Pool energy for Ferocious Bite
@@ -606,7 +606,7 @@ precombat() {
         const target = this.getCurrentTarget();
         
         return ((this.isDoTRefreshable("Rake", target) && this.getDoTPersistentMultiplier() >= this.getDoTPMultiplier("Rake") || 
-                target.getAuraRemainingTime("Rake") < 3.5) || 
+                target.hasAura("Rake").remaining < 3500) || 
                 me.hasAura("Sudden Ambush") && this.getDoTPersistentMultiplier() > this.getDoTPMultiplier("Rake")) && 
                !(this.getVariable("need_bt") && me.hasAura("BT Rake")) && 
                (this.hasHeroTalent("Wildstalker") || !me.hasAura("Berserk"));
@@ -623,10 +623,10 @@ precombat() {
                !(this.getVariable("need_bt") && me.hasAura("BT Swipe"));
       }),
       
-      // Moonfire if refreshable
-      spell.cast("Moonfire", on => this.getCurrentTarget(), req => {
-        return this.isDoTRefreshable("Moonfire", this.getCurrentTarget());
-      }),
+    //   // Moonfire if refreshable
+    //   spell.cast("Moonfire", on => this.getCurrentTarget(), req => {
+    //     return this.isDoTRefreshable("Moonfire", this.getCurrentTarget());
+    //   }),
       
       // Thrash if refreshable and not talented into Thrashing Claws and not in Berserk
       spell.cast("Thrash", on => this.getCurrentTarget(), req => {
@@ -644,7 +644,7 @@ precombat() {
       // Pool energy if we need to refresh dot soon
       new bt.Action(() => {
         if (this.getVariable("dot_refresh_soon") && 
-            me.powerDeficit(PowerType.Energy) > 70 && 
+            me.powerByType(PowerType.Energy) > 70 && 
             !this.getVariable("need_bt") && 
             !me.hasAura("Berserk") && 
             spell.getCooldown("Tiger's Fury").timeleft > 3) {
@@ -681,10 +681,10 @@ precombat() {
                this.getDoTPersistentMultiplier() >= this.getDoTPMultiplier("Rake");
       }),
       
-      // Moonfire for Bloodtalons
-      spell.cast("Moonfire", on => this.getCurrentTarget(), req => {
-        return this.getVariable("need_bt") && !me.hasAura("BT Moonfire");
-      }),
+    //   // Moonfire for Bloodtalons
+    //   spell.cast("Moonfire", on => this.getCurrentTarget(), req => {
+    //     return this.getVariable("need_bt") && !me.hasAura("Moonfire");
+    //   }),
       
       // Thrash for Bloodtalons
       spell.cast("Thrash", on => this.getCurrentTarget(), req => {
@@ -775,12 +775,12 @@ precombat() {
         return this.getNoRakeTarget() && this.hasHeroTalent("Wildstalker");
       }),
       
-      // Moonfire in AoE
-      spell.cast("Moonfire", on => this.getBestMoonfireTarget(), req => {
-        return this.isDoTRefreshable("Moonfire", this.getBestMoonfireTarget()) && 
-               !(this.getVariable("need_bt") && me.hasAura("BT Moonfire")) && 
-               !this.getVariable("cc_capped");
-      }),
+    //   // Moonfire in AoE
+    //   spell.cast("Moonfire", on => this.getBestMoonfireTarget(), req => {
+    //     return this.isDoTRefreshable("Moonfire", this.getBestMoonfireTarget()) && 
+    //            !(this.getVariable("need_bt") && me.hasAura("BT Moonfire")) && 
+    //            !this.getVariable("cc_capped");
+    //   }),
       
       // Rake in AoE
       spell.cast("Rake", on => this.getBestRakeTarget(), req => {
@@ -820,10 +820,10 @@ precombat() {
                !me.hasAura("BT Rake");
       }),
       
-      // Fallback Bloodtalons Moonfire
-      spell.cast("Moonfire", on => this.getBestMoonfireTarget(), req => {
-        return this.getVariable("need_bt") && !me.hasAura("BT Moonfire");
-      }),
+    //   // Fallback Bloodtalons Moonfire
+    //   spell.cast("Moonfire", on => this.getBestMoonfireTarget(), req => {
+    //     return this.getVariable("need_bt") && !me.hasAura("BT Moonfire");
+    //   }),
       
       // Fallback Bloodtalons Rake with Sudden Ambush
       spell.cast("Rake", on => this.getBestRakeTarget(), req => {
@@ -910,7 +910,7 @@ precombat() {
     // Default durations for common DoTs
     switch (dotName) {
       case "Rip":
-        return this.getVariable("rip_duration") || (4 + (4 * me.comboPoints));
+        return this.getVariable("rip_duration") || (4 + (4 *  me.powerByType(PowerType.ComboPoints)));
       case "Rake":
         return 15 * (this.hasTalent("Circle of Life and Death") ? 0.8 : 1);
       case "Thrash":
