@@ -8,6 +8,14 @@ class General {
 
   static lastAutoTargetTime = 0;
 
+  static availableKeys = [
+    "None", "A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M",
+    "N", "O", "P", "Q", "R", "S", "T", "U", "V", "W", "X", "Y", "Z",
+    "F1", "F2", "F3", "F4", "F5", "F6", "F7", "F8", "F9", "F10", "F11", "F12",
+    "Pause", "Insert", "Home", "Delete", "End", "PageDown", "PageUp",
+    "LeftArrow", "RightArrow", "UpArrow", "DownArrow"
+  ];
+
   static options = [
     // Combat Behavior Settings
     { type: "checkbox", uid: "AttackOOC", text: "Attack Out of Combat", default: false },
@@ -15,6 +23,8 @@ class General {
     { type: "checkbox", uid: "RenderBestTargetCircle", text: "Render Best Target Circle", default: false },
     { type: "slider", uid: "TargetSwitchDelay", text: "Target Switch Delay (ms)", min: 0, max: 5000, default: 1000 },
     { type: "combobox", uid: "TargetPriority", text: "Target Priority", options: ["Closest", "Lowest Health", "Highest Health"], default: "Closest" },
+    // Pause Rotation Key
+    { type: "combobox", uid: "PauseKey", text: "Pause Rotation Key", options: General.availableKeys, default: "None" },
     // Spell Cast Settings
     { type: "slider", uid: "SpellCastDelay", text: "Spell Cast Delay (ms)", min: 0, max: 1000, default: 0 },
     { type: "slider", uid: "SpellQueueExpirationTimer", text: "Spell Queue Expiration Timer (ms)", min: 2000, max: 5000, default: 3000 },
@@ -31,12 +41,12 @@ class General {
 
   static renderOptions(renderFunction) {
     renderFunction([
-      { header: "Combat Behavior", options: this.options.slice(0, 5) },
-      { header: "Spell Casting", options: this.options.slice(5, 7) },
-      { header: "Cache Settings", options: [this.options[7]] },
-      { header: "Interrupt", options: this.options.slice(8, 10) },
-      { header: "Dispel", options: [this.options[10]] },
-      { header: "Healthstone", options: [this.options[11]] },
+      { header: "Combat Behavior", options: this.options.slice(0, 6) }, // Include the Pause Key option here
+      { header: "Spell Casting", options: this.options.slice(6, 8) },
+      { header: "Cache Settings", options: [this.options[8]] },
+      { header: "Interrupt", options: this.options.slice(9, 11) },
+      { header: "Dispel", options: [this.options[11]] },
+      { header: "Healthstone", options: [this.options[12]] },
     ]);
   }
 

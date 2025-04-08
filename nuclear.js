@@ -7,6 +7,7 @@ import { defaultHealTargeting } from "./Targeting/HealTargeting";
 import { defaultCombatTargeting } from "./Targeting/CombatTargeting";
 import commandListener from '@/Core/CommandListener'
 import { renderBehaviorTree } from "./Debug/BehaviorTreeDebug";
+import settings from "@/Core/Settings";
 
 export let availableBehaviors = [];
 
@@ -15,6 +16,7 @@ class Nuclear extends wow.EventListener {
     this.builder = new BehaviorBuilder();
     await this.builder.initialize();
     this.rebuild();
+    this.isPaused = false;
   }
 
   tick() {
@@ -31,10 +33,28 @@ class Nuclear extends wow.EventListener {
       return;
     }
 
+    if (settings.PauseKey && settings.PauseKey !== "None") {
+      const keyEnum = imgui.Key[settings.PauseKey];
+      if (keyEnum !== undefined && imgui.isKeyPressed(keyEnum, false)) {
+        this.isPaused = !this.isPaused;
+        console.info(`Rotation ${this.isPaused ? 'paused' : 'resumed'}`);
+      }
+    }
+
+    // Draw pause indicator if paused
+    if (this.isPaused) {
+      const pauseText = "ROTATION PAUSED";
+      const displaySize = imgui.io.displaySize;
+      const center = {x: displaySize.x / 2, y: displaySize.y / 2};
+      const textSize = imgui.calcTextSize(pauseText);
+      const adjusted = {x: center.x - textSize.x / 2, y: center.y - textSize.y / 2};
+      imgui.getBackgroundDrawList()?.addText(pauseText, adjusted, colors.yellow);
+    }
+
     try {
       defaultHealTargeting?.update();
       defaultCombatTargeting?.update();
-      if (this.behaviorRoot) {
+      if (this.behaviorRoot && !this.isPaused) {
         this.behaviorRoot.execute(this.behaviorContext);
       }
     } catch (e) {
