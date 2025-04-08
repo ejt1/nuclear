@@ -6,6 +6,7 @@ import spell from "@/Core/Spell";
 import { me } from "@/Core/ObjectManager";
 import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 import Settings from '@/Core/Settings';
+import KeyBinding from '@/Core/KeyBinding';
 
 const auras = {
   soulFragments: 203981,
@@ -21,6 +22,8 @@ export class DemonHunterVengeanceBehavior extends Behavior {
       header: "Utility",
       options: [
         { type: "checkbox", uid: "VengeanceChaosNovaMultiCasters", text: "Use Chaos Nova on multiple casters", default: true },
+        { type: "hotkey", uid: "VengeanceInfernalStrikeUse", text: "Infernal Strike Toggle", default: null },
+        { type: "hotkey", uid: "VengeanceSigilOfSpiteUse", text: "Sigil of Spite Toggle", default: null },
       ]
     },
     {
@@ -39,13 +42,20 @@ export class DemonHunterVengeanceBehavior extends Behavior {
       spell.cast("Torment", on => combat.targets.find(t => t.target && !t.isTanking())),
       spell.cast("Demon Spikes", on => me, req => this.shouldUseDemonSpikes()),
       spell.interrupt("Disrupt"),
+
+      // Hotkey-based abilities
+      spell.cast("Infernal Strike", on => me.targetUnit, req => KeyBinding.isBehaviorHotkeyDown("VengeanceInfernalStrikeUse")),
+      spell.cast("Sigil of Spite", on => combat.bestTarget, req => KeyBinding.isBehaviorHotkeyDown("VengeanceSigilOfSpiteUse")),
+
       new bt.Decorator(
         ret => !spell.isGlobalCooldown(),
         new bt.Selector(
           spell.cast("Chaos Nova", on => me, req => this.shouldUseChaosNova()),
           common.waitForTarget(),
           common.ensureAutoAttack(),
+          spell.cast("Reaver's Glaive", on => combat.bestTarget),
           spell.cast("Immolation Aura", on => me, req => combat.bestTarget && me.isWithinMeleeRange(combat.bestTarget)),
+          spell.cast("Sigil of Spite", on => combat.bestTarget, req => combat.getUnitsAroundUnit(combat.bestTarget, 10).length > 1),
           spell.cast("Sigil of Flame", on => combat.bestTarget),
           spell.cast("Fel Devastation", on => me, req => !me.isMoving() && combat.targets.filter(t => me.isFacing(t, 90) && me.isWithinMeleeRange(t)).length > 0),
           spell.cast("Spirit bomb", on => me, req => {
@@ -54,7 +64,7 @@ export class DemonHunterVengeanceBehavior extends Behavior {
           }),
           spell.cast("Fiery Brand", on => combat.bestTarget),
           spell.cast("Fracture", on => combat.bestTarget, req => this.soulFragments() < 5),
-          spell.cast("Soul Cleave", on => combat.bestTarget, req => this.soulFragments() == 0 || me.pctPower == 100),
+          spell.cast("Soul Cleave", on => combat.bestTarget),
           spell.cast("Felblade", on => combat.bestTarget, req => me.pctPower < 60),
           spell.cast("Throw Glaive", on => combat.bestTarget),
         )

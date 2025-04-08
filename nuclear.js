@@ -7,6 +7,8 @@ import { defaultHealTargeting } from "./Targeting/HealTargeting";
 import { defaultCombatTargeting } from "./Targeting/CombatTargeting";
 import commandListener from '@/Core/CommandListener'
 import { renderBehaviorTree } from "./Debug/BehaviorTreeDebug";
+import settings from "@/Core/Settings";
+import KeyBinding from "@/Core/KeyBinding";
 
 export let availableBehaviors = [];
 
@@ -15,6 +17,10 @@ class Nuclear extends wow.EventListener {
     this.builder = new BehaviorBuilder();
     await this.builder.initialize();
     this.rebuild();
+    this.isPaused = false;
+
+    // Set default keybinding for pause (Something noone will press)
+    KeyBinding.setDefault("pause", imgui.Key.F9);
   }
 
   tick() {
@@ -31,10 +37,29 @@ class Nuclear extends wow.EventListener {
       return;
     }
 
+    // Don't process key presses if we're in key binding mode
+    if (!KeyBinding.isBinding()) {
+      // Check for pause key press using the new KeyBinding system
+      if (KeyBinding.isPressed("pause")) {
+        this.isPaused = !this.isPaused;
+        console.info(`Rotation ${this.isPaused ? 'paused' : 'resumed'}`);
+      }
+    }
+
+    // Draw pause indicator if paused
+    if (this.isPaused) {
+      const pauseText = "ROTATION PAUSED";
+      const displaySize = imgui.io.displaySize;
+      const center = {x: displaySize.x / 2, y: displaySize.y / 2};
+      const textSize = imgui.calcTextSize(pauseText);
+      const adjusted = {x: center.x - textSize.x / 2, y: center.y - textSize.y / 2};
+      imgui.getBackgroundDrawList()?.addText(pauseText, adjusted, colors.yellow);
+    }
+
     try {
       defaultHealTargeting?.update();
       defaultCombatTargeting?.update();
-      if (this.behaviorRoot) {
+      if (this.behaviorRoot && !this.isPaused) {
         this.behaviorRoot.execute(this.behaviorContext);
       }
     } catch (e) {
@@ -43,6 +68,52 @@ class Nuclear extends wow.EventListener {
       console.error(`${e.message}`);
       console.error(`${e.stack}`);
     }
+  }
+
+  // Add method to render keybinding UI
+  renderKeybindingUI() {
+    imgui.text("Configure Hotkeys");
+    imgui.separator();
+
+    // Group layout
+    if (imgui.collapsingHeader("Core Controls", imgui.TreeNodeFlags.DefaultOpen)) {
+      // Add pause rotation key binding button
+      KeyBinding.button("pause", "Pause Rotation");
+
+      // Add pause core key binding button
+      KeyBinding.button("pauseCore", "Pause Application");
+
+      // Add toggle window key binding button
+      KeyBinding.button("toggleWindow", "Toggle Nuclear Window");
+
+      // Add toggle debug window button
+      KeyBinding.button("toggleDebug", "Toggle Debug Window");
+    }
+
+    // Info about key binding
+    imgui.spacing();
+    imgui.separator();
+    imgui.spacing();
+
+    // Display binding status
+    if (KeyBinding.isBinding()) {
+      imgui.pushStyleColor(imgui.Col.Text, [1.0, 0.8, 0.0, 1.0]); // Yellow
+      imgui.text("Press a key combination to bind (ESC to cancel)...");
+      imgui.popStyleColor();
+    } else {
+      imgui.textWrapped("Click on a button and press any key combination to rebind. Press ESC to cancel binding.");
+    }
+
+    imgui.spacing();
+
+    // Add reset buttons
+    if (imgui.button("Reset All to Defaults")) {
+      KeyBinding.resetAll();
+    }
+
+    // Add note about reserved keys
+    imgui.spacing();
+    imgui.textWrapped("Note: ESC is reserved for canceling binding mode and cannot be bound.");
   }
 
   rebuild() {

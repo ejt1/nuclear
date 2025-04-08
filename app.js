@@ -12,15 +12,20 @@ import AntiAFK from './Extra/AntiAFK';
 import General from './Extra/General';
 import commandListener from './Core/CommandListener';
 import colors from './Enums/Colors';
+import KeyBinding from './Core/KeyBinding';
 
 let pauseCore = false;
 
 const extraModules = [General, Radar, Autolooter, AntiAFK];
 
+// Set up default keybinding for pausing the core
+KeyBinding.setDefault("pauseCore", imgui.Key.Pause);
+
 nuclear.initialize().then(() => {
   // our "main loop", called every tick
   setInterval(_ => {
-    if (imgui.isKeyPressed(imgui.Key.Pause, false)) {
+    // Don't process key presses if we're in key binding mode
+    if (!KeyBinding.isBinding() && KeyBinding.isPressed("pauseCore")) {
       pauseCore = !pauseCore;
     }
 
