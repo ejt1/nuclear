@@ -19,14 +19,20 @@ class KeyBindingManager {
         const data = fs.readFile(keybindingsPath, 'utf-8');
         const parsed = JSON.parse(data);
 
-        // Ensure all bindings have the isActive property
+        // Process each binding
         for (const bindName in parsed) {
+          // Ensure all bindings have the isActive property
           if (parsed[bindName] && !parsed[bindName].hasOwnProperty('isActive')) {
             // If key is None, set isActive to false, otherwise true
             parsed[bindName].isActive =
               parsed[bindName].key !== undefined &&
               parsed[bindName].key !== null &&
               parsed[bindName].key !== imgui.Key.None;
+          }
+
+          // Remove the keyName property as it's just for human readability
+          if (parsed[bindName] && parsed[bindName].hasOwnProperty('keyName')) {
+            delete parsed[bindName].keyName;
           }
         }
 
@@ -43,7 +49,17 @@ class KeyBindingManager {
   // Save keybindings to file
   saveBindings() {
     try {
-      fs.writeFile(keybindingsPath, JSON.stringify(this.keybindings, null, 2));
+      // Add human-readable keyName to each binding before saving
+      const bindingsWithKeyNames = {};
+      for (const bindName in this.keybindings) {
+        const binding = this.keybindings[bindName];
+        bindingsWithKeyNames[bindName] = { ...binding };
+
+        // Add human-readable key name using our existing formatter
+        bindingsWithKeyNames[bindName].keyName = this.formatKeyBinding(binding);
+      }
+
+      fs.writeFile(keybindingsPath, JSON.stringify(bindingsWithKeyNames, null, 2));
       console.info('Keybindings saved successfully.');
     } catch (error) {
       console.error('Error saving keybindings:', error);
