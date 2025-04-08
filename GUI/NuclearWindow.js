@@ -7,6 +7,7 @@ import General from "@/Extra/General";
 import ProfileSettings from "@/Extra/ProfileSettings";
 import nuclear from "@/nuclear";
 import { me } from "@/Core/ObjectManager";
+import KeyBinding from "@/Core/KeyBinding";
 
 class NuclearWindow {
   constructor() {
@@ -28,6 +29,7 @@ class NuclearWindow {
       enabledColor: colors.green,
       disabledColor: colors.lightgrey
     };
+    this.toggleBindInitialized = false;
   }
 
   tick() {
@@ -35,9 +37,17 @@ class NuclearWindow {
       return;
     }
 
-    if (imgui.isKeyPressed(imgui.Key.Insert, false)) {
+    // Set default keybinding for toggling the window if not set yet
+    if (!this.toggleBindInitialized) {
+      KeyBinding.setDefault("toggleWindow", imgui.Key.Insert);
+      this.toggleBindInitialized = true;
+    }
+
+    // Don't process key presses if we're in key binding mode
+    if (!KeyBinding.isBinding() && KeyBinding.isPressed("toggleWindow")) {
       this.show.value = !this.show.value;
     }
+
     if (this.show.value) {
       this.render(this.show);
     }
@@ -84,6 +94,13 @@ class NuclearWindow {
           imgui.endTabItem();
         }
       });
+
+      // Add Keybindings tab
+      if (imgui.beginTabItem("Keybindings")) {
+        nuclear.renderKeybindingUI();
+        imgui.endTabItem();
+      }
+
       imgui.endTabBar();
     }
 
@@ -148,6 +165,19 @@ class NuclearWindow {
             });
             imgui.endCombo();
           }
+        } else if (option.type === "hotkey") {
+          // Render the label text
+          imgui.text(`${option.text}:`);
+          imgui.sameLine();
+
+          // Create unique ID for the button
+          const buttonId = `##hotkey_${option.uid}`;
+
+          // Render the hotkey binding UI
+          KeyBinding.renderHotkeySetting(option.uid, settingValue, newValue => {
+            // This callback is called when the binding changes
+            // We don't need to store anything in settings as KeyBinding manages its own storage
+          });
         }
       }
     });
