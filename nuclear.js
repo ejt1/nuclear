@@ -85,6 +85,9 @@ class Nuclear extends wow.EventListener {
 
       // Add toggle window key binding button
       KeyBinding.button("toggleWindow", "Toggle Nuclear Window");
+
+      // Add toggle debug window button
+      KeyBinding.button("toggleDebug", "Toggle Debug Window");
     }
 
     // Info about key binding
