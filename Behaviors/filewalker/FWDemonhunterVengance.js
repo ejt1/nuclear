@@ -20,7 +20,31 @@ export class VengeanceDemonHunterBehavior extends Behavior {
     FEL_SCARRED: "Demonsurge",            // Top talent for Fel-Scarred
   };
 
-        static settings = [
+  // Spell IDs from spellIDs.js
+  static SPELL_IDS = {
+    // General
+    DEMON_SPIKES: 203720,
+    FIERY_BRAND: 204021,
+    META_VENGEANCE: 187827,
+    FEL_DEVASTATION: 212084,
+    IMMOLATION_AURA: 258920,
+    THE_HUNT: 370965,
+    SIGIL_OF_FLAME: 204596,
+    FELBLADE: 232893,
+    THROW_GLAIVE: 185123,
+    DISRUPT: 183752,
+    
+    // Vengeance specific
+    SOUL_CLEAVE: 228477,
+    FRACTURE: 263642,
+    SOUL_CARVER: 207407,
+    SPIRIT_BOMB: 247454,
+    SIGIL_OF_SPITE: 389401,
+    REAVERS_GLAIVE: 425364,
+    TAUNT: 185245,
+  };
+
+  static settings = [
     {
       header: 'Vengeance Demon Hunter Settings',
       options: [
@@ -36,8 +60,7 @@ export class VengeanceDemonHunterBehavior extends Behavior {
           type: 'slider', 
           min: 2, 
           max: 8, 
-          default: 3, 
-          description: 'Number of enemies needed to use AOE abilities' 
+          default: 3
         },
         { 
           uid: 'VengSpiritBombThreshold', 
@@ -45,8 +68,7 @@ export class VengeanceDemonHunterBehavior extends Behavior {
           type: 'slider', 
           min: 0, 
           max: 8, 
-          default: 6,
-          description: 'Minimum number of targets to use Spirit Bomb (0 to disable)' 
+          default: 6
         },
         { 
           uid: 'VengFelbladeThreshold', 
@@ -54,8 +76,7 @@ export class VengeanceDemonHunterBehavior extends Behavior {
           type: 'slider', 
           min: 10, 
           max: 150, 
-          default: 80,
-          description: 'Use Felblade when below this Fury amount' 
+          default: 80
         },
         { 
           uid: 'VengUseSigils', 
@@ -67,8 +88,13 @@ export class VengeanceDemonHunterBehavior extends Behavior {
           uid: 'VengPreferFieryBrand',
           text: 'Optimize for Fiery Brand',
           type: 'checkbox',
-          default: true,
-          description: 'Optimize Fel Devastation and Soul Carver usage with Fiery Brand'
+          default: true
+        },
+        {
+          uid: 'VengAutoTaunt',
+          text: 'Auto Taunt Enemies',
+          type: 'checkbox',
+          default: true
         }
       ],
     },
@@ -89,8 +115,7 @@ export class VengeanceDemonHunterBehavior extends Behavior {
           type: 'slider', 
           min: 0, 
           max: 2, 
-          default: 1,
-          description: 'Minimum charges to keep on Demon Spikes' 
+          default: 1
         },
         { 
           uid: 'VengDemonSpikesThreshold', 
@@ -132,7 +157,7 @@ export class VengeanceDemonHunterBehavior extends Behavior {
           this._lastTarget = this.getCurrentTarget();
           const heroTalent = this.detectHeroTalent();
           if (heroTalent) {
-            console.info(`Detected Hero Talent: ${heroTalent}`);
+            // console.info(`Detected Hero Talent: ${heroTalent}`);
           } else {
             console.info("No Hero Talent detected. Using default rotation.");
           }
@@ -147,22 +172,87 @@ export class VengeanceDemonHunterBehavior extends Behavior {
       new bt.Selector(
         this.defensives(),
         
+        
         new bt.Decorator(
           () => !Spell.isGlobalCooldown(),
           new bt.Selector(
             // Interrupt with priority
             Spell.interrupt('Disrupt'),
-            
+            this.autoTaunt(),
+            this.catchLoseEnemies(),
             // Main rotation selector
             new bt.Selector(
               this.aldrachiReaverRotation(),
               this.felScarredRotation(),
               this.defaultRotation()
             ),
-            
           )
         )
       )
+    );
+  }
+
+  // Auto taunt functionality
+  autoTaunt() {
+    return new bt.Decorator(
+      () => Settings.VengAutoTaunt && !Spell.isGlobalCooldown(),
+      new bt.Action(() => {
+        if (!me.inCombat()) return bt.Status.Failure;
+        
+        // Get nearby enemies in combat with us
+        const nearbyEnemies = combat.targets.filter(unit => 
+          unit instanceof wow.CGUnit && 
+          unit.inCombat(me) && 
+          !unit.deadOrGhost && 
+          me.distanceTo(unit) < 30
+        );
+        
+        // Check for enemies that are targeting someone else
+        for (const enemy of nearbyEnemies) {
+          if (enemy.target && !enemy.target.equals(me.guid) )
+          {
+            Spell.cast("Torment", enemy.target);
+            console.info(`GET OVER HERE! ${enemy.unsafeName}`);
+          }
+        }
+        
+        return bt.Status.Failure;
+      })
+    );
+  }
+
+    // Auto taunt functionality
+  catchLoseEnemies() {
+    return new bt.Decorator(
+      () => !Spell.isGlobalCooldown(),
+      new bt.Action(() => {
+        if (!me.inCombat()) return bt.Status.Failure;
+        
+        // Get nearby enemies in combat with us
+        const nearbyEnemies = combat.targets.filter(unit => 
+          unit instanceof wow.CGUnit && 
+          unit.inCombat(me) && 
+          !unit.deadOrGhost && 
+          me.distanceTo(unit) < 30
+        );
+        
+        // Check for enemies that are targeting someone else
+        for (const enemy of nearbyEnemies) {
+          if (enemy.target && 
+              !enemy.target.equals(me.guid) && 
+              Spell.getTimeSinceLastCast('Throw Glaive') > 2000 &&
+              Spell.getCooldown('Throw Glaive').ready) {
+            
+            // Use taunt on this enemy
+            if (Spell.getSpell('Throw Glaive').cast(enemy)) {
+              console.info(`Auto-Glaiving ${enemy.unsafeName} who is targeting someone else`);
+              return bt.Status.Success;
+            }
+          }
+        }
+        
+        return bt.Status.Failure;
+      })
     );
   }
 
@@ -207,8 +297,7 @@ export class VengeanceDemonHunterBehavior extends Behavior {
     return new bt.Decorator(
       () => this.isAldrachiReaver(),
       new bt.Selector(
-        // Use Reaver's Glaive when we have 20 stacks of Art of the Glaive
-        // Spell.cast("Reaver's Glaive", this.getCurrentTarget, () => this.canUseReaversGlaive()),
+        // Use Reaver's Glaive when we have Art of the Glaive proc
         Spell.cast("Reaver's Glaive", this.getCurrentTarget, () => this.getArtOfTheGlaiveProc()),
         
         // Check for Reaver's Glaive empowerment
@@ -373,12 +462,12 @@ export class VengeanceDemonHunterBehavior extends Behavior {
       )
     );
   }
+
   defaultRotation() {
     return new bt.Decorator(
       () => this.isDefaultRotation(),
       new bt.Selector(
-        // Use Reaver's Glaive when we have 20 stacks of Art of the Glaive
-        // Spell.cast("Reaver's Glaive", this.getCurrentTarget, () => this.canUseReaversGlaive()),
+        // Use Reaver's Glaive when we have Art of the Glaive proc
         Spell.cast("Reaver's Glaive", this.getCurrentTarget, () => this.getArtOfTheGlaiveProc()),
         
         // Check for Reaver's Glaive empowerment
@@ -521,13 +610,8 @@ export class VengeanceDemonHunterBehavior extends Behavior {
   }
 
   getArtOfTheGlaiveProc() {
-    // Check for Art of the Glaive aura stacks
-    return Spell.getSpell("Throw Glaive").overrideId == 442294 ? true : false;
-  }
-  
-  canUseReaversGlaive() {
-    // Check if we have 20 stacks of Art of the Glaive
-    return this.getArtOfTheGlaiveStacks() >= 20 && this.isAldrachiReaver();
+    // Check for Art of the Glaive proc by checking for the specific override ID
+    return Spell.getSpell("Throw Glaive").overrideId === 442294;
   }
 
   getRemainingTime(unit, auraName) {
