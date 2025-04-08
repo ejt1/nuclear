@@ -253,7 +253,7 @@ class KeyBindingManager {
           if (this.isKeyUsedElsewhere(keyValue, this.modifiers, uid)) {
             console.warn(`Key combination already assigned to another function. Please choose a different key.`);
             this.errorState = true;
-            continue;
+            return true;
           }
 
           // Bind the key with modifiers
@@ -440,7 +440,7 @@ class KeyBindingManager {
           if (this.isKeyUsedElsewhere(keyValue, this.modifiers, bindName)) {
             console.warn(`Key combination already assigned to another function. Please choose a different key.`);
             this.errorState = true;
-            continue;
+            return true; // Exit key handling but stay in binding mode
           }
 
           // Bind the key with modifiers
