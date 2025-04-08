@@ -33,7 +33,7 @@ const auras = {
 };
 
 export class EnhancementShamanNewBehavior extends Behavior {
-  name = 'Enhancement Shaman New';
+  name = 'FW Enhancement Shaman';
   context = BehaviorContext.Any;
   specialization = Specialization.Shaman.Enhancement;
   version = wow.GameVersion.Retail;
@@ -75,6 +75,9 @@ export class EnhancementShamanNewBehavior extends Behavior {
       common.waitForFacing(),
       common.waitForCastOrChannel(),
       
+      this.manageSurgingTotem(),
+
+
       // Precombat actions
       new bt.Decorator(
         ret => !spell.isGlobalCooldown(),
@@ -85,7 +88,7 @@ export class EnhancementShamanNewBehavior extends Behavior {
           // Precombat buffs
           spell.cast('Lightning Shield', on => me, req => !me.hasAura('Lightning Shield')),
           spell.cast('Windfury Weapon', on => me, req => !me.hasAura('Windfury Weapon')),
-          // spell.cast('Flametongue Weapon', on => me, req => !me.hasAura('Flametongue Weapon')),
+          spell.cast('Flametongue Weapon', on => me, req => !me.hasAura('Flametongue Weapon')),
           spell.cast('Skyfury', on => me, req => !me.hasAura('Skyfury')),
           
           // Defensive actions
@@ -403,7 +406,8 @@ export class EnhancementShamanNewBehavior extends Behavior {
                this.isOpeningPhase(),
         this.multiTargetTotemicOpen()
       ),
-      
+      this.useRacials(),
+      this.useTrinkets(),
       spell.cast(444995, this.getCurrentTarget, req => spell.getSpell('Surging Totem').overrideId == 444995),
       
       spell.cast('Ascendance', this.getCurrentTarget, req =>
@@ -444,7 +448,8 @@ export class EnhancementShamanNewBehavior extends Behavior {
       spell.cast('Elemental Blast', this.getCurrentTarget, req =>
         (!this.hasTalent('Elemental Spirits') || 
          (this.hasTalent('Elemental Spirits') && 
-          (spell.getCharges('Elemental Blast') === spell.getMaxCharges('Elemental Blast') || this.feralSpiritActive() >= 2))) &&
+          (spell.getSpell('Elemental Blast').charges.charges === spell.getSpell('Elemental Blast').charges.maxcharges || 
+           this.feralSpiritActive() >= 2))) &&
         me.getAuraStacks(auras.maelstromweapon) === 10 &&
         (!this.hasTalent('Crashing Storms') || this.getEnemiesInRange(8) <= 3)
       ),
@@ -553,7 +558,7 @@ export class EnhancementShamanNewBehavior extends Behavior {
       ),
       
       spell.cast('Elemental Blast', this.getCurrentTarget, req =>
-        me.getAuraStacks(auras.maelstromweapon) === 10
+        me.getAuraStacks(auras.maelstromweapon) >= 5
       ),
       
       spell.cast('Lightning Bolt', this.getCurrentTarget, req =>
@@ -831,7 +836,8 @@ export class EnhancementShamanNewBehavior extends Behavior {
         req => this.isOpeningPhase(),
         this.singleTargetOpen()
       ),
-      
+      this.useRacials(),
+      this.useTrinkets(),
       // Primordial Storm management
       spell.cast('Primordial Storm', this.getCurrentTarget, req =>
         me.getAuraStacks(auras.maelstromweapon) >= 10 ||
@@ -909,7 +915,8 @@ export class EnhancementShamanNewBehavior extends Behavior {
         req => this.isOpeningPhase(),
         this.singleTargetTotemicOpen()
       ),
-      
+      this.useRacials(),
+      this.useTrinkets(),
       spell.cast(444995, this.getCurrentTarget, req => spell.getSpell('Surging Totem').overrideId == 444995),
       
       spell.cast('Ascendance', this.getCurrentTarget, req =>
@@ -981,6 +988,18 @@ export class EnhancementShamanNewBehavior extends Behavior {
         !me.hasAura('Whirling Air')
       ),
       
+      spell.cast('Elemental Blast', this.getCurrentTarget, req =>
+        ((!this.hasTalent('Overflowing Maelstrom') && me.getAuraStacks(auras.maelstromweapon) >= 5) ||
+         (me.getAuraStacks(auras.maelstromweapon) >= 9)) && 
+        this.getChargesFractional('Elemental Blast') >= 1.8
+      ),
+      
+           // spell.cast('Elemental Blast', this.getCurrentTarget, req => 
+      //   ((!this.hasTalent('Overflowing Maelstrom') && me.getAuraStacks(auras.maelstromweapon) >= 5) ||
+      //    (me.getAuraStacks(auras.maelstromweapon) >= 9)) && 
+      //   this.getChargesFractional('Elemental Blast') >= 1.8
+      // ),
+
       spell.cast('Elemental Blast', this.getCurrentTarget, req =>
         me.getAuraStacks(auras.maelstromweapon) >= 10 &&
         (!me.hasAura('Primordial Storm') || this.getAuraRemainingTime('Primordial Storm') > 4000)
@@ -1219,7 +1238,7 @@ export class EnhancementShamanNewBehavior extends Behavior {
         this.minTalentedCdRemains() >= spell.getCooldown('Berserking').timeleft ||
         (!this.hasTalent('Ascendance') && !this.hasTalent('Feral Spirit') && !this.hasTalent('Doom Winds'))
       )),
-      
+      spell.cast("Berserking", this.getCurrentTarget),
       spell.cast("Fireblood", this.getCurrentTarget, req => me.hasAura('Fireblood') && (
         me.hasAura('Ascendance') || 
         me.hasAura(auras.feralspirits) || 
@@ -1245,6 +1264,7 @@ export class EnhancementShamanNewBehavior extends Behavior {
   
   useTrinkets() {
     return new bt.Selector(
+      common.useEquippedItemByName("Signet of the Priory"),
       // Generic trinket use based on APL logic
       // common.useEquippedTrinket(1, req => 
       //   !this.isTrinketWeird(1) && 
@@ -1532,6 +1552,139 @@ export class EnhancementShamanNewBehavior extends Behavior {
     }
     combatStartTime = 0;
     currentCombatTime = 0;
+  }
+
+  getChargesFractional(spellName) {
+    const spell = spell.getSpell(spellName);
+    if (!spell || !spell.charges) return 0;
+    
+    const currentCharges = spell.charges.charges || 0;
+    const maxCharges = spell.charges.maxCharges || 0;
+    
+    if (currentCharges >= maxCharges) return currentCharges;
+    
+    const remainingTime = spell.charges.start + spell.charges.duration - wow.frameTime;
+    const chargeDuration = spell.charges.duration;
+    const fractionalPart = 1 - (remainingTime / chargeDuration);
+    
+    return currentCharges + fractionalPart;
+  }
+
+  trackTotems() {
+    const activeTotems = [];
+    
+    objMgr.objects.forEach(obj => {
+      if (obj instanceof wow.CGUnit && 
+          obj.createdBy && 
+          me.guid && 
+          obj.createdBy.equals(me.guid)) {
+        
+        // Check if it's any type of totem
+        if (obj.name.includes('Totem')) {
+          // Get health percentage to determine totem lifetime
+          const healthPct = obj.pctHealth;
+          const distanceToPlayer = me.distanceTo(obj);
+          
+          activeTotems.push({
+            guid: obj.guid,
+            name: obj.name,
+            position: obj.position,
+            distance: distanceToPlayer,
+            health: healthPct
+          });
+        }
+      }
+    });
+    
+    return activeTotems;
+  }
+  
+  // Find specifically the Surging Totem and get detailed information
+  getSurgingTotemInfo() {
+    let totemInfo = null;
+    
+    objMgr.objects.forEach(obj => {
+      if (obj instanceof wow.CGUnit && 
+          obj.createdBy && 
+          me.guid && 
+          obj.createdBy.equals(me.guid) && 
+          obj.name === 'Surging Totem') {
+        
+        const distanceToPlayer = me.distanceTo(obj);
+        
+        totemInfo = {
+          guid: obj.guid,
+          position: obj.position,
+          distance: distanceToPlayer,
+          health: obj.pctHealth,
+          entryId: obj.entryId,
+          // Calculate remaining time (approximation based on health)
+          remainingTime: (obj.pctHealth / 100) * 120000 // Assuming 120sec max duration
+        };
+      }
+    });
+    
+    return totemInfo;
+  }
+  
+  // Manage totem relocation
+  manageSurgingTotem() {
+    return new bt.Selector(
+      new bt.Action(() => {
+        // Don't attempt relocation if player is moving
+        if (me.isMoving()) {
+          return bt.Status.Failure;
+        }
+  
+        const totemInfo = this.getSurgingTotemInfo();
+        
+        // If totem is active and far away
+        if (totemInfo && totemInfo.distance > 15) {
+          
+          // Check if we should relocate based on remaining time
+          const shouldRelocate = totemInfo.remainingTime > 30000; // Only relocate if >30 seconds left
+          
+          if (shouldRelocate) {
+            console.info(`Relocating Surging Totem - ${totemInfo.distance.toFixed(1)} yards away, ${(totemInfo.remainingTime/1000).toFixed(1)}s remaining`);
+            
+            // Try to cast the totem again if available
+            const surgingTotem = spell.getSpell('Surging Totem');
+            const totemicRecall = spell.getSpell('Totemic Recall');
+            
+            // First recall existing totems if that ability exists
+            if (totemicRecall && totemicRecall.isKnown && totemicRecall.cooldown.ready) {
+              totemicRecall.cast();
+              return bt.Status.Success;
+            }
+            
+            // If there's no recall ability, try to place a new totem
+            if (surgingTotem && surgingTotem.isKnown && surgingTotem.cooldown.ready) {
+              surgingTotem.cast();
+              return bt.Status.Success;
+            }
+          }
+        }
+        
+        return bt.Status.Failure;
+      })
+    );
+  }
+  
+  // Get the count of active totems by name
+  getTotemCount(totemName) {
+    let count = 0;
+    
+    objMgr.objects.forEach(obj => {
+      if (obj instanceof wow.CGUnit && 
+          obj.createdBy && 
+          me.guid && 
+          obj.createdBy.equals(me.guid) && 
+          obj.name === totemName) {
+        count++;
+      }
+    });
+    
+    return count;
   }
   
 }

@@ -5,6 +5,7 @@ import Autolooter from "@/Extra/Autolooter";
 import Radar from "@/Extra/Radar";
 import General from "@/Extra/General";
 import ProfileSettings from "@/Extra/ProfileSettings";
+import SpellQueueDisplay from "@/Extra/SpellQueueDisplay";
 import nuclear from "@/nuclear";
 import { me } from "@/Core/ObjectManager";
 import KeyBinding from "@/Core/KeyBinding";
@@ -12,7 +13,7 @@ import KeyBinding from "@/Core/KeyBinding";
 class NuclearWindow {
   constructor() {
     this.show = new imgui.MutableVariable(false);
-    this.modules = [General, Radar, Autolooter, AntiAFK, ProfileSettings]; // Add other modules here as needed
+    this.modules = [General, Radar, Autolooter, AntiAFK, ProfileSettings, SpellQueueDisplay]; // Added SpellQueueDisplay
     this.initialized = false;
     // Initialize state for each option from Settings
     this.state = {};
@@ -76,7 +77,7 @@ class NuclearWindow {
     const mainViewport = imgui.getMainViewport();
     const workPos = mainViewport.workPos;
     imgui.setNextWindowPos({ x: workPos.x + 20, y: workPos.y + 20 }, imgui.Cond.FirstUseEver);
-    imgui.setNextWindowSize({ x: 300, y: 400 }, imgui.Cond.FirstUseEver);
+    imgui.setNextWindowSize({ x: 350, y: 450 }, imgui.Cond.FirstUseEver);
 
     imgui.pushStyleColor(imgui.Col.Text, [1.0, 1.0, 1.0, 1.0]);
     imgui.pushStyleColor(imgui.Col.WindowBg, [0.1, 0.1, 0.1, 0.9]);
