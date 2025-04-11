@@ -3,6 +3,7 @@ import objMgr from '../Core/ObjectManager';
 import Settings from "../Core/Settings";
 import { renderBehaviorTree } from './BehaviorTreeDebug';
 import PerfMgr from './PerfMgr';
+import KeyBinding from '@/Core/KeyBinding';
 
 class DebugWindow {
   constructor() {
@@ -10,10 +11,18 @@ class DebugWindow {
     this.displayPerfMgr = new imgui.MutableVariable(false);
     this.selected = null;
     this.selectedSpell = null;
+    this.toggleBindInitialized = false;
   }
 
   tick() {
-    if (imgui.isKeyPressed(imgui.Key.F12, false)) {
+    // Set default keybinding for toggling the debug window if not set yet
+    if (!this.toggleBindInitialized) {
+      KeyBinding.setDefault("toggleDebug", imgui.Key.F12);
+      this.toggleBindInitialized = true;
+    }
+
+    // Don't process key presses if we're in key binding mode
+    if (!KeyBinding.isBinding() && KeyBinding.isPressed("toggleDebug")) {
       this.show.value = !this.show.value;
     }
 
@@ -341,7 +350,5 @@ class DebugWindow {
     }
   }
 }
-
-
 
 export default new DebugWindow;

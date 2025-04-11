@@ -31,7 +31,7 @@ class General {
 
   static renderOptions(renderFunction) {
     renderFunction([
-      { header: "Combat Behavior", options: this.options.slice(0, 5) },
+      { header: "Combat Behavior", options: this.options.slice(0, 5) }, // Only include the 5 combat behavior settings
       { header: "Spell Casting", options: this.options.slice(5, 7) },
       { header: "Cache Settings", options: [this.options[7]] },
       { header: "Interrupt", options: this.options.slice(8, 10) },
