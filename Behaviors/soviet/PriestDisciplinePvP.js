@@ -70,25 +70,28 @@ export class PriestDisciplinePvP extends Behavior {
         this.healTarget = h.getPriorityPVPHealTarget();
         return bt.Status.Failure; // Proceed to next child
       }),
-      spell.cast("Power Word: Life", on => this.healTarget, ret => this.healTarget?.pctHealth < 50),
-      spell.cast("Desperate Prayer", on => me, ret => me.pctHealth < 40),
+      spell.cast("Power Word: Life", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 50),
+      spell.cast("Desperate Prayer", on => me, ret => me.effectiveHealthPercent < 40),
       spell.cast("Pain Suppression", on => this.healTarget, ret => this.shouldCastWithHealthAndNotPainSupp(this.healTarget, 34)),
       spell.cast("Rapture", on => this.healTarget, ret => this.shouldCastWithHealthAndNotPainSupp(this.healTarget, 55)),
       spell.cast("Void Shift", on => this.healTarget, ret => this.shouldCastWithHealthAndNotPainSupp(this.healTarget, 24)),
       spell.cast("Mass Dispel", on => this.findMassDispelTarget(), ret => this.findMassDispelTarget() !== undefined),
       spell.cast("Premonition", on => me, ret => this.shouldCastPremonition(this.healTarget)),
-      spell.cast("Evangelism", on => me, ret => me.inCombat() && this.getAtonementCount() > 3 && this.minAtonementDuration() < 4000),
+      spell.cast("Evangelism", on => me, ret => me.inCombat() && (
+        (this.getAtonementCount() > 3 && this.minAtonementDuration() < 4000)
+        || this.healTarget.effectiveHealthPercent < 40)
+      ),
       spell.cast("Shadow Word: Death", on => this.findDeathThePolyTarget(), ret => this.findDeathThePolyTarget() !== undefined),
       spell.cast("Power Word: Barrier", on => this.healTarget, ret => this.shouldCastWithHealthAndNotPainSupp(this.healTarget, 45)),
-      spell.cast("Power Word: Shield", on => this.healTarget, ret => this.healTarget?.pctHealth < 89 && !this.hasShield(this.healTarget)),
+      spell.cast("Power Word: Shield", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 89 && !this.hasShield(this.healTarget)),
       spell.cast("Power Word: Radiance", on => this.healTarget, ret => this.shouldCastRadiance(this.healTarget, 2)),
-      spell.cast("Flash Heal", on => this.healTarget, ret => this.healTarget?.pctHealth < 85 && me.hasAura(auras.surgeOfLight)),
+      spell.cast("Flash Heal", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 85 && me.hasAura(auras.surgeOfLight)),
       spell.dispel("Purify", true, DispelPriority.High, true, WoWDispelType.Magic),
       spell.dispel("Dispel Magic", false, DispelPriority.High, true, WoWDispelType.Magic),
-      spell.cast("Penance", on => this.healTarget, ret => this.healTarget?.pctHealth < 69),
+      spell.cast("Penance", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 69),
       spell.cast("Power Word: Radiance", on => this.healTarget, ret => this.shouldCastRadiance(this.healTarget, 1)),
-      spell.cast("Penance", on => this.healTarget, ret => this.healTarget?.pctHealth < 79),
-      spell.cast("Flash Heal", on => this.healTarget, ret => this.healTarget?.pctHealth < 55),
+      spell.cast("Penance", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 79),
+      spell.cast("Flash Heal", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 55),
       spell.dispel("Purify", true, DispelPriority.Medium, true, WoWDispelType.Magic),
       spell.dispel("Dispel Magic", false, DispelPriority.Medium, true, WoWDispelType.Magic)
     );
@@ -98,7 +101,7 @@ export class PriestDisciplinePvP extends Behavior {
     return new bt.Selector(
       spell.cast("Shadow Word: Death", on => this.findShadowWordDeathTarget(), ret => this.findShadowWordDeathTarget() !== undefined),
       spell.cast("Shadow Word: Pain", ret => me.targetUnit && !this.hasShadowWordPain(me.targetUnit)),
-      spell.cast("Mindgames", on => me.targetUnit, ret => me.targetUnit?.pctHealth < 50),
+      spell.cast("Mindgames", on => me.targetUnit, ret => me.targetUnit?.effectiveHealthPercent < 50),
       spell.cast("Penance", on => me.targetUnit, ret => me.hasAura(auras.powerOfTheDarkSide)),
       spell.cast("Mind Blast", on => me.targetUnit, ret => true),
       spell.cast("Smite", ret => true)
@@ -128,7 +131,7 @@ export class PriestDisciplinePvP extends Behavior {
   findShadowWordDeathTarget() {
     const enemies = me.getEnemies();
     for (const enemy of enemies) {
-      if (enemy.pctHealth < 20) {
+      if (enemy.effectiveHealthPercent < 20) {
         return enemy;
       }
     }
@@ -160,7 +163,7 @@ export class PriestDisciplinePvP extends Behavior {
     if (me.hasAura(auras.premonitionInsight) || me.hasAura(auras.premonitionSolace) || me.hasAura(auras.premonitionPiety)) {
       return false;
     }
-    return target.pctHealth < 50 || target.timeToDeath() < 3;
+    return target.effectiveHealthPercent < 50 || target.timeToDeath() < 3;
   }
 
   hasAtonement(target) {
@@ -182,14 +185,14 @@ export class PriestDisciplinePvP extends Behavior {
     if (target.hasAura("Ice Block") || target.hasAura("Divine Shield")) {
       return false;
     }
-    return (target.pctHealth < health || target.timeToDeath() < 3) && !target.hasAuraByMe(auras.painSuppression);
+    return (target.effectiveHealthPercent < health || target.timeToDeath() < 3) && !target.hasAuraByMe(auras.painSuppression);
   }
 
   shouldCastRadiance(target, charges) {
     if (!target) {
       return false;
     }
-    return target.pctHealth < 75 && spell.getCharges("Power Word: Radiance") === charges;
+    return target.effectiveHealthPercent < 75 && spell.getCharges("Power Word: Radiance") === charges;
   }
 
   isNotDeadAndInLineOfSight(friend) {
