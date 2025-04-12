@@ -45,8 +45,7 @@ export class BalanceDruidBehavior extends Behavior {
       new bt.Decorator(
         req => !me.hasAura(24858),
         spell.cast("Moonkin Form"),
-
-          new bt.Action(() => bt.Status.Success)
+        new bt.Action(() => bt.Status.Success)
       ),
       
       new bt.Decorator(
@@ -133,11 +132,11 @@ export class BalanceDruidBehavior extends Behavior {
         return false;
       }),
       
-      spell.cast('Moonfire', this.getCurrentTarget, () => 
-        this.getDebuffRemainingTime('Moonfire') < 3000 && 
-        (!this.hasTalent('Treants of the Moon') || 
-         (spell.getCooldown('Force of Nature').timeleft > 3000 && !me.hasAura('Harmony of the Grove')))
-      ),
+      // spell.cast('Moonfire', this.getCurrentTarget, () => 
+      //   this.getDebuffRemainingTime('Moonfire') < 3000 && 
+      //   (!this.hasTalent('Treants of the Moon') || 
+      //    (spell.getCooldown('Force of Nature').timeleft > 3000 && !me.hasAura('Harmony of the Grove')))
+      // ),
       
       // Cooldown management
       this.preCombatCooldowns(),
@@ -174,11 +173,11 @@ export class BalanceDruidBehavior extends Behavior {
         this.getDebuffRemainingTime('Sunfire') < 7000
       ),
       
-      spell.cast('Moonfire', this.getCurrentTarget, () => 
-        this.getDebuffRemainingTime('Moonfire') < 7000 && 
-        (!this.hasTalent('Treants of the Moon') || 
-         (spell.getCooldown('Force of Nature').timeleft > 3000 && !me.hasAura('Harmony of the Grove')))
-      ),
+      // spell.cast('Moonfire', this.getCurrentTarget, () => 
+      //   this.getDebuffRemainingTime('Moonfire') < 7000 && 
+      //   (!this.hasTalent('Treants of the Moon') || 
+      //    (spell.getCooldown('Force of Nature').timeleft > 3000 && !me.hasAura('Harmony of the Grove')))
+      // ),
       
       spell.cast('Stellar Flare', this.getCurrentTarget, () => 
         this.getDebuffRemainingTime('Stellar Flare') < 7000
@@ -195,25 +194,28 @@ export class BalanceDruidBehavior extends Behavior {
         this.convokeCondition()
       ),
       
-      // // Moon cycle abilities
-      // spell.cast('New Moon', this.getCurrentTarget, () => 
-      //   this.astralPowerDeficit() > this.passiveAsp() + this.energizeAmount('New Moon') || 
-      //   spell.getCooldown('Celestial Alignment').timeleft > 15000
-      // ),
+      // Moon cycle abilities
+      spell.cast('New Moon', this.getCurrentTarget, () => 
+        this.astralPowerDeficit() > this.passiveAsp() + this.energizeAmount('New Moon') || 
+        spell.getCooldown('Celestial Alignment').timeleft > 15000 &&
+        me.hasAura('New Moon')
+      ),
       
-      // spell.cast('Half Moon', this.getCurrentTarget, () => 
-      //   this.astralPowerDeficit() > this.passiveAsp() + this.energizeAmount('Half Moon') && 
-      //   (this.lunarRemains() > spell.getSpell('Half Moon').castTime || 
-      //    this.solarRemains() > spell.getSpell('Half Moon').castTime) || 
-      //   spell.getCooldown('Celestial Alignment').timeleft > 15000
-      // ),
+      spell.cast('Half Moon', this.getCurrentTarget, () => 
+        this.astralPowerDeficit() > this.passiveAsp() + this.energizeAmount('Half Moon') && 
+        (this.lunarRemains() > spell.getSpell('Half Moon').castTime || 
+         this.solarRemains() > spell.getSpell('Half Moon').castTime) || 
+        spell.getCooldown('Celestial Alignment').timeleft > 15000 &&
+        me.hasAura('Half Moon')
+      ),
       
-      // spell.cast('Full Moon', this.getCurrentTarget, () => 
-      //   this.astralPowerDeficit() > this.passiveAsp() + this.energizeAmount('Full Moon') && 
-      //   (this.lunarRemains() > spell.getSpell('Full Moon').castTime || 
-      //    this.solarRemains() > spell.getSpell('Full Moon').castTime) || 
-      //   spell.getCooldown('Celestial Alignment').timeleft > 15000
-      // ),
+      spell.cast('Full Moon', this.getCurrentTarget, () => 
+        this.astralPowerDeficit() > this.passiveAsp() + this.energizeAmount('Full Moon') && 
+        (this.lunarRemains() > spell.getSpell('Full Moon').castTime || 
+         this.solarRemains() > spell.getSpell('Full Moon').castTime) || 
+        spell.getCooldown('Celestial Alignment').timeleft > 15000 &&
+        me.hasAura('Full Moon')
+      ),
       
       // Special proc spell usage
       spell.cast('Starsurge', this.getCurrentTarget, () => 
@@ -261,48 +263,53 @@ export class BalanceDruidBehavior extends Behavior {
         me.powerByType(PowerType.LunarPower) > 45
       ),
       
-      // Moonfire with refined logic
-      spell.cast('Moonfire', this.getCurrentTarget, () => {
-        const debuffRemaining = this.getDebuffRemainingTime('Moonfire');
-        const targetCount = this.enemiesAroundTarget(10);
-        
-        // Don't refresh on too many targets
-        if (targetCount > 6 && debuffRemaining > 3000) {
-          return false;
+      // Replace the Moonfire casting with this:
+new bt.Selector(
+  new bt.Action(() => {
+    const moonTarget = this.findMoonfireTarget();
+    if (moonTarget) {
+      const targetCount = this.enemiesAroundTarget(10);
+      // Don't refresh on too many targets
+      if (targetCount > 6) {
+        // Only apply to targets without Moonfire
+        const debuff = moonTarget.getAuraByMe("Moonfire");
+        if (debuff && debuff.remaining > 3000) {
+          return bt.Status.Failure;
         }
-        
-        // About to expire (less than 6 seconds)
-        if (debuffRemaining < 6000) {
-          // Additional checks for multi-target
-          if (!this.hasTalent('Treants of the Moon') || 
-              targetCount > 6 || 
-              (spell.getCooldown('Force of Nature').timeleft > 3000 && !me.hasAura('Harmony of the Grove'))) {
-            return true;
-          }
-        }
-        
-        return false;
-      }),
+      }
       
-      // Sunfire with refined logic
-      spell.cast('Sunfire', this.getCurrentTarget, () => {
-        const debuffRemaining = this.getDebuffRemainingTime('Sunfire');
-        const targetCount = this.enemiesAroundTarget(10);
-        
-        // Calculate dynamic refresh threshold based on target count
-        // The formula translates to: 6 - (targetCount % 2) seconds
-        const refreshThreshold = 6000 - ((targetCount % 2) * 1000);
-        
-        // Only refresh if below the dynamic threshold
-        if (debuffRemaining < refreshThreshold) {
-          // Additional check to prevent over-prioritization
-          if (me.powerByType(PowerType.LunarPower) < 80 || debuffRemaining < 3000) {
-            return true;
-          }
+      // Additional checks for multi-target
+      if (!this.hasTalent('Treants of the Moon') || 
+          targetCount > 6 || 
+          (spell.getCooldown('Force of Nature').timeleft > 3000 && !me.hasAura('Harmony of the Grove'))) {
+        if (spell.cast("Moonfire", () => moonTarget)) {
+          return bt.Status.Success;
         }
-        
-        return false;
-      }),
+      }
+    }
+    return bt.Status.Failure;
+  })
+),
+
+// Replace the Sunfire casting with this:
+// Simple Sunfire implementation for multiTarget method
+spell.cast('Sunfire', this.getCurrentTarget, () => {
+  const target = this.getCurrentTarget();
+  if (!target) return false;
+  
+  // Check if target has the Sunfire debuff
+  const debuff = target.getAuraByMe("Sunfire");
+  const debuffRemaining = debuff ? debuff.remaining : 0;
+  
+  // Get target count for threshold calculation
+  const targetCount = this.enemiesAroundTarget(10);
+  
+  // Calculate refresh threshold (simpler formula)
+  const refreshThreshold = targetCount > 4 ? 4000 : 6000;
+  
+  // Only cast if debuff is missing or about to expire
+  return !debuff || debuffRemaining < refreshThreshold;
+}),
       
       // Eclipse building spells
       spell.cast('Wrath', this.getCurrentTarget, () => 
@@ -403,7 +410,7 @@ export class BalanceDruidBehavior extends Behavior {
   }
 
   castCooldowns() {
-    console.debug("CA " + me.hasAura(194223) + " Incarn:" + me.hasAura("Incarnation: Chosen of Elune"));
+    // console.debug("CA " + me.hasAura(194223) + " Incarn:" + me.hasAura("Incarnation: Chosen of Elune"));
     return new bt.Selector(
       // Only cast Celestial Alignment if it's not already active
       spell.cast('Celestial Alignment', () => 
@@ -444,13 +451,13 @@ export class BalanceDruidBehavior extends Behavior {
 
   inLunar() {
     const inLunar = me.auras.find(aura => aura.name.includes("Eclipse (Lunar)") && aura.remaining > 1000) !== undefined;
-    console.debug('IN Lunar ' + inLunar)
+    // console.debug('IN Lunar ' + inLunar)
     return me.auras.find(aura => aura.name.includes("Eclipse (Lunar)") && aura.remaining > 1000) !== undefined;
   }
 
   inSolar() {
     const inSolar = me.auras.find(aura => aura.name.includes("Eclipse (Solar)") && aura.remaining > 1000) !== undefined;
-    console.debug('IN Solar ' + inSolar)
+    // console.debug('IN Solar ' + inSolar)
     return me.auras.find(aura => aura.name.includes("Eclipse (Solar)") && aura.remaining > 1000) !== undefined;
   }
 
@@ -585,4 +592,39 @@ getGCD() {
     const target = this.getCurrentTarget();
     return target ? target.getUnitsAroundCount(range) : 0;
   }
+
+  // New target selection functions for DOT application
+findMoonfireTarget() {
+  // Check current target first
+  const currentTarget = this.getCurrentTarget();
+  if (currentTarget && !currentTarget.hasAuraByMe("Moonfire")) {
+    return currentTarget;
+  }
+  
+  // Find a target without Moonfire
+  const moonFireTarget = combat.targets.find(unit => 
+    common.validTarget(unit) && 
+    !unit.hasAuraByMe("Moonfire") && 
+    unit.distanceTo(me) <= 40
+  );
+  
+  return moonFireTarget || null;
+}
+
+findSunfireTarget() {
+  // Check current target first
+  const currentTarget = this.getCurrentTarget();
+  if (currentTarget && !currentTarget.hasAuraByMe("Sunfire")) {
+    return currentTarget;
+  }
+  
+  // Find a target without Sunfire
+  const sunfireTarget = combat.targets.find(unit => 
+    common.validTarget(unit) && 
+    !unit.hasAuraByMe("Sunfire") && 
+    unit.distanceTo(me) <= 40
+  );
+  
+  return sunfireTarget || null;
+}
 }
