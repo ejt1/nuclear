@@ -7,7 +7,7 @@ class KeyBindingManager {
     this.defaults = {};
     this.isBindingActive = false;
     this.currentBindingKey = null;
-    this.modifiers = { ctrl: false, alt: false, shift: false };
+    this.modifiers = { ctrl: false, shift: false };
     this.errorState = false;
     this.loadBindings();
   }
@@ -74,7 +74,6 @@ class KeyBindingManager {
         key: imgui.Key.None,
         modifiers: {
           ctrl: false,
-          alt: false,
           shift: false
         },
         isActive: false
@@ -85,7 +84,6 @@ class KeyBindingManager {
         key,
         modifiers: {
           ctrl: modifiers.ctrl || false,
-          alt: modifiers.alt || false,
           shift: modifiers.shift || false
         },
         isActive: true
@@ -117,11 +115,9 @@ class KeyBindingManager {
 
     // Check if modifiers match current state
     const ctrlDown = imgui.isKeyDown(imgui.Key.LeftCtrl) || imgui.isKeyDown(imgui.Key.RightCtrl);
-    const altDown = imgui.isKeyDown(imgui.Key.LeftAlt) || imgui.isKeyDown(imgui.Key.RightAlt);
     const shiftDown = imgui.isKeyDown(imgui.Key.LeftShift) || imgui.isKeyDown(imgui.Key.RightShift);
 
     if (binding.modifiers.ctrl !== ctrlDown) return false;
-    if (binding.modifiers.alt !== altDown) return false;
     if (binding.modifiers.shift !== shiftDown) return false;
 
     // Check if the key is down
@@ -144,11 +140,9 @@ class KeyBindingManager {
 
     // Check if modifiers match current state
     const ctrlDown = imgui.isKeyDown(imgui.Key.LeftCtrl) || imgui.isKeyDown(imgui.Key.RightCtrl);
-    const altDown = imgui.isKeyDown(imgui.Key.LeftAlt) || imgui.isKeyDown(imgui.Key.RightAlt);
     const shiftDown = imgui.isKeyDown(imgui.Key.LeftShift) || imgui.isKeyDown(imgui.Key.RightShift);
 
     if (binding.modifiers.ctrl !== ctrlDown) return false;
-    if (binding.modifiers.alt !== altDown) return false;
     if (binding.modifiers.shift !== shiftDown) return false;
 
     // Check if the key was pressed
@@ -164,7 +158,6 @@ class KeyBindingManager {
     // Add modifiers
     let displayText = "";
     if (binding.modifiers.ctrl) displayText += "Ctrl+";
-    if (binding.modifiers.alt) displayText += "Alt+";
     if (binding.modifiers.shift) displayText += "Shift+";
 
     return displayText + keyName;
@@ -210,7 +203,7 @@ class KeyBindingManager {
       this.errorState = false;
 
       // Reset modifiers
-      this.modifiers = { ctrl: false, alt: false, shift: false };
+      this.modifiers = { ctrl: false, shift: false };
     }
 
     // Add option to clear the binding
@@ -218,7 +211,7 @@ class KeyBindingManager {
     if (imgui.button(`Clear##${uid}`)) {
       this.keybindings[uid] = {
         key: imgui.Key.None,
-        modifiers: { ctrl: false, alt: false, shift: false },
+        modifiers: { ctrl: false, shift: false },
         isActive: false
       };
       this.saveBindings();
@@ -237,7 +230,6 @@ class KeyBindingManager {
     if (this.isBindingActive && this.currentBindingKey === uid) {
       // Check for modifiers
       this.modifiers.ctrl = imgui.isKeyDown(imgui.Key.LeftCtrl) || imgui.isKeyDown(imgui.Key.RightCtrl);
-      this.modifiers.alt = imgui.isKeyDown(imgui.Key.LeftAlt) || imgui.isKeyDown(imgui.Key.RightAlt);
       this.modifiers.shift = imgui.isKeyDown(imgui.Key.LeftShift) || imgui.isKeyDown(imgui.Key.RightShift);
 
       // Check if a non-modifier key is pressed
@@ -258,8 +250,6 @@ class KeyBindingManager {
           // Skip if it's only a modifier key
           if (keyValue === imgui.Key.LeftCtrl ||
               keyValue === imgui.Key.RightCtrl ||
-              keyValue === imgui.Key.LeftAlt ||
-              keyValue === imgui.Key.RightAlt ||
               keyValue === imgui.Key.LeftShift ||
               keyValue === imgui.Key.RightShift) {
             continue;
@@ -347,7 +337,6 @@ class KeyBindingManager {
 
       if (binding.key === key &&
           binding.modifiers.ctrl === modifiers.ctrl &&
-          binding.modifiers.alt === modifiers.alt &&
           binding.modifiers.shift === modifiers.shift) {
         return true;
       }
@@ -369,7 +358,6 @@ class KeyBindingManager {
 
       if (binding.key === key &&
           binding.modifiers.ctrl === modifiers.ctrl &&
-          binding.modifiers.alt === modifiers.alt &&
           binding.modifiers.shift === modifiers.shift) {
         return bindName;
       }
@@ -401,7 +389,7 @@ class KeyBindingManager {
       this.errorState = false;
 
       // Reset modifiers
-      this.modifiers = { ctrl: false, alt: false, shift: false };
+      this.modifiers = { ctrl: false, shift: false };
     }
 
     // Add option to clear the binding
@@ -409,7 +397,7 @@ class KeyBindingManager {
     if (imgui.button(`Clear##${bindName}`)) {
       this.keybindings[bindName] = {
         key: imgui.Key.None,
-        modifiers: { ctrl: false, alt: false, shift: false },
+        modifiers: { ctrl: false, shift: false },
         isActive: false
       };
       this.saveBindings();
@@ -424,7 +412,6 @@ class KeyBindingManager {
     if (this.isBindingActive && this.currentBindingKey === bindName) {
       // Check for modifiers
       this.modifiers.ctrl = imgui.isKeyDown(imgui.Key.LeftCtrl) || imgui.isKeyDown(imgui.Key.RightCtrl);
-      this.modifiers.alt = imgui.isKeyDown(imgui.Key.LeftAlt) || imgui.isKeyDown(imgui.Key.RightAlt);
       this.modifiers.shift = imgui.isKeyDown(imgui.Key.LeftShift) || imgui.isKeyDown(imgui.Key.RightShift);
 
       // Check if a non-modifier key is pressed
@@ -445,8 +432,6 @@ class KeyBindingManager {
           // Skip if it's only a modifier key
           if (keyValue === imgui.Key.LeftCtrl ||
               keyValue === imgui.Key.RightCtrl ||
-              keyValue === imgui.Key.LeftAlt ||
-              keyValue === imgui.Key.RightAlt ||
               keyValue === imgui.Key.LeftShift ||
               keyValue === imgui.Key.RightShift) {
             continue;
