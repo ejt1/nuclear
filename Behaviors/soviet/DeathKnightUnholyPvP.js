@@ -6,6 +6,7 @@ import {defaultCombatTargeting as Combat} from "@/Targeting/CombatTargeting";
 import Specialization from "@/Enums/Specialization";
 import common from "@/Core/Common";
 import Pet from "@/Core/Pet";
+import Spell from "@/Core/Spell";
 
 const auras = {
   darkSuccor: 101568,
@@ -41,7 +42,7 @@ export class DeathKnightUnholy extends Behavior {
           common.waitForNotMounted(),
           common.waitForCastOrChannel(),
           spell.cast("Death Strike", ret => me.pctHealth < 95 && me.hasAura(auras.darkSuccor)),
-          spell.cast("Death Strike", ret => me.pctHealth < 45 && me.power > 55),
+          spell.cast("Death Strike", ret => me.pctHealth < 55 && (Spell.getTimeSinceLastCast("Death Strike") > 3000 || me.power > 50)),
           new bt.Decorator(
             ret => Combat.burstToggle && me.target && me.isWithinMeleeRange(me.target),
             this.burstDamage()
@@ -64,6 +65,7 @@ export class DeathKnightUnholy extends Behavior {
       spell.cast("Death and Decay", on => me, ret => this.shouldDeathAndDecay()),
       spell.cast("Dark Transformation", ret => true),
       spell.cast("Death Coil", on => me.target, ret => this.shouldDeathCoil(90) && me.targetUnit.hasAuraByMe(auras.festeringWound) >= 3 && this.apocalypseOnCooldown()),
+      spell.cast("Outbreak", on => me.target, ret => me.target && !me.targetUnit.hasAuraByMe(auras.virulentPlague)),
       spell.cast("Scourge Strike", on => me.target, ret => me.target && me.targetUnit.hasAuraByMe(auras.festeringWound) && this.apocalypseOnCooldown()),
       spell.cast("Death Coil", on => me.target, ret => this.shouldDeathCoil(60) && (this.apocalypseOnCooldown() || me.getReadyRunes() < 2)),
       spell.cast("Festering Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) < 5),
