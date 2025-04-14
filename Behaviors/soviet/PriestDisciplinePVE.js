@@ -43,6 +43,7 @@ export class PriestDiscipline extends Behavior {
           common.waitForNotMounted(),
           common.waitForNotSitting(),
           common.waitForCastOrChannel(),
+          this.waitForNotJustCastPenitence(),
           spell.cast("Renew", on => me, req => me.hasVisibleAuraByMe(90985) && me.getAuraByMe(90985).remaining < 3000),
           spell.cast("Fade", on => me, req => me.inCombat() && (me.isTanking() || me.effectiveHealthPercent < 90)),
           spell.cast("Power Word: Fortitude", on => me, req => !me.hasVisibleAura(21562)),
@@ -68,6 +69,16 @@ export class PriestDiscipline extends Behavior {
         )
       )
     );
+  }
+
+  waitForNotJustCastPenitence() {
+    return new bt.Action(() => {
+      let lastCastPenitence = spell.getTimeSinceLastCast("Ultimate Penitence");
+      if (lastCastPenitence < 400) {
+        return bt.Status.Success;
+      }
+      return bt.Status.Failure;
+    });
   }
 
   getTanks() {
