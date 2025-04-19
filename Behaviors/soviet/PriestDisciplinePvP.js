@@ -73,7 +73,6 @@ export class PriestDisciplinePvP extends Behavior {
       spell.cast("Power Word: Life", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 50),
       spell.cast("Desperate Prayer", on => me, ret => me.effectiveHealthPercent < 40),
       spell.cast("Pain Suppression", on => this.healTarget, ret => this.shouldCastWithHealthAndNotPainSupp(this.healTarget, 34)),
-      spell.cast("Rapture", on => this.healTarget, ret => this.shouldCastWithHealthAndNotPainSupp(this.healTarget, 55)),
       spell.cast("Void Shift", on => this.healTarget, ret => this.shouldCastWithHealthAndNotPainSupp(this.healTarget, 24)),
       spell.cast("Mass Dispel", on => this.findMassDispelTarget(), ret => this.findMassDispelTarget() !== undefined),
       spell.cast("Premonition", on => me, ret => this.shouldCastPremonition(this.healTarget)),
