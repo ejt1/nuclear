@@ -9,11 +9,12 @@ import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 import { DispelPriority } from "@/Data/Dispels";
 import { WoWDispelType } from "@/Enums/Auras";
 import Settings from "@/Core/Settings";
+import spellBlacklist from "@/Data/PVPData";
 
 // Aura IDs for Restoration Shaman abilities
 const auras = {
-  earthShield: 974,
-  earthLivingWeapon: 382021,
+  earthShield: 383648,
+  earthLivingWeapon: 382022,
   waterShield: 52127,
   riptide: 61295,
   tidalWaves: 51564,
@@ -124,7 +125,7 @@ export class ShamanRestorationPvP extends Behavior {
           type: "slider",
           uid: "NaturesSwiftnessPct",
           text: "Nature's Swiftness Health Threshold (%)",
-          default: 35,
+          default: 55,
           min: 0,
           max: 100,
         },
@@ -154,16 +155,71 @@ export class ShamanRestorationPvP extends Behavior {
     return new bt.Decorator(
       ret => !spell.isGlobalCooldown(),
       new bt.Selector(
-        common.waitForNotWaitingForArenaToStart(),
         common.waitForNotSitting(),
         common.waitForNotMounted(),
         spell.interrupt("Wind Shear", true),
         common.waitForCastOrChannel(),
+        new bt.Decorator(
+          () => this.shouldStopCasting(),
+          new bt.Action(() => {
+            me.stopCasting();
+            return bt.Status.Success;
+          })
+        ),
         this.ensureBuffs(),
+        common.waitForNotWaitingForArenaToStart(),
         this.healRotation(),
+        common.waitForTarget(),
+        common.waitForFacing(),
         this.damageRotation()
       )
     );
+  }
+
+  /**
+   * Determines if casting should be stopped (e.g., for damage spells when healing is needed)
+   */
+  shouldStopCasting() {
+    if (!me.isCastingOrChanneling) return false;
+
+    const currentCast = me.currentCastOrChannel;
+    const remainingCastTime = currentCast.timeleft;
+
+    // If the cast is almost complete (less than 0.5 seconds remaining), let it finish
+    if (remainingCastTime < 500) return false;
+
+    // Define damaging spells to stop
+    const isDamageCast = [
+      "Flame Shock",
+      "Lava Burst",
+      "Chain Lightning",
+      "Lightning Bolt"
+    ].includes(currentCast.name);
+
+    if (isDamageCast && (this.isHealingNeeded() || this.isEmergencyHealingNeeded())) {
+      return true;
+    }
+
+    return false;
+  }
+
+  /**
+   * Checks if healing is needed (ally health below 70%)
+   */
+  isHealingNeeded() {
+    const lowestHealth = heal.getPriorityPVPHealTarget()?.effectiveHealthPercent;
+    return lowestHealth < 70;
+  }
+
+  /**
+   * Checks if emergency healing is needed (ally health below 40%)
+   */
+  isEmergencyHealingNeeded() {
+    const lowestHealth = heal.getPriorityPVPHealTarget()?.effectiveHealthPercent;
+    return me.inCombat() &&
+      heal.getPriorityPVPHealTarget()?.inCombat() &&
+      me.withinLineOfSight(heal.getPriorityPVPHealTarget()) &&
+      lowestHealth <= 40;
   }
 
   /**
@@ -171,8 +227,10 @@ export class ShamanRestorationPvP extends Behavior {
    */
   ensureBuffs() {
     return new bt.Selector(
+      spell.cast("Skyfury", on => me, ret => !me.hasAura(auras.skyfury)),
       spell.cast("Water Shield", on => me, ret => !me.hasAura(auras.waterShield)),
-      spell.cast("Earthliving Weapon", on => me, ret => !me.hasAura(auras.earthLivingWeapon)),
+      spell.cast("Earthliving Weapon", on => me, req => !me.hasAura(auras.earthLivingWeapon)),
+      spell.cast("Earth Shield", on => me, ret => !me.hasAura(auras.earthShield)),
     );
   }
 
@@ -183,21 +241,31 @@ export class ShamanRestorationPvP extends Behavior {
     return new bt.Selector(
       new bt.Action(() => {
         this.healTarget = heal.getPriorityPVPHealTarget();
-        return bt.Status.Failure; // Proceed to next child
+        return bt.Status.Failure;
       }),
+      spell.cast("Grounding Totem", on => me, ret => this.shouldDropGroundingForCCOnMe()),
       spell.cast("Astral Shift", on => me, ret => me.effectiveHealthPercent < Settings.AstralShiftPct),
       spell.cast("Nature's Swiftness", on => me, ret => this.healTarget?.effectiveHealthPercent < Settings.NaturesSwiftnessPct),
       spell.cast("Healing Wave", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < Settings.HealingWavePct && me.hasAura(auras.naturesSwiftness)),
       spell.cast("Ascendance", on => me, ret => this.healTarget?.effectiveHealthPercent < Settings.AscendancePct),
       spell.cast("Spirit Link Totem", on => this.getBestSpiritLinkTarget(), ret => this.shouldCastSpiritLinkTotem()),
       spell.cast("Healing Tide Totem", on => me, ret => this.healTarget?.effectiveHealthPercent < Settings.HealingTideTotemPct),
-      spell.cast("Riptide", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < Settings.RiptidePct && !(this.healTarget?.hasAura(auras.riptide))),
+      spell.cast("Riptide", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < Settings.RiptidePct && !this.healTarget?.hasAuraByMe(auras.riptide)),
+      spell.cast("Earth Shield", on => this.shouldCastEarthShield(), ret => {
+        const target = this.shouldCastEarthShield();
+        if (target) {
+          this.lastEarthShieldCast = wow.frameTime;
+          return true;
+        }
+        return false;
+      }),
       spell.cast("Earthen Wall Totem", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < Settings.EarthenWallTotemPct),
+      spell.cast("Riptide", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 55),
       spell.cast("Healing Rain", on => this.getBestHealingRainTarget(), ret => this.shouldCastHealingRain()),
       spell.cast("Unleash Life", on => me, ret => this.healTarget?.effectiveHealthPercent < Settings.UnleashLifePct),
       spell.dispel("Purify Spirit", true, DispelPriority.High, true, WoWDispelType.Magic),
       spell.dispel("Greater Purge", false, DispelPriority.Medium, true, WoWDispelType.Magic, ret => Settings.UsePurge),
-      spell.cast("Healing Stream Totem", on => me, ret => this.canCastHealingStreamTotem() && this.healTarget?.effectiveHealthPercent < Settings.HealingStreamTotemPct),
+      spell.cast("Healing Stream Totem", on => me, ret => spell.getTimeSinceLastCast("Healing Stream Totem") > 12000 && this.healTarget?.effectiveHealthPercent < 85),
       spell.cast("Healing Surge", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < Settings.HealingSurgePct && me.hasAura(auras.tidalWaves)),
       spell.cast("Healing Surge", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < Settings.HealingSurgePct),
     );
@@ -219,7 +287,49 @@ export class ShamanRestorationPvP extends Behavior {
   }
 
   /**
-   * Finds a target for Flame Shock (no or low-duration Flame Shock)
+   * Determines if Earth Shield should be cast on the priority PvP heal target
+   * @returns {Object|null} The target to cast Earth Shield on, or null if conditions are not met
+   */
+  shouldCastEarthShield() {
+    const target = heal.getPriorityPVPHealTarget();
+    const timeSinceLastCast = wow.frameTime - this.lastEarthShieldCast;
+
+    if (
+      target &&
+      target.isPlayer() &&
+      target.effectiveHealthPercent < 75 &&
+      !target.hasAura(auras.earthShield) &&
+      timeSinceLastCast >= 3500
+    ) {
+      return target;
+    }
+    return null;
+  }
+
+
+  /**
+   * Determines if Grounding Totem should be cast to counter CC (e.g., Polymorph) targeting the shaman
+   */
+  shouldDropGroundingForCCOnMe() {
+    const enemies = combat.targets.filter(unit => unit && unit.isPlayer());
+    for (const enemy of enemies) {
+      if (enemy.isCastingOrChanneling && enemy.isPlayer()) {
+        const spellInfo = enemy.spellInfo;
+        const target = spellInfo ? spellInfo.spellTargetGuid : null;
+        if (spellInfo) {
+          const onBlacklist = spellBlacklist[spellInfo.spellCastId];
+          const castRemains = spellInfo.castEnd - wow.frameTime;
+          if (target && target.equals(me.guid) && onBlacklist && castRemains < 1000) {
+            return true;
+          }
+        }
+      }
+    }
+    return false;
+  }
+
+  /**
+   * Finds a target for Flame Shock (no or low-duration Flame Shock, players only)
    */
   getFlameShockTarget() {
     const target = me.targetUnit;
@@ -227,7 +337,8 @@ export class ShamanRestorationPvP extends Behavior {
       return target;
     }
     return combat.targets.find(unit =>
-      unit && (!unit.hasAuraByMe(auras.flameShock) || unit.getAuraByMe(auras.flameShock).remaining < 5400) &&
+      unit && unit.isPlayer() &&
+      (!unit.hasAuraByMe(auras.flameShock) || unit.getAuraByMe(auras.flameShock).remaining < 5400) &&
       me.canAttack(unit) && me.withinLineOfSight(unit)
     ) || null;
   }
@@ -244,11 +355,11 @@ export class ShamanRestorationPvP extends Behavior {
   }
 
   /**
-   * Finds the best target for Healing Rain (max allies in range)
+   * Finds the best target for Healing Rain (max allies in range, players only)
    */
   getBestHealingRainTarget() {
     return heal.priorityList.reduce((best, current) => {
-      if (!current) return best;
+      if (!current || !current.isPlayer()) return best;
       const alliesNear = this.getAlliesInRange(current, 11);
       const lowHealthAllies = alliesNear.filter(ally => ally.effectiveHealthPercent < Settings.HealingRainPct);
       if (!best || lowHealthAllies.length > this.getAlliesInRange(best, 11).filter(ally => ally.effectiveHealthPercent < Settings.HealingRainPct).length) {
@@ -266,15 +377,15 @@ export class ShamanRestorationPvP extends Behavior {
     if (!target) return false;
     const alliesNear = this.getAlliesInRange(target, 12); // Spirit Link radius
     const lowHealthAllies = alliesNear.filter(ally => ally.effectiveHealthPercent < Settings.SpiritLinkTotemPct);
-    return lowHealthAllies.length >= 3 && !me.hasAura(auras.ascendance);
+    return lowHealthAllies.length >= 1 && !me.hasAura(auras.ascendance);
   }
 
   /**
-   * Finds the best target for Spirit Link Totem
+   * Finds the best target for Spirit Link Totem (players only)
    */
   getBestSpiritLinkTarget() {
     return heal.priorityList.reduce((best, current) => {
-      if (!current) return best;
+      if (!current || !current.isPlayer()) return best;
       const alliesNear = this.getAlliesInRange(current, 12);
       const lowHealthAllies = alliesNear.filter(ally => ally.effectiveHealthPercent < Settings.SpiritLinkTotemPct);
       if (!best || lowHealthAllies.length > this.getAlliesInRange(best, 12).filter(ally => ally.effectiveHealthPercent < Settings.SpiritLinkTotemPct).length) {
@@ -285,37 +396,14 @@ export class ShamanRestorationPvP extends Behavior {
   }
 
   /**
-   * Gets allies within a specified range of a unit
+   * Gets allies within a specified range of a unit (players only)
    */
   getAlliesInRange(unit, range) {
-    let allies = heal.priorityList.filter(ally => ally && ally.distanceTo(unit) <= range && me.withinLineOfSight(ally));
-    if (!allies.some(ally => ally.guid.equals(me.guid)) && me.distanceTo(unit) <= range) {
+    let allies = heal.priorityList.filter(ally => ally && ally.isPlayer() && ally.distanceTo(unit) <= range && me.withinLineOfSight(ally));
+    if (!allies.some(ally => ally.guid.equals(me.guid)) && me.distanceTo(unit) <= range && me.isPlayer()) {
       allies.push(me);
     }
     return allies;
   }
 
-  /**
-   * Checks if Healing Stream Totem can be cast
-   */
-  canCastHealingStreamTotem() {
-    const timeSinceLastCast = wow.frameTime - this.lastHealingStreamTotemCast;
-    return timeSinceLastCast >= 12000 && spell.getCooldown("Healing Stream Totem").timeleft === 0;
-  }
-
-  /**
-   * Gets a totem by name
-   */
-  getTotemByName(totemName) {
-    let totem = null;
-    objMgr.objects.forEach(obj => {
-      if (obj instanceof wow.CGUnit &&
-        obj.name === totemName &&
-        obj.createdBy && obj.createdBy.equals(me.guid)) {
-        totem = obj;
-        return false; // Break the loop
-      }
-    });
-    return totem;
-  }
 }
