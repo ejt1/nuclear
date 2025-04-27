@@ -13,7 +13,8 @@ import spellBlacklist from "@/Data/PVPData";
 
 // Aura IDs for Restoration Shaman abilities
 const auras = {
-  earthShield: 383648,
+  earthShieldMYAURA: 383648,
+  earthShield: 974,
   earthLivingWeapon: 382022,
   waterShield: 52127,
   riptide: 61295,
@@ -26,6 +27,8 @@ const auras = {
   flameShock: 188389,
   lavaSurge: 77762,
   highTide: 288675,
+  spiritWalkersTidalTotem: 404523,
+  ancestralSwiftness: 443454
 };
 
 /**
@@ -69,7 +72,7 @@ export class ShamanRestorationPvP extends Behavior {
           type: "slider",
           uid: "HealingWavePct",
           text: "Healing Wave Health Threshold (%)",
-          default: 65,
+          default: 78,
           min: 0,
           max: 100,
         },
@@ -227,10 +230,10 @@ export class ShamanRestorationPvP extends Behavior {
    */
   ensureBuffs() {
     return new bt.Selector(
-      spell.cast("Skyfury", on => me, ret => !me.hasAura(auras.skyfury)),
+      spell.cast('Skyfury', on => me, req => !me.hasAura('Skyfury')),
       spell.cast("Water Shield", on => me, ret => !me.hasAura(auras.waterShield)),
       spell.cast("Earthliving Weapon", on => me, req => !me.hasAura(auras.earthLivingWeapon)),
-      spell.cast("Earth Shield", on => me, ret => !me.hasAura(auras.earthShield)),
+      spell.cast("Earth Shield", on => me, ret => !me.hasAura(auras.earthShieldMYAURA)),
     );
   }
 
@@ -246,27 +249,26 @@ export class ShamanRestorationPvP extends Behavior {
       spell.cast("Grounding Totem", on => me, ret => this.shouldDropGroundingForCCOnMe()),
       spell.cast("Astral Shift", on => me, ret => me.effectiveHealthPercent < Settings.AstralShiftPct),
       spell.cast("Nature's Swiftness", on => me, ret => this.healTarget?.effectiveHealthPercent < Settings.NaturesSwiftnessPct),
-      spell.cast("Healing Wave", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < Settings.HealingWavePct && me.hasAura(auras.naturesSwiftness)),
+      spell.cast("Healing Wave", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 75 && (me.hasAura(auras.ancestralSwiftness) || me.hasAura(auras.naturesSwiftness))),
+      spell.cast("Healing Surge", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 55 && me.hasAura(auras.spiritWalkersTidalTotem)),
+      spell.cast("Riptide", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 55),
       spell.cast("Ascendance", on => me, ret => this.healTarget?.effectiveHealthPercent < Settings.AscendancePct),
       spell.cast("Spirit Link Totem", on => this.getBestSpiritLinkTarget(), ret => this.shouldCastSpiritLinkTotem()),
       spell.cast("Healing Tide Totem", on => me, ret => this.healTarget?.effectiveHealthPercent < Settings.HealingTideTotemPct),
+      spell.cast("Earthen Wall Totem", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < Settings.EarthenWallTotemPct),
       spell.cast("Riptide", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < Settings.RiptidePct && !this.healTarget?.hasAuraByMe(auras.riptide)),
+      spell.dispel("Greater Purge", false, DispelPriority.High, true, WoWDispelType.Magic, ret => Settings.UsePurge),
       spell.cast("Earth Shield", on => this.shouldCastEarthShield(), ret => {
         const target = this.shouldCastEarthShield();
-        if (target) {
-          this.lastEarthShieldCast = wow.frameTime;
-          return true;
-        }
-        return false;
+        return !!target;
+
       }),
-      spell.cast("Earthen Wall Totem", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < Settings.EarthenWallTotemPct),
-      spell.cast("Riptide", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 55),
-      spell.cast("Healing Rain", on => this.getBestHealingRainTarget(), ret => this.shouldCastHealingRain()),
       spell.cast("Unleash Life", on => me, ret => this.healTarget?.effectiveHealthPercent < Settings.UnleashLifePct),
+      spell.cast("Healing Stream Totem", on => me, ret => spell.getTimeSinceLastCast("Healing Stream Totem") > 12000 && this.healTarget?.effectiveHealthPercent < 85),
+      spell.cast("Healing Rain", on => this.getBestHealingRainTarget(), ret => this.shouldCastHealingRain()),
       spell.dispel("Purify Spirit", true, DispelPriority.High, true, WoWDispelType.Magic),
       spell.dispel("Greater Purge", false, DispelPriority.Medium, true, WoWDispelType.Magic, ret => Settings.UsePurge),
-      spell.cast("Healing Stream Totem", on => me, ret => spell.getTimeSinceLastCast("Healing Stream Totem") > 12000 && this.healTarget?.effectiveHealthPercent < 85),
-      spell.cast("Healing Surge", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < Settings.HealingSurgePct && me.hasAura(auras.tidalWaves)),
+      spell.cast("Healing Wave", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent > 25 && this.healTarget?.effectiveHealthPercent < Settings.HealingWavePct && me.hasAura(auras.tidalWaves) && this.noEnemiesWithinRange(20)),
       spell.cast("Healing Surge", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < Settings.HealingSurgePct),
     );
   }
@@ -278,7 +280,9 @@ export class ShamanRestorationPvP extends Behavior {
     return new bt.Selector(
       spell.dispel("Purify Spirit", true, DispelPriority.Medium, true, WoWDispelType.Magic),
       spell.dispel("Greater Purge", false, DispelPriority.Low, true, WoWDispelType.Magic, ret => Settings.UsePurge),
-      spell.cast("Flame Shock", on => this.getFlameShockTarget(), ret => this.getFlameShockTarget() !== undefined),
+      // I removed this because I don't want to interrupt ccd mobs poly etc - once we know this - we can fix
+      //spell.cast("Flame Shock", on => this.getFlameShockTarget(), ret => this.getFlameShockTarget() !== undefined),
+      spell.cast("Flame Shock", on => me.targetUnit, ret => !(me.targetUnit?.hasAuraByMe(auras.flameShock))),
       spell.cast("Lava Burst", on => me.targetUnit, ret => me.hasAura(auras.lavaSurge) && me.targetUnit?.hasAuraByMe(auras.flameShock)),
       spell.cast("Chain Lightning", on => me.targetUnit, ret => me.targetUnit?.getUnitsAroundCount(10) > 1),
       spell.cast("Lava Burst", on => me.targetUnit, ret => me.targetUnit?.hasAuraByMe(auras.flameShock)),
@@ -287,19 +291,29 @@ export class ShamanRestorationPvP extends Behavior {
   }
 
   /**
+   * Checks if no enemy players are within the specified range
+   * @param {number} range - The range to check (in yards)
+   * @returns {boolean} True if no enemies are within range, false otherwise
+   */
+  noEnemiesWithinRange(range) {
+    return combat.targets.filter(unit => unit && unit.isPlayer() && unit.distanceTo(me) <= range).length === 0;
+  }
+
+
+  /**
    * Determines if Earth Shield should be cast on the priority PvP heal target
    * @returns {Object|null} The target to cast Earth Shield on, or null if conditions are not met
    */
   shouldCastEarthShield() {
     const target = heal.getPriorityPVPHealTarget();
-    const timeSinceLastCast = wow.frameTime - this.lastEarthShieldCast;
 
     if (
       target &&
+      target !== me &&
       target.isPlayer() &&
       target.effectiveHealthPercent < 75 &&
-      !target.hasAura(auras.earthShield) &&
-      timeSinceLastCast >= 3500
+      !(target.hasAura(auras.earthShield)) &&
+      spell.getTimeSinceLastCast("Earth Shield") >= 3500
     ) {
       return target;
     }
@@ -351,7 +365,7 @@ export class ShamanRestorationPvP extends Behavior {
     if (!target) return false;
     const alliesNear = this.getAlliesInRange(target, 11); // Healing Rain radius
     const lowHealthAllies = alliesNear.filter(ally => ally.effectiveHealthPercent < Settings.HealingRainPct);
-    return lowHealthAllies.length >= 3;
+    return lowHealthAllies.length >= 2;
   }
 
   /**
