@@ -98,7 +98,7 @@ export class PriestDiscipline extends Behavior {
         return bt.Status.Failure; // Proceed to next child
       }),
       spell.cast("Power Word: Life", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 50 && me.inCombat()),
-      spell.cast("Desperate Prayer", on => me, ret => me.effectiveHealthPercent < 70 && me.inCombat()),
+      spell.cast("Desperate Prayer", on => me, ret => me.effectiveHealthPercent < 40 && me.inCombat()),
       //spell.cast("Pain Suppression", on => this.healTarget, ret => this.shouldCastWithHealthAndNotPainSupp(this.healTarget, 34) && me.inCombat()),
       spell.cast("Rapture", on => this.healTarget, ret => this.shouldCastWithHealthAndNotPainSupp(this.healTarget, 30) && me.inCombat()),
       spell.cast("Void Shift", on => this.healTarget, ret => this.shouldCastWithHealthAndNotPainSupp(this.healTarget, 24)),
@@ -118,11 +118,10 @@ export class PriestDiscipline extends Behavior {
       spell.cast("Mind Blast", on => this.currentOrBestTarget(), ret => this.hasAtonement(this.healTarget)),
       spell.cast("Shadowfiend", on => this.currentOrBestTarget(), ret => me.inCombat() && this.hasAtonement(this.healTarget)),
       spell.cast("Voidwraith", on => this.currentOrBestTarget(), ret => me.inCombat() && this.hasAtonement(this.healTarget)),
+      spell.dispel("Purify", true, DispelPriority.Low, false, WoWDispelType.Magic, WoWDispelType.Disease),
       spell.cast("Shadow Word: Death", on => this.findShadowWordDeathTarget(), ret => this.findShadowWordDeathTarget() !== undefined && this.hasAtonement(this.healTarget)),
       spell.cast("Penance", on => this.getPenanceTarget(), ret => this.shouldCastPenance()),
       spell.cast("Flash Heal", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 55),
-      spell.cast("Power Word: Shield", on => this.healTarget, ret => (!this.hasAtonement(this.healTarget) || this.healTarget.getAuraByMe(auras.atonement).remaining < 4000) && me.hasVisibleAura("Rapture")),
-      spell.dispel("Purify", true, DispelPriority.Low, false, WoWDispelType.Magic, WoWDispelType.Disease),
       spell.cast("Penance", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 50),
       this.maintainTankAtonement()
     );
@@ -133,7 +132,7 @@ export class PriestDiscipline extends Behavior {
       // Buff Management: Prioritize spells based on active buffs
       spell.cast("Penance", on => this.currentOrBestTarget(), ret => me.hasAura(auras.harshDiscipline)),
       spell.cast("Penance", on => this.currentOrBestTarget(), ret => me.hasAura(auras.powerOfTheDarkSide)),
-      spell.cast("Mind Blast", on => this.currentOrBestTarget(), ret => me.hasAura(auras.twilightEquilibriumShadowAmp)),
+      spell.cast("Mind Blast", on => this.currentOrBestTarget(), ret => true),
       spell.cast("Smite", on => this.currentOrBestTarget(), ret => me.hasAura(auras.twilightEquilibriumHolyAmp)),
       spell.cast("Smite", on => this.currentOrBestTarget(), ret => me.hasAura(auras.wealAndWoe)),
 
@@ -145,13 +144,12 @@ export class PriestDiscipline extends Behavior {
 
       // Core Rotation Spells
       spell.cast("Shadow Word: Pain", on => this.currentOrBestTarget(), ret => !this.hasShadowWordPain(this.currentOrBestTarget())),
-      spell.cast("Power Word: Radiance", on => me, ret => (spell.getCooldown("Voidwraith").timeleft < 1.5 || spell.getCooldown("Shadowfiend").timeleft < 1.5 || me.hasVisibleAura("Shadow Covenant")) && spell.getCharges("Power Word: Radiance") === 2),
+      spell.cast("Power Word: Radiance", on => me, ret => ((this.hasTalent("Voidwraith") && spell?.getCooldown("Voidwraith")?.timeleft < 1.5) || spell?.getCooldown("Shadowfiend").timeleft < 1.5 || me.hasVisibleAura("Shadow Covenant")) && spell.getCharges("Power Word: Radiance") === 2),
       spell.cast("Shadowfiend", on => this.currentOrBestTarget(), ret => me.inCombat()),
       spell.cast("Voidwraith", on => this.currentOrBestTarget(), ret => me.inCombat()),
       spell.cast("Shadow Word: Death", on => this.findShadowWordDeathTarget(), ret => this.findShadowWordDeathTarget() !== undefined),
       spell.cast("Shadow Word: Death", on => this.currentOrBestTarget(), ret => me.hasVisibleAura("Shadow Covenant")),
       spell.cast("Mindgames", on => me.targetUnit, ret => me.targetUnit?.effectiveHealthPercent < 50),
-      spell.cast("Mind Blast", on => this.currentOrBestTarget(), ret => true),
       spell.cast("Penance", on => this.hasswpTarget(), ret => this.hasswpTarget() !== undefined),
       spell.cast("Penance", on => this.currentOrBestTarget(), ret => this.hasShadowWordPain(this.currentOrBestTarget())),
       spell.cast("Halo", on => me, ret => this.getEnemiesInRange(40) >= 3),
@@ -166,6 +164,10 @@ export class PriestDiscipline extends Behavior {
       spell.cast("Power Word: Shield", on => this.getTankNeedingAtonement(), req => this.shouldApplyAtonementToTank()),
       spell.cast("Renew", on => this.getTankNeedingAtonement(), req => this.shouldApplyAtonementToTank())
     );
+  }
+
+  hasTalent(talentName) {
+    return spell.isSpellKnown(talentName);
   }
 
   currentOrBestTarget() {
