@@ -105,7 +105,7 @@ export class PriestDiscipline extends Behavior {
       spell.cast("Mass Dispel", on => this.findMassDispelTarget(), ret => this.findMassDispelTarget() !== undefined),
       spell.cast("Premonition", on => me, ret => this.shouldCastPremonition(this.healTarget)),
       spell.cast("Shadow Word: Death", on => this.findDeathThePolyTarget(), ret => this.findDeathThePolyTarget() !== undefined),
-      spell.cast("Evangelism", on => me, ret => me.inCombat() && this.getAtonementCount() > 3 && this.minAtonementDuration() < 4000),
+      spell.cast("Evangelism", on => me, ret => me.inCombat() && this.getAtonementCount() > 3 && this.healTarget?.effectiveHealthPercent < 35),
       //spell.cast("Power Word: Barrier", on => this.healTarget, ret => this.shouldCastWithHealthAndNotPainSupp(this.healTarget, 40) && me.inCombat()),
       spell.cast("Power Word: Shield", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 90 && !this.hasShield(this.healTarget) && !me.hasVisibleAura("Rapture")),
       spell.cast("Power Word: Radiance", on => me, ret => this.shouldCastRadiance()),
