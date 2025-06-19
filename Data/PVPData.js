@@ -17,6 +17,7 @@ export const spellBlacklist = {
   211004: "Hex (Spider)",
   360806: "Sleep walk",
   5782: "Fear",
+  20066: "Repentance",
 };
 
 export default spellBlacklist;
