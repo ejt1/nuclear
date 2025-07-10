@@ -654,6 +654,63 @@ Object.defineProperties(wow.CGUnit.prototype, {
   //   }
   // },
 
+  /**
+   * Get DR stacks for a specific spell on this unit
+   * @param {number} spellId - The spell ID to check DR for
+   * @returns {number} - Number of DR stacks (0-3, where 3 = immune)
+   */
+  getDRStacks: {
+    value: function(spellId) {
+      // Access drTracker from global scope (imported in nuclear.js)
+      if (typeof drTracker !== 'undefined') {
+        return drTracker.getDRStacksBySpell(this.guid, spellId);
+      }
+      return 0;
+    }
+  },
+
+  /**
+   * Check if this unit would be diminished by a spell
+   * @param {number} spellId - The spell ID to check
+   * @returns {boolean} - True if the spell would be diminished
+   */
+  wouldBeDiminished: {
+    value: function(spellId) {
+      if (typeof drTracker !== 'undefined') {
+        return drTracker.wouldBeDiminished(this.guid, spellId);
+      }
+      return false;
+    }
+  },
+
+  /**
+   * Check if this unit is immune to a spell
+   * @param {number} spellId - The spell ID to check
+   * @returns {boolean} - True if the unit is immune to this spell
+   */
+  isImmuneToSpell: {
+    value: function(spellId) {
+      if (typeof drTracker !== 'undefined') {
+        return drTracker.isImmune(this.guid, spellId);
+      }
+      return false;
+    }
+  },
+
+  /**
+   * Get the diminished duration multiplier for a spell on this unit
+   * @param {number} spellId - The spell ID to check
+   * @returns {number} - Duration multiplier (1.0 = full, 0.5 = half, 0.25 = quarter, 0 = immune)
+   */
+  getDiminishedMultiplier: {
+    value: function(spellId) {
+      if (typeof drTracker !== 'undefined') {
+        return drTracker.getDiminishedMultiplier(this.guid, spellId);
+      }
+      return 1.0;
+    }
+  }
+
 });
 
 export default true;
