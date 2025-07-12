@@ -90,7 +90,9 @@ class CooldownTracker extends wow.EventListener {
    */
   isHostilePlayer(sourceGuid) {
     const unit = objMgr.findObject(sourceGuid);
-    if (!unit || !(unit instanceof wow.CGUnit) || unit.type !== wow.ObjectTypeID.Player) return false;
+    if (!unit || !(unit instanceof wow.CGUnit)) return false;
+
+    if (!unit.isPlayer()) return false;
 
     // Check if hostile to us using the isEnemy property
     return unit.isEnemy;
@@ -200,7 +202,7 @@ class CooldownTracker extends wow.EventListener {
       for (const [hash, obj] of objMgr.objects) {
         if (obj instanceof wow.CGUnit &&
             obj.guid.hash === guidHash &&
-            obj.type === wow.ObjectTypeID.Player &&
+            obj.type === 6 &&
             obj.isEnemy &&
             me.distanceTo(obj) <= this.maxTrackingDistance) {
           return obj;
@@ -292,8 +294,13 @@ class CooldownTracker extends wow.EventListener {
     for (const [guidHash, threatData] of this.activeThreatLines) {
       const unit = threatData.unit;
 
-      // Verify unit is still valid and in range
-      if (!unit || unit.deadOrGhost || !me.withinLineOfSight(unit)) continue;
+      // Check line of sight safely
+      try {
+        if (!unit || !me || !me.withinLineOfSight(unit)) continue;
+      } catch (e) {
+        // If line of sight check fails, skip this unit
+        continue;
+      }
 
       // Position line to middle of enemy unit as well
       const unitCenter = new Vector3(unit.position.x, unit.position.y, unit.position.z + (unit.displayHeight / 2));

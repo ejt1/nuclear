@@ -8,10 +8,10 @@ class PVP {
   static options = [
     { type: "checkbox", uid: "DRTrackerEnabled", text: "DR Tracker Enabled", default: true },
     { type: "checkbox", uid: "DRTrackerDebugLogs", text: "DR Tracker Debug Logs Enabled", default: false },
-    { type: "checkbox", uid: "CooldownTrackerEnabled", text: "Cooldown Tracker Enabled", default: true },
+    { type: "checkbox", uid: "CooldownTrackerEnabled", text: "Cooldown Tracker Enabled (HasErrors)", default: false },
     { type: "checkbox", uid: "CooldownTrackerDebugLogs", text: "Cooldown Tracker Debug Logs Enabled", default: false },
-    { type: "checkbox", uid: "CooldownTrackerArenaOnly", text: "Cooldown Tracker Arena Only", default: true },
-    { type: "checkbox", uid: "CooldownTrackerVisualThreats", text: "Show Visual Threat Lines", default: true },
+    { type: "checkbox", uid: "CooldownTrackerArenaOnly", text: "Cooldown Tracker Arena Only", default: false },
+    { type: "checkbox", uid: "CooldownTrackerVisualThreats", text: "Show Visual Threat Lines", default: false },
   ];
 
   static renderOptions(renderFunction) {

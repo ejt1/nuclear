@@ -38,6 +38,8 @@ export class DeathKnightUnholy extends Behavior {
       spell.cast("Raise Dead", on => me, req => !Pet.current),
       spell.interrupt("Mind Freeze", true),
       spell.cast("Claw", on => me.target),
+      spell.cast("Strangulate", on => this.strangulateTarget(), ret => me.target && me.target.pctHealth < 70 && this.strangulateTarget() !== undefined),
+      spell.cast("Blinding Sleet", on => this.blindingSleetTarget(), ret => this.blindingSleetTarget() !== undefined),
       new bt.Decorator(
         ret => !spell.isGlobalCooldown(),
         new bt.Selector(
@@ -99,5 +101,35 @@ export class DeathKnightUnholy extends Behavior {
   apocalypseOnCooldown() {
     const apocalypse = wow.SpellBook.getSpellByName("Apocalypse");
     return apocalypse && apocalypse.cooldown.duration > 0;
+  }
+
+  strangulateTarget() {
+    // Get all enemy players within 20 yards and find the first valid healer target
+    const nearbyEnemies = me.getPlayerEnemies(20);
+
+    for (const unit of nearbyEnemies) {
+      if (unit.isHealer() && !unit.isCCd() && unit.canCC() && unit.getDR("silence") === 0) {
+        return unit;
+      }
+    }
+
+    return undefined;
+  }
+
+  blindingSleetTarget() {
+    // Get all enemy players within 10 yards
+    const nearbyEnemies = me.getPlayerEnemies(10);
+
+    for (const unit of nearbyEnemies) {
+      if (me.isFacing(unit) &&
+          unit.isHealer() &&
+          !unit.isCCd() &&
+          unit.canCC() &&
+          unit.getDR("disorient") === 0) {
+        return unit;
+      }
+    }
+
+    return undefined;
   }
 }

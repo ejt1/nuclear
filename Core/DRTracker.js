@@ -93,8 +93,13 @@ class DRTracker extends wow.EventListener {
    * Check if a GUID belongs to any player unit
    */
   isPlayerUnit(guid) {
-    const unit = objMgr.findObject(guid);
-    return unit && unit.isPlayer();
+    try {
+      const unit = objMgr.findObject(guid);
+      return unit && unit.isPlayer();
+    } catch (error) {
+      // If there's an error checking if unit is a player, assume it's not
+      return false;
+    }
   }
 
   /**

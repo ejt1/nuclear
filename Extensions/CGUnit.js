@@ -1,7 +1,7 @@
 import objMgr, { me } from "@/Core/ObjectManager";
 import Common from "@/Core/Common";
 import { MovementFlags, TraceLineHitFlags, UnitFlags, UnitStandStateType } from "@/Enums/Flags";
-import { HealImmune } from "@/Enums/Auras";
+import { HealImmune, PVPImmuneToCC } from "@/Enums/Auras";
 import Settings from "@/Core/Settings";
 import { rootExclusions } from "@/Data/Exclusions";
 
@@ -152,7 +152,7 @@ Object.defineProperties(wow.CGUnit.prototype, {
      */
     value: function () {
       // Check if `this.type` is either 6 (player) or 7 (active player)
-      return this && (this.type === wow.ObjectTypeID.Player || this.type === wow.ObjectTypeID.ActivePlayer);
+      return this && (this.type && (this.type === 6 || this.type === 7));
     }
   },
 
@@ -638,6 +638,32 @@ Object.defineProperties(wow.CGUnit.prototype, {
      */
     value: function () {
       return Object.values(HealImmune).some(immune => this.hasAura(immune));
+    }
+  },
+
+  canCC: {
+    /**
+     * Check if the unit can be crowd controlled (CC'd).
+     * Only players can be CC'd, and only if they don't have PVP immunity auras.
+     * @returns {boolean} - Returns true if the unit can be CC'd, false otherwise.
+     */
+    value: function () {
+      // Only players can be CC'd
+      if (!this.isPlayer()) {
+        return false;
+      }
+
+      // Get the set of immunity spell IDs for efficient lookup
+      const immunitySpellIds = new Set(Object.values(PVPImmuneToCC));
+
+      // Check if the player has any PVP immunity auras - if they do, they can't be CC'd
+      const immunityAura = this.auras.find(aura => immunitySpellIds.has(aura.spellId));
+      if (immunityAura) {
+        // console.log(`[canCC] ${this.name} has CC immunity aura: ${immunityAura.name} (${immunityAura.spellId})`);
+        return false;
+      }
+
+      return true;
     }
   },
     /**
