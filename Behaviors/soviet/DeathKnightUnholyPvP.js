@@ -121,7 +121,8 @@ export class DeathKnightUnholy extends Behavior {
     const nearbyEnemies = me.getPlayerEnemies(10);
 
     for (const unit of nearbyEnemies) {
-      if (me.isFacing(unit) &&
+      if (unit !== me.target &&
+          me.isFacing(unit) &&
           unit.isHealer() &&
           !unit.isCCd() &&
           unit.canCC() &&

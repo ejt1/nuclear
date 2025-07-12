@@ -55,7 +55,7 @@ export const drSpellList = {
   605: "disorient", // Mind Control
   8122: "disorient", // Psychic Scream
   2094: "disorient", // Blind
-  118699: "disorient", // Fear
+  118699: "disorient", //
   130616: "disorient", // Fear (Horrify)
   5484: "disorient", // Howl of Terror
   261589: "disorient", // Seduction (Grimoire of Sacrifice)

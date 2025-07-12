@@ -62,6 +62,8 @@ export const PVPImmuneToCC = {
   Bladestorm: 46924, // Warrior - Bladestorm
   // Warlock
   NetherWard: 212295, // Warlock - nether ward
+  // Demon hunter
+  NetherWalk: 196555, // Netherwalk
 }
 
 
