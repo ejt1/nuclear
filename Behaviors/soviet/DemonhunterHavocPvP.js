@@ -41,11 +41,18 @@ export class DemonhunterHavocPvP extends Behavior {
     {
       header: 'Havoc PvP Settings',
       options: [
-        { type: 'checkbox', uid: 'DHHavocUseOffensiveCooldown', text: 'Use Offensive Cooldowns', default: true },
-        { type: 'checkbox', uid: 'DHHavocUseDefensiveCooldown', text: 'Use Defensive Cooldowns', default: true },
-        { type: 'slider', uid: 'DHHavocBlurThreshold', text: 'Blur HP Threshold', default: 65, min: 1, max: 100 },
-        { type: 'slider', uid: 'DHHavocDarknessThreshold', text: 'Darkness HP Threshold', default: 35, min: 1, max: 100 },
-        { type: 'slider', uid: 'DHHavocNetherwalkThreshold', text: 'Netherwalk HP Threshold', default: 20, min: 1, max: 100 }
+        {type: 'checkbox', uid: 'DHHavocUseOffensiveCooldown', text: 'Use Offensive Cooldowns', default: true},
+        {type: 'checkbox', uid: 'DHHavocUseDefensiveCooldown', text: 'Use Defensive Cooldowns', default: true},
+        {type: 'slider', uid: 'DHHavocBlurThreshold', text: 'Blur HP Threshold', default: 65, min: 1, max: 100},
+        {type: 'slider', uid: 'DHHavocDarknessThreshold', text: 'Darkness HP Threshold', default: 35, min: 1, max: 100},
+        {
+          type: 'slider',
+          uid: 'DHHavocNetherwalkThreshold',
+          text: 'Netherwalk HP Threshold',
+          default: 20,
+          min: 1,
+          max: 100
+        }
       ]
     }
   ];
@@ -61,7 +68,7 @@ export class DemonhunterHavocPvP extends Behavior {
 
       // CC abilities (outside GCD)
       spell.cast("Fel Eruption", on => this.felEruptionTarget(), ret => me.target && me.target.effectiveHealthPercent < 80 && this.felEruptionTarget() !== undefined),
-      spell.cast("Imprison", on => this.imprisonTarget(), ret =>  me.target && me.target.effectiveHealthPercent < 67 && this.imprisonTarget() !== undefined),
+      spell.cast("Imprison", on => this.imprisonTarget(), ret => me.target && me.target.effectiveHealthPercent < 67 && this.imprisonTarget() !== undefined),
       spell.cast("Sigil of Misery", on => this.sigilOfMiseryTarget(), ret => this.sigilOfMiseryTarget() !== undefined),
 
       common.waitForTarget(),
@@ -134,27 +141,27 @@ export class DemonhunterHavocPvP extends Behavior {
   burstSequence() {
     return new bt.Selector(
       // Burst sequence - tree will traverse down when spells are on cooldown
-      // 0. Throw glaive
+      // Throw glaive
       spell.cast("Throw Glaive", on => me.target, ret => me.hasAura(auras.reaversGlaive)),
-      // 1. The Hunt to proc Reaver's Glaive and Exergy buff - check for root status
+      // The Hunt to proc Reaver's Glaive and Exergy buff - check for root status
       spell.cast("The Hunt", on => me.target, ret => !me.isRooted()),
-      // 2. Eye Beam to enter Demon Form (prioritize when we have Reaver's Glaive)
+      // Eye Beam to enter Demon Form (prioritize when we have Reaver's Glaive)
       spell.cast("Eye Beam", on => me.target, ret => me.isWithinMeleeRange(me.target)),
-      // 3. Chaos Strike when empowered by warbladesHunger
+      // Chaos Strike when empowered by warbladesHunger
       spell.cast("Chaos Strike", on => me.target, ret => me.hasAura(auras.warbladesHunger)),
-      // 4. Felblade for fury and positioning
+      // Felblade for fury and positioning
       spell.cast("Felblade", on => me.target, ret => true),
-      // 5. Essence Break to empower abilities
+      // Essence Break to empower abilities
       spell.cast("Essence Break", on => me.target, ret => me.isWithinMeleeRange(me.target)),
-      // 7. Blade Dance within Essence Break window
+      // Blade Dance within Essence Break window
       spell.cast("Blade Dance", on => me.target, ret => this.getDebuffRemainingTime("Essence Break") > 0),
-      // 8. Metamorphosis if not already active
+      // Metamorphosis if not already active
       spell.cast("Metamorphosis", on => me.target, ret => Settings.DHHavocUseOffensiveCooldown && !me.hasAura(auras.metamorphosis)),
-      // 9. Blade Dance (bot handles Death Sweep upgrade during meta)
+      // Blade Dance (bot handles Death Sweep upgrade during meta)
       spell.cast("Blade Dance", on => me.target),
-      // 10. Chaos Strike (bot handles Annihilation upgrade during meta)
+      // Chaos Strike (bot handles Annihilation upgrade during meta)
       spell.cast("Chaos Strike", on => me.target),
-      // 11. Sigil of Spite for soul generation when we need it
+      // Sigil of Spite for soul generation when we need it
       spell.cast("Sigil of Spite", on => me.target, ret => this.getSoulFragments() < 3)
     );
   }
@@ -162,25 +169,29 @@ export class DemonhunterHavocPvP extends Behavior {
   // Sustained Damage - priorities from the guide, behavior tree will traverse when spells fail
   sustainedDamage() {
     return new bt.Selector(
+      // Throw Glaive when empowered by Reaver's Glaive - highest priority
+      spell.cast("Throw Glaive", on => me.target, ret => me.hasAura(auras.reaversGlaive)),
       // Felblade to catch up to target when out of melee but within 15 yards
-           spell.cast("Throw Glaive", on => me.target, ret => me.hasAura(auras.reaversGlaive)),
-      spell.cast("Felblade", on => me.target, ret => !me.isWithinMeleeRange(me.target) && me.target.distanceTo(me) <= 15),      // Melee rotation - sustained damage priorities from guide
+      spell.cast("Felblade", on => me.target, ret => !me.isWithinMeleeRange(me.target) && me.target.distanceTo(me) <= 15),
+      // Ranged abilities when not in melee and too far for Felblade
+      new bt.Decorator(ret => !me.isWithinMeleeRange(me.target) && me.isFacing(me.target),
+        new bt.Selector(spell.cast("Throw Glaive", on => me.target))),
+      // Melee rotation - sustained damage priorities from guide
       new bt.Decorator(ret => me.isWithinMeleeRange(me.target) && me.isFacing(me.target),
         new bt.Selector(
-          // 1. Blade Dance - highest priority (empowered by Reaver's Glaive when available)
+          // Blade Dance - highest priority (empowered by Reaver's Glaive when available)
           spell.cast("Blade Dance", on => me.target),
-          // 2. Chaos Strike if we have Fury (empowered by Reaver's Glaive when available)
+          // Chaos Strike if we have Fury (empowered by Reaver's Glaive when available)
           spell.cast("Chaos Strike", on => me.target, ret => this.getFury() >= 40),
-          // 3. Felblade for Fury generation - use as often as possible for Army Unto Oneself uptime
+          // Felblade for Fury generation - use as often as possible for Army Unto Oneself uptime
           spell.cast("Felblade", on => me.target, ret => this.getFury() < 90),
-          // 5. Immolation Aura - lowest priority generator
+          // Immolation Aura - lowest priority generator
           spell.cast("Immolation Aura", on => me),
-          // 11. Sigil of Spite for soul generation when we need it
+          // Sigil of Spite for soul generation when we need it
           spell.cast("Sigil of Spite", on => me.target, ret => this.getSoulFragments() < 3),
-
-          // 6. Throw Glaive as a slow when target isn't slowed
+          // Throw Glaive as a slow when target isn't slowed
           spell.cast("Throw Glaive", on => me.target, ret => me.target && !me.target.isSlowed()),
-          // 7. Demon's Bite as absolute filler
+          // Demon's Bite as absolute filler
           spell.cast("Demon's Bite", on => me.target)
         ))
     );
@@ -208,16 +219,16 @@ export class DemonhunterHavocPvP extends Behavior {
   // Enhanced burst conditions
   shouldStartFullBurst() {
     return me.target &&
-           spell.getCooldown('The Hunt').ready &&
-           spell.getCooldown('Metamorphosis').ready &&
-           spell.getCooldown('Eye Beam').ready &&
-           this.getFury() > 50;
+      spell.getCooldown('The Hunt').ready &&
+      spell.getCooldown('Metamorphosis').ready &&
+      spell.getCooldown('Eye Beam').ready &&
+      this.getFury() > 50;
   }
 
   shouldStartMiniBurst() {
     return me.target &&
-           (spell.getCooldown('Eye Beam').ready || spell.getCooldown('Essence Break').ready) &&
-           this.getFury() > 30;
+      (spell.getCooldown('Eye Beam').ready || spell.getCooldown('Essence Break').ready) &&
+      this.getFury() > 30;
   }
 
   // CC targeting methods
