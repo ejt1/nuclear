@@ -57,40 +57,40 @@ export class DemonhunterHavocPvP extends Behavior {
     }
   ];
 
-  build() {
-    return new bt.Selector(
-      common.waitForNotMounted(),
-      common.waitForNotSitting(),
-      common.waitForCastOrChannel(),
+    build() {
+      return new bt.Selector(
+        common.waitForNotMounted(),
+        common.waitForNotSitting(),
+        common.waitForCastOrChannel(),
 
-      // Interrupts (outside GCD)
-      spell.interrupt('Disrupt'),
+        // Interrupts (outside GCD)
+        spell.interrupt('Disrupt', true),
 
-      // CC abilities (outside GCD)
-      spell.cast("Fel Eruption", on => this.felEruptionTarget(), ret => me.target && me.target.effectiveHealthPercent < 80 && this.felEruptionTarget() !== undefined),
-      spell.cast("Imprison", on => this.imprisonTarget(), ret => me.target && me.target.effectiveHealthPercent < 67 && this.imprisonTarget() !== undefined),
-      spell.cast("Sigil of Misery", on => this.sigilOfMiseryTarget(), ret => this.sigilOfMiseryTarget() !== undefined),
+        // CC abilities (outside GCD)
+        spell.cast("Fel Eruption", on => this.felEruptionTarget(), ret => me.target && me.target.effectiveHealthPercent < 87 && this.felEruptionTarget() !== undefined),
+        spell.cast("Imprison", on => this.imprisonTarget(), ret => me.target && me.target.effectiveHealthPercent < 75 && this.imprisonTarget() !== undefined),
+        spell.cast("Sigil of Misery", on => this.sigilOfMiseryTarget(), ret => this.sigilOfMiseryTarget() !== undefined),
 
-      common.waitForTarget(),
-      common.waitForFacing(),
+        common.waitForTarget(),
+        common.waitForFacing(),
 
-      new bt.Decorator(
-        ret => !spell.isGlobalCooldown(),
-        new bt.Selector(
-          // Defensive cooldowns (highest priority)
-          this.defensiveCooldowns(),
-          // Offensive dispels
-          this.offensiveDispels(),
-          // PvP burst or sustained damage
-          new bt.Decorator(
-            ret => Combat.burstToggle && me.target,
-            this.burstDamage()
-          ),
-          this.sustainedDamage()
+        new bt.Decorator(
+          ret => !spell.isGlobalCooldown(),
+          new bt.Selector(
+            // Defensive cooldowns (highest priority)
+            this.defensiveCooldowns(),
+            // Offensive dispels
+            this.offensiveDispels(),
+            // PvP burst or sustained damage
+            new bt.Decorator(
+              ret => Combat.burstToggle && me.target,
+              this.burstDamage()
+            ),
+            this.sustainedDamage()
+          )
         )
-      )
-    );
-  }
+      );
+    }
 
 
   offensiveDispels() {
@@ -154,11 +154,13 @@ export class DemonhunterHavocPvP extends Behavior {
       // Essence Break to empower abilities
       spell.cast("Essence Break", on => me.target, ret => me.isWithinMeleeRange(me.target)),
       // Blade Dance within Essence Break window
-      spell.cast("Blade Dance", on => me.target, ret => this.getDebuffRemainingTime("Essence Break") > 0),
+      spell.cast("Blade Dance", on => me.target, ret => me.isWithinMeleeRange(me.target) && this.getDebuffRemainingTime("Essence Break") > 0),
       // Metamorphosis if not already active
       spell.cast("Metamorphosis", on => me.target, ret => Settings.DHHavocUseOffensiveCooldown && !me.hasAura(auras.metamorphosis)),
+      // Immolation Aura when fury is low
+      spell.cast("Immolation Aura", on => me, ret => this.getFury() < 60),
       // Blade Dance (bot handles Death Sweep upgrade during meta)
-      spell.cast("Blade Dance", on => me.target),
+      spell.cast("Blade Dance", on => me.target, ret => me.isWithinMeleeRange(me.target)),
       // Chaos Strike (bot handles Annihilation upgrade during meta)
       spell.cast("Chaos Strike", on => me.target),
       // Sigil of Spite for soul generation when we need it
@@ -180,7 +182,7 @@ export class DemonhunterHavocPvP extends Behavior {
       new bt.Decorator(ret => me.isWithinMeleeRange(me.target) && me.isFacing(me.target),
         new bt.Selector(
           // Blade Dance - highest priority (empowered by Reaver's Glaive when available)
-          spell.cast("Blade Dance", on => me.target),
+          spell.cast("Blade Dance", on => me.target, ret => me.isWithinMeleeRange(me.target)),
           // Chaos Strike if we have Fury (empowered by Reaver's Glaive when available)
           spell.cast("Chaos Strike", on => me.target, ret => this.getFury() >= 40),
           // Felblade for Fury generation - use as often as possible for Army Unto Oneself uptime
@@ -190,7 +192,7 @@ export class DemonhunterHavocPvP extends Behavior {
           // Sigil of Spite for soul generation when we need it
           spell.cast("Sigil of Spite", on => me.target, ret => this.getSoulFragments() < 3),
           // Throw Glaive as a slow when target isn't slowed
-          spell.cast("Throw Glaive", on => me.target, ret => me.target && !me.target.isSlowed()),
+          spell.cast("Throw Glaive", on => me.target, ret => me.target && (me.target.isRooted() || !me.target.isMoving())),
           // Demon's Bite as absolute filler
           spell.cast("Demon's Bite", on => me.target)
         ))

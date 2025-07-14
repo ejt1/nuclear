@@ -38,6 +38,7 @@ export class PriestDisciplinePvP extends Behavior {
         common.waitForNotMounted(),
         common.waitForCastOrChannel(),
         this.waitForNotJustCastPenitence(),
+        spell.cast("Psychic Scream", on => this.psychicScreamTarget(), ret => this.psychicScreamTarget() !== undefined),
         this.healRotation(),
         this.applyAtonement(),
         common.waitForTarget(),
@@ -103,7 +104,6 @@ export class PriestDisciplinePvP extends Behavior {
       spell.cast("Mindgames", on => me.targetUnit, ret => me.targetUnit?.effectiveHealthPercent < 50),
       spell.cast("Penance", on => me.targetUnit, ret => me.hasAura(auras.powerOfTheDarkSide)),
       spell.cast("Mind Blast", on => me.targetUnit, ret => true),
-      spell.cast("Smite", ret => true)
     );
   }
 
@@ -213,6 +213,22 @@ export class PriestDisciplinePvP extends Behavior {
       }
     }
     return minDuration === Infinity ? 0 : minDuration;
+  }
+
+  psychicScreamTarget() {
+    // Get all enemy players within 7 yards
+    const nearbyEnemies = me.getPlayerEnemies(7);
+
+    for (const unit of nearbyEnemies) {
+      if (unit.isHealer() &&
+          !unit.isCCd() &&
+          unit.canCC() &&
+          unit.getDR("disorient") === 0) {
+        return unit;
+      }
+    }
+
+    return undefined;
   }
 }
 

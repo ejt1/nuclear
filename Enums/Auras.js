@@ -42,6 +42,7 @@ export const PVPImmuneToCC = {
   // Paladin
   BlessingOfSpellWarden: 204018, // Spell warden
   DivineShield: 642, // Divine Shield
+  BlessingOfProtection: 1022, // BoP
   // Mage
   IceBlock: 45438, // Ice Block
   // Evoker
