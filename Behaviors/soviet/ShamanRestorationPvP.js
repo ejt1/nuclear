@@ -171,6 +171,7 @@ export class ShamanRestorationPvP extends Behavior {
         ),
         this.ensureBuffs(),
         common.waitForNotWaitingForArenaToStart(),
+        spell.cast("Hex", on => this.hexTarget(), ret => this.hexTarget() !== undefined),
         this.healRotation(),
         common.waitForTarget(),
         common.waitForFacing(),
@@ -189,7 +190,7 @@ export class ShamanRestorationPvP extends Behavior {
     const remainingCastTime = currentCast.timeleft;
 
     // If the cast is almost complete (less than 0.5 seconds remaining), let it finish
-    if (remainingCastTime < 500) return false;
+    if (remainingCastTime < 300) return false;
 
     // Define damaging spells to stop
     const isDamageCast = [
@@ -211,7 +212,7 @@ export class ShamanRestorationPvP extends Behavior {
    */
   isHealingNeeded() {
     const lowestHealth = heal.getPriorityPVPHealTarget()?.effectiveHealthPercent;
-    return lowestHealth < 70;
+    return lowestHealth < 85;
   }
 
   /**
@@ -222,7 +223,7 @@ export class ShamanRestorationPvP extends Behavior {
     return me.inCombat() &&
       heal.getPriorityPVPHealTarget()?.inCombat() &&
       me.withinLineOfSight(heal.getPriorityPVPHealTarget()) &&
-      lowestHealth <= 40;
+      lowestHealth <= 55;
   }
 
   /**
@@ -418,6 +419,26 @@ export class ShamanRestorationPvP extends Behavior {
       allies.push(me);
     }
     return allies;
+  }
+
+  /**
+   * Finds a valid target for Hex (enemy healer with specific conditions)
+   */
+  hexTarget() {
+    // Get all enemy players
+    const nearbyEnemies = me.getPlayerEnemies(30); // Hex has 30 yard range
+
+    for (const unit of nearbyEnemies) {
+      if (unit.isHealer() &&
+          !unit.isCCd() &&
+          unit.canCC() &&
+          unit.getDR("incapacitate") === 0 &&
+          heal.getPriorityPVPHealTarget()?.effectiveHealthPercent > 69) {
+        return unit;
+      }
+    }
+
+    return undefined;
   }
 
 }
