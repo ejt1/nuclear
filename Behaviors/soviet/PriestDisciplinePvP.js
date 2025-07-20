@@ -104,6 +104,7 @@ export class PriestDisciplinePvP extends Behavior {
       spell.cast("Mindgames", on => me.targetUnit, ret => me.targetUnit?.effectiveHealthPercent < 50),
       spell.cast("Penance", on => me.targetUnit, ret => me.hasAura(auras.powerOfTheDarkSide)),
       spell.cast("Mind Blast", on => me.targetUnit, ret => true),
+      spell.cast("Smite", on => me.targetUnit, ret => me.pctPower > 30),
     );
   }
 
