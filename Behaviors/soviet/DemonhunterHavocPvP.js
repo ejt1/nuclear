@@ -57,40 +57,40 @@ export class DemonhunterHavocPvP extends Behavior {
     }
   ];
 
-    build() {
-      return new bt.Selector(
-        common.waitForNotMounted(),
-        common.waitForNotSitting(),
-        common.waitForCastOrChannel(),
+  build() {
+    return new bt.Selector(
+      common.waitForNotMounted(),
+      common.waitForNotSitting(),
+      common.waitForCastOrChannel(),
 
-        // Interrupts (outside GCD)
-        spell.interrupt('Disrupt', true),
+      // Interrupts (outside GCD)
+      spell.interrupt('Disrupt', true),
 
-        // CC abilities (outside GCD)
-        spell.cast("Fel Eruption", on => this.felEruptionTarget(), ret => me.target && me.target.effectiveHealthPercent < 87 && this.felEruptionTarget() !== undefined),
-        spell.cast("Imprison", on => this.imprisonTarget(), ret => me.target && me.target.effectiveHealthPercent < 75 && this.imprisonTarget() !== undefined),
-        spell.cast("Sigil of Misery", on => this.sigilOfMiseryTarget(), ret => this.sigilOfMiseryTarget() !== undefined),
+      // CC abilities (outside GCD)
+      spell.cast("Fel Eruption", on => this.felEruptionTarget(), ret => me.target && me.target.effectiveHealthPercent < 87 && this.felEruptionTarget() !== undefined),
+      spell.cast("Imprison", on => this.imprisonTarget(), ret => me.target && me.target.effectiveHealthPercent < 75 && this.imprisonTarget() !== undefined),
+      spell.cast("Sigil of Misery", on => this.sigilOfMiseryTarget(), ret => this.sigilOfMiseryTarget() !== undefined),
 
-        common.waitForTarget(),
-        common.waitForFacing(),
+      common.waitForTarget(),
+      common.waitForFacing(),
 
-        new bt.Decorator(
-          ret => !spell.isGlobalCooldown(),
-          new bt.Selector(
-            // Defensive cooldowns (highest priority)
-            this.defensiveCooldowns(),
-            // Offensive dispels
-            this.offensiveDispels(),
-            // PvP burst or sustained damage
-            new bt.Decorator(
-              ret => Combat.burstToggle && me.target,
-              this.burstDamage()
-            ),
-            this.sustainedDamage()
-          )
+      new bt.Decorator(
+        ret => !spell.isGlobalCooldown(),
+        new bt.Selector(
+          // Defensive cooldowns (highest priority)
+          this.defensiveCooldowns(),
+          // Offensive dispels
+          this.offensiveDispels(),
+          // PvP burst or sustained damage
+          new bt.Decorator(
+            ret => Combat.burstToggle && me.target,
+            this.burstDamage()
+          ),
+          this.sustainedDamage()
         )
-      );
-    }
+      )
+    );
+  }
 
 
   offensiveDispels() {
@@ -177,7 +177,8 @@ export class DemonhunterHavocPvP extends Behavior {
       spell.cast("Felblade", on => me.target, ret => !me.isWithinMeleeRange(me.target) && me.target.distanceTo(me) <= 15),
       // Ranged abilities when not in melee and too far for Felblade
       new bt.Decorator(ret => !me.isWithinMeleeRange(me.target) && me.isFacing(me.target),
-        new bt.Selector(spell.cast("Throw Glaive", on => me.target))),
+        new bt.Selector(spell.cast("Throw Glaive", on => me.target, req => spell.getCharges('Throw Glaive') === 2)
+        )),
       // Melee rotation - sustained damage priorities from guide
       new bt.Decorator(ret => me.isWithinMeleeRange(me.target) && me.isFacing(me.target),
         new bt.Selector(
@@ -192,7 +193,7 @@ export class DemonhunterHavocPvP extends Behavior {
           // Sigil of Spite for soul generation when we need it
           spell.cast("Sigil of Spite", on => me.target, ret => this.getSoulFragments() < 3),
           // Throw Glaive as a slow when target isn't slowed
-          spell.cast("Throw Glaive", on => me.target, ret => me.target && (me.target.isRooted() || !me.target.isMoving())),
+          //spell.cast("Throw Glaive", on => me.target, ret => me.target && (me.target.isRooted() || !me.target.isMoving())),
           // Demon's Bite as absolute filler
           spell.cast("Demon's Bite", on => me.target)
         ))
