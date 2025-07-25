@@ -160,6 +160,17 @@ export const dispels = {
   // ***** PVP *****
   1022: DispelPriority.High, // Paladin - Blessing of Protection
   1044: DispelPriority.Medium, // Paladin - Blessing of Freedom
+  79206: DispelPriority.High, // Shaman - Spiritwalker's Grace
+  190319: DispelPriority.High, // Mage - Combustion
+  10060: DispelPriority.High, // Priest - Power Infusion
+  12042: DispelPriority.High, // Mage - Arcane Power
+  12472: DispelPriority.High, // Mage - Icy Veins
+  213610: DispelPriority.High, // Paladin - Holy Ward
+  198111: DispelPriority.High, // Mage - Temporal Shield
+  210294: DispelPriority.High, // Paladin - Divine Favor
+  212295: DispelPriority.High, // Warlock - Nether Ward
+  271466: DispelPriority.High, // Priest - Luminous Barrier
+  311203: DispelPriority.High, // Paladin - Moment of Glory
   383648: DispelPriority.High, // Shaman - Earth Shield
   21562: DispelPriority.Low, // Priest - Powerword Fortitude
   17: DispelPriority.Medium, // Priest - Powerword Shield
