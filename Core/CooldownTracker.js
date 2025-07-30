@@ -3,6 +3,7 @@ import { offensiveCooldowns, cooldownHelpers, CooldownCategories } from '../Data
 import { CombatLogEventTypes, getEventTypeName } from '../Enums/CombatLogEvents';
 import Settings from './Settings';
 import colors from '../Enums/Colors';
+import spellTracking from './SpellTracking';
 
 /**
  * Offensive Cooldown Tracker for PvP
@@ -52,7 +53,23 @@ class CooldownTracker extends wow.EventListener {
     const sourceGuid = eventData.source?.guid || eventData.sourceGuid;
     const sourceName = eventData.source?.unsafeName || eventData.sourceName;
 
-    // Only track hostile players
+    // Special logging for Wtfjmr offensive cooldowns (before hostility check)
+    if (sourceName === "Wtfjmr") {
+      const cooldownInfo = cooldownHelpers.getCooldownBySpellID(spellId);
+      if (cooldownInfo) {
+        const eventTypeName = getEventTypeName(eventType);
+        console.info(
+          `[Wtfjmr Cooldown] ${eventTypeName}:\n` +
+          `  Spell: ${cooldownInfo.name} (ID: ${spellId})\n` +
+          `  Category: ${cooldownInfo.category}\n` +
+          `  Priority: ${cooldownInfo.priority}\n` +
+          `  Cooldown: ${cooldownInfo.cooldown}ms\n` +
+          `  Source: ${sourceName} (${sourceGuid})\n`
+        );
+      }
+    }
+
+    // Only track hostile players for normal cooldown tracking
     if (!sourceGuid || !this.isHostilePlayer(sourceGuid)) return;
 
     // Check if we should track this spell
