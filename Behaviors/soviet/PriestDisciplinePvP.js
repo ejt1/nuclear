@@ -495,6 +495,11 @@ export class PriestDisciplinePvP extends Behavior {
   }
 
   findMindControlDPSTarget() {
+    // Check if the setting is enabled first
+    if (Settings.UseMindControlDPS !== true) {
+      return undefined;
+    }
+
     // Check cooldown first
     if (spell.isOnCooldown("Mind Control")) {
       return undefined;
