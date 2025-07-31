@@ -8,7 +8,7 @@ import { defaultHealTargeting as h } from "@/Targeting/HealTargeting";
 import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 import { DispelPriority } from "@/Data/Dispels";
 import { WoWDispelType } from "@/Enums/Auras";
-import spellBlacklist from "@/Data/PVPData";
+import { spellBlacklist } from "@/Data/PVPData";
 import { pvpHelpers } from "@/Data/PVPData";
 import drTracker from "@/Core/DRTracker";
 import Settings from "@/Core/Settings";
