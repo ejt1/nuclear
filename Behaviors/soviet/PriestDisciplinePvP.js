@@ -5,7 +5,6 @@ import common from '@/Core/Common';
 import spell from "@/Core/Spell";
 import { me } from "@/Core/ObjectManager";
 import { defaultHealTargeting as h } from "@/Targeting/HealTargeting";
-import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 import { DispelPriority } from "@/Data/Dispels";
 import { WoWDispelType } from "@/Enums/Auras";
 import { spellBlacklist } from "@/Data/PVPData";
