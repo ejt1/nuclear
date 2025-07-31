@@ -255,34 +255,6 @@ export class PriestDisciplinePvP extends Behavior {
     return minDuration === Infinity ? 0 : minDuration;
   }
 
-  findShadowWordDeathTarget() {
-    const enemies = me.getEnemies();
-    for (const enemy of enemies) {
-      if (enemy.effectiveHealthPercent < 20) {
-        return enemy;
-      }
-    }
-    return undefined;
-  }
-
-  findDeathThePolyTarget() {
-    const enemies = me.getEnemies(40);
-    for (const enemy of enemies) {
-      if (enemy.isCastingOrChanneling && enemy.isPlayer()) {
-        const spellInfo = enemy.spellInfo;
-        const target = spellInfo ? spellInfo.spellTargetGuid : null;
-        if (enemy.spellInfo) {
-          const onBlacklist = spellBlacklist[enemy.spellInfo.spellCastId];
-          const castRemains = enemy.spellInfo.castEnd - wow.frameTime;
-          if (target && target.equals(me.guid) && onBlacklist && castRemains < 1000) {
-            return enemy;
-          }
-        }
-      }
-    }
-    return undefined;
-  }
-
   findShadowWordPainTarget() {
     // Shadow Word: Pain doesn't require facing but needs LOS
     const enemies = me.getEnemies();
