@@ -70,8 +70,30 @@ export class PriestDisciplinePvP extends Behavior {
         common.waitForNotWaitingForArenaToStart(),
         common.waitForNotSitting(),
         common.waitForNotMounted(),
-        common.waitForCastOrChannel(),
         this.waitForNotJustCastPenitence(),
+
+        // Cast Shadow Word: Death before waitForCastOrChannel if not on cooldown and not channeling Ultimate Penitence
+        new bt.Decorator(
+          ret => {
+            if (spell.isOnCooldown("Shadow Word: Death")) {
+              return false;
+            }
+            // Check if we're channeling Ultimate Penitence (spell ID: 421453)
+            if (me.isChanneling) {
+              const currentSpellId = me.currentChannel;
+              if (currentSpellId === 421453) { // Ultimate Penitence
+                return false;
+              }
+            }
+            return true;
+          },
+          spell.cast("Shadow Word: Death", on => this.findAdvancedShadowWordDeathTarget(), ret =>
+            Settings.UseAdvancedShadowWordDeath === true &&
+            this.findAdvancedShadowWordDeathTarget() !== undefined
+          )
+        ),
+
+        common.waitForCastOrChannel(),
 
         spell.cast("Psychic Scream", on => this.psychicScreamTarget(), ret => this.psychicScreamTarget() !== undefined),
 
@@ -139,9 +161,6 @@ export class PriestDisciplinePvP extends Behavior {
 
   noFacingSpellsImportant() {
     return new bt.Selector(
-      spell.cast("Shadow Word: Death", on => this.findAdvancedShadowWordDeathTarget(), ret =>
-        Settings.UseAdvancedShadowWordDeath === true && this.findAdvancedShadowWordDeathTarget() !== undefined
-      ),
       spell.cast("Fade", () => Settings.UseFadeForReflectSpells === true && this.shouldUseFadeForReflectSpells()),
       spell.cast("Power Infusion", on => this.findPowerInfusionTarget(), ret =>
         Settings.UseAutoPowerInfusion === true && this.findPowerInfusionTarget() !== undefined
@@ -159,7 +178,8 @@ export class PriestDisciplinePvP extends Behavior {
         Settings.UseMindControlDPS === true && this.findMindControlDPSTarget() !== undefined
       ),
       spell.cast("Shadowfiend", on => me.targetUnit, ret => me.pctPowerByType(PowerType.Mana) < 90),
-      spell.cast("Shadow Word: Pain", on => this.findShadowWordPainTarget(), ret => this.findShadowWordPainTarget() !== undefined)
+      // spell.cast("Shadow Word: Pain", on => this.findShadowWordPainTarget(), ret => this.findShadowWordPainTarget() !== undefined)
+      spell.cast("Shadow Word: Pain", on => me.target, ret => me.target && !me.target.hasAura(auras.shadowWordPain))
     );
   }
 
@@ -534,11 +554,6 @@ export class PriestDisciplinePvP extends Behavior {
   }
 
   findAdvancedShadowWordDeathTarget() {
-    // Check cooldown first
-    if (spell.isOnCooldown("Shadow Word: Death")) {
-      return undefined;
-    }
-
     // Shadow Word: Death doesn't require facing but needs LOS
     const enemies = me.getEnemies();
 
