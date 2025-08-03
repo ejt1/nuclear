@@ -244,6 +244,10 @@ class Spell extends wow.EventListener {
       return false;
     }
 
+    if (!options.skipFacingCheck && (target instanceof wow.CGUnit && !losExclude[target.entryId]) && !me.isFacing(target)) {
+      return false;
+    }
+
     if (!options.skipRangeCheck && (target instanceof wow.CGUnit && !losExclude[target.entryId]) && !this.inRange(spell, target)) {
       return false;
     }
@@ -407,6 +411,9 @@ class Spell extends wow.EventListener {
             continue;
           }
           if (!me.isFacing(target)) {
+            continue;
+          }
+          if (!me.withinLineOfSight(target)) {
             continue;
           }
 

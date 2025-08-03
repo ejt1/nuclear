@@ -15,6 +15,7 @@ export const CooldownCategories = {
   MOBILITY_OFFENSIVE: 'Mobility + Damage',
   STEALTH_POSITIONING: 'Stealth/Positioning',
   CC_SETUP: 'Crowd Control Setup',
+  INTERRUPT: 'Interrupt',
   MAJOR_DEFENSIVE: 'Major Defensive',
   IMMUNITY: 'Immunity',
   TRINKET_RACIAL: 'Trinket/Racial'
@@ -61,6 +62,12 @@ export const offensiveCooldowns = {
   // Area Damage
   61391: { name: "Typhoon", category: CooldownCategories.AREA_DAMAGE, duration: 0, cooldown: 30000 },
   132469: { name: "Typhoon", category: CooldownCategories.AREA_DAMAGE, duration: 0, cooldown: 30000 },
+  
+  // Crowd Control Setup
+  339: { name: "Entangling Roots", category: CooldownCategories.CC_SETUP, duration: 30000, cooldown: 0 },
+  2637: { name: "Hibernate", category: CooldownCategories.CC_SETUP, duration: 40000, cooldown: 0 },
+  99: { name: "Incapacitating Roar", category: CooldownCategories.CC_SETUP, duration: 3000, cooldown: 30000 },
+  22570: { name: "Maim", category: CooldownCategories.CC_SETUP, duration: 6000, cooldown: 20000 },
 
   // === EVOKER ===
   // Major Offensive
@@ -80,6 +87,11 @@ export const offensiveCooldowns = {
   121818: { name: "Stampede", category: CooldownCategories.AREA_DAMAGE, duration: 5000, cooldown: 180000 },
   201430: { name: "Stampede", category: CooldownCategories.AREA_DAMAGE, duration: 5000, cooldown: 180000 },
   212431: { name: "Explosive Shot", category: CooldownCategories.AREA_DAMAGE, duration: 0, cooldown: 30000 },
+  
+  // Crowd Control Setup
+  187650: { name: "Freezing Trap", category: CooldownCategories.CC_SETUP, duration: 60000, cooldown: 30000 },
+  162480: { name: "Steel Trap", category: CooldownCategories.CC_SETUP, duration: 20000, cooldown: 30000 },
+  109248: { name: "Binding Shot", category: CooldownCategories.CC_SETUP, duration: 10000, cooldown: 45000 },
 
   // === MAGE ===
   // Magic Burst
@@ -94,6 +106,12 @@ export const offensiveCooldowns = {
 
   // Area Damage
   157981: { name: "Blast Wave", category: CooldownCategories.AREA_DAMAGE, duration: 0, cooldown: 25000 },
+  
+  // Crowd Control Setup
+  118: { name: "Polymorph", category: CooldownCategories.CC_SETUP, duration: 50000, cooldown: 0 },
+  383121: { name: "Mass Polymorph", category: CooldownCategories.CC_SETUP, duration: 50000, cooldown: 60000 },
+  33395: { name: "Freeze", category: CooldownCategories.CC_SETUP, duration: 8000, cooldown: 30000 },
+  122: { name: "Frost Nova", category: CooldownCategories.CC_SETUP, duration: 10000, cooldown: 30000 },
 
   // Stealth/Positioning
   66: { name: "Invisibility", category: CooldownCategories.STEALTH_POSITIONING, duration: 20000, cooldown: 300000 },
@@ -109,6 +127,10 @@ export const offensiveCooldowns = {
   // Pet/Summon
   123904: { name: "Invoke Xuen", category: CooldownCategories.PET_SUMMON_BURST, duration: 20000, cooldown: 120000 },
   132578: { name: "Invoke Niuzao", category: CooldownCategories.PET_SUMMON_BURST, duration: 25000, cooldown: 180000 },
+  
+  // Crowd Control Setup
+  115078: { name: "Paralysis", category: CooldownCategories.CC_SETUP, duration: 60000, cooldown: 0 },
+  119381: { name: "Leg Sweep", category: CooldownCategories.CC_SETUP, duration: 3000, cooldown: 60000 },
 
   // === PALADIN ===
   // Physical Burst
@@ -120,6 +142,11 @@ export const offensiveCooldowns = {
   343527: { name: "Execution Sentence", category: CooldownCategories.EXECUTE_FINISHER, duration: 8000, cooldown: 60000 },
   343721: { name: "Final Reckoning", category: CooldownCategories.AREA_DAMAGE, duration: 0, cooldown: 120000 },
   427453: { name: "Hammer of Light", category: CooldownCategories.MAJOR_OFFENSIVE, duration: 0, cooldown: 60000 },
+  
+  // Crowd Control Setup
+  853: { name: "Hammer of Justice", category: CooldownCategories.CC_SETUP, duration: 6000, cooldown: 60000 },
+  105421: { name: "Blinding Light", category: CooldownCategories.CC_SETUP, duration: 6000, cooldown: 90000 },
+  20066: { name: "Repentance", category: CooldownCategories.CC_SETUP, duration: 60000, cooldown: 15000 },
 
   // === PRIEST ===
   // Major Offensive
@@ -133,6 +160,12 @@ export const offensiveCooldowns = {
 
   // Execute/Finisher
   32379: { name: "Shadow Word: Death", category: CooldownCategories.EXECUTE_FINISHER, duration: 0, cooldown: 10000 },
+  
+  // Crowd Control Setup
+  8122: { name: "Psychic Scream", category: CooldownCategories.CC_SETUP, duration: 8000, cooldown: 26000 },
+  64044: { name: "Psychic Horror", category: CooldownCategories.CC_SETUP, duration: 4000, cooldown: 45000 },
+  9484: { name: "Shackle Undead", category: CooldownCategories.CC_SETUP, duration: 50000, cooldown: 0 },
+  605: { name: "Mind Control", category: CooldownCategories.CC_SETUP, duration: 5000, cooldown: 120000 },
 
   // === ROGUE ===
   // Physical Burst
@@ -148,6 +181,12 @@ export const offensiveCooldowns = {
   1856: { name: "Vanish", category: CooldownCategories.STEALTH_POSITIONING, duration: 10000, cooldown: 90000 },
   1784: { name: "Stealth", category: CooldownCategories.STEALTH_POSITIONING, duration: 10000, cooldown: 2000 },
   115191: { name: "Stealth", category: CooldownCategories.STEALTH_POSITIONING, duration: 10000, cooldown: 2000 },
+  
+  // Crowd Control Setup
+  408: { name: "Kidney Shot", category: CooldownCategories.CC_SETUP, duration: 6000, cooldown: 25000 },
+  1833: { name: "Cheap Shot", category: CooldownCategories.CC_SETUP, duration: 4000, cooldown: 0 },
+  2094: { name: "Blind", category: CooldownCategories.CC_SETUP, duration: 8000, cooldown: 120000 },
+  6770: { name: "Sap", category: CooldownCategories.CC_SETUP, duration: 60000, cooldown: 0 },
 
   // === SHAMAN ===
   // Major Offensive
@@ -159,6 +198,11 @@ export const offensiveCooldowns = {
   114050: { name: "Ascendance (Elemental)", category: CooldownCategories.MAGIC_BURST, duration: 15000, cooldown: 180000 },
   114051: { name: "Ascendance (Enhancement)", category: CooldownCategories.PHYSICAL_BURST, duration: 15000, cooldown: 180000 },
   114052: { name: "Ascendance (Restoration)", category: CooldownCategories.MAGIC_BURST, duration: 15000, cooldown: 180000 },
+  
+  // Crowd Control Setup
+  51514: { name: "Hex", category: CooldownCategories.CC_SETUP, duration: 60000, cooldown: 30000 },
+  197214: { name: "Sundering", category: CooldownCategories.CC_SETUP, duration: 2000, cooldown: 40000 },
+  118345: { name: "Pulverize", category: CooldownCategories.CC_SETUP, duration: 6000, cooldown: 35000 },
 
   // === WARLOCK ===
   // Magic Burst
@@ -201,6 +245,45 @@ export const offensiveCooldowns = {
   20594: { name: "Stoneform", category: CooldownCategories.TRINKET_RACIAL, duration: 8000, cooldown: 120000 },
   58984: { name: "Shadowmeld", category: CooldownCategories.STEALTH_POSITIONING, duration: 0, cooldown: 120000 },
   265221: { name: "Fireblood", category: CooldownCategories.TRINKET_RACIAL, duration: 8000, cooldown: 120000 },
+
+  // === INTERRUPTS ===
+  // Death Knight
+  47528: { name: "Mind Freeze", category: CooldownCategories.INTERRUPT, duration: 0, cooldown: 15000 },
+  
+  // Demon Hunter
+  183752: { name: "Disrupt", category: CooldownCategories.INTERRUPT, duration: 0, cooldown: 15000 },
+  
+  // Druid
+  78675: { name: "Solar Beam", category: CooldownCategories.INTERRUPT, duration: 8000, cooldown: 60000 },
+  
+  // Hunter
+  147362: { name: "Counter Shot", category: CooldownCategories.INTERRUPT, duration: 0, cooldown: 24000 },
+  187707: { name: "Muzzle", category: CooldownCategories.INTERRUPT, duration: 0, cooldown: 15000 },
+  
+  // Mage
+  2139: { name: "Counterspell", category: CooldownCategories.INTERRUPT, duration: 0, cooldown: 24000 },
+  
+  // Monk
+  116705: { name: "Spear Hand Strike", category: CooldownCategories.INTERRUPT, duration: 0, cooldown: 15000 },
+  
+  // Paladin
+  96231: { name: "Rebuke", category: CooldownCategories.INTERRUPT, duration: 0, cooldown: 15000 },
+  
+  // Priest
+  15487: { name: "Silence", category: CooldownCategories.INTERRUPT, duration: 4000, cooldown: 45000 },
+  
+  // Rogue
+  1766: { name: "Kick", category: CooldownCategories.INTERRUPT, duration: 0, cooldown: 15000 },
+  
+  // Shaman
+  57994: { name: "Wind Shear", category: CooldownCategories.INTERRUPT, duration: 0, cooldown: 12000 },
+  
+  // Warlock
+  19647: { name: "Spell Lock", category: CooldownCategories.INTERRUPT, duration: 0, cooldown: 24000 },
+  89766: { name: "Axe Toss", category: CooldownCategories.INTERRUPT, duration: 0, cooldown: 30000 },
+  
+  // Warrior
+  6552: { name: "Pummel", category: CooldownCategories.INTERRUPT, duration: 0, cooldown: 15000 },
 
   // === MAJOR DEFENSIVES (for offensive timing) ===
   // Ice Block, Divine Shield, etc.
@@ -252,7 +335,8 @@ export const cooldownHelpers = {
       [CooldownCategories.PET_SUMMON_BURST]: 6,
       [CooldownCategories.AREA_DAMAGE]: 5,
       [CooldownCategories.MOBILITY_OFFENSIVE]: 4,
-      [CooldownCategories.CC_SETUP]: 3,
+      [CooldownCategories.CC_SETUP]: 8, // High priority for crowd control timing
+      [CooldownCategories.INTERRUPT]: 7, // High priority for interrupt tracking
       [CooldownCategories.STEALTH_POSITIONING]: 2,
       [CooldownCategories.IMMUNITY]: 8, // High priority for defensive timing
       [CooldownCategories.MAJOR_DEFENSIVE]: 7,
