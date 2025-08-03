@@ -9,6 +9,7 @@ import { defaultCombatTargeting as Combat } from '@/Targeting/CombatTargeting';
 import { PowerType } from '@/Enums/PowerType';
 import { DispelPriority } from '@/Data/Dispels';
 import { WoWDispelType } from '@/Enums/Auras';
+import { pvpHelpers } from '@/Data/PVPData';
 
 const auras = {
   metamorphosis: 162264,
@@ -68,8 +69,8 @@ export class DemonhunterHavocPvP extends Behavior {
       spell.interrupt('Disrupt', true),
 
       // CC abilities (outside GCD)
-      spell.cast("Fel Eruption", on => this.felEruptionTarget(), ret => me.target && me.target.effectiveHealthPercent < 87 && this.felEruptionTarget() !== undefined),
-      spell.cast("Imprison", on => this.imprisonTarget(), ret => me.target && me.target.effectiveHealthPercent < 75 && this.imprisonTarget() !== undefined),
+      spell.cast("Fel Eruption", on => this.felEruptionTarget(), ret => me.target && (me.target.effectiveHealthPercent < 87 || this.findFriendUsingMajorCDsWithin5Sec() !== undefined) && this.felEruptionTarget() !== undefined),
+      spell.cast("Imprison", on => this.imprisonTarget(), ret => me.target && (me.target.effectiveHealthPercent < 75 || this.findFriendUsingMajorCDsWithin5Sec() !== undefined) && this.imprisonTarget() !== undefined),
       spell.cast("Sigil of Misery", on => this.sigilOfMiseryTarget(), ret => this.sigilOfMiseryTarget() !== undefined),
 
       common.waitForTarget(),
@@ -245,21 +246,6 @@ export class DemonhunterHavocPvP extends Behavior {
     return aura ? aura.remaining : 0;
   }
 
-  // Enhanced burst conditions
-  shouldStartFullBurst() {
-    return me.target &&
-      spell.getCooldown('The Hunt').ready &&
-      spell.getCooldown('Metamorphosis').ready &&
-      spell.getCooldown('Eye Beam').ready &&
-      this.getFury() > 50;
-  }
-
-  shouldStartMiniBurst() {
-    return me.target &&
-      (spell.getCooldown('Eye Beam').ready || spell.getCooldown('Essence Break').ready) &&
-      this.getFury() > 30;
-  }
-
   // CC targeting methods
   felEruptionTarget() {
     // Get all enemy players within 30 yards and find the first valid healer target for stun
@@ -298,5 +284,70 @@ export class DemonhunterHavocPvP extends Behavior {
     }
 
     return undefined;
+  }
+
+  // Helper function to find friends using major cooldowns
+  findFriendUsingMajorCDsWithin5Sec() {
+    const friends = me.getFriends();
+    let bestTarget = null;
+    let bestPriority = 0;
+
+    for (const friend of friends) {
+      if (!friend.isPlayer() ||
+          me.distanceTo(friend) > 40 ||
+          !me.withinLineOfSight(friend)) {
+        continue;
+      }
+
+      const majorCooldown = pvpHelpers.hasMajorDamageCooldown(friend, 5);
+      if (!majorCooldown) {
+        continue;
+      }
+
+      // Calculate priority based on class role and cooldown duration
+      let priority = 0;
+
+      // Higher priority for DPS classes
+      if (!friend.isHealer()) {
+        priority += 100;
+      } else {
+        priority += 50; // Support healers too, but lower priority
+      }
+
+      // Bonus for longer duration cooldowns
+      if (majorCooldown.remainingTime > 8) {
+        priority += 50;
+      } else if (majorCooldown.remainingTime > 5) {
+        priority += 25;
+      }
+
+      // Check if they have multiple major cooldowns (even better target)
+      const allMajorCDs = this.countMajorCooldowns(friend);
+      if (allMajorCDs > 1) {
+        priority += 25 * (allMajorCDs - 1);
+      }
+
+      if (priority > bestPriority) {
+        bestPriority = priority;
+        bestTarget = friend;
+      }
+    }
+
+    if (bestTarget) {
+      const majorCooldown = pvpHelpers.hasMajorDamageCooldown(bestTarget, 3);
+      console.log(`[DH] Friend with major CD found: ${bestTarget.unsafeName} with ${majorCooldown.name} (${majorCooldown.remainingTime.toFixed(1)}s remaining)`);
+    }
+
+    return bestTarget;
+  }
+
+  countMajorCooldowns(unit) {
+    let count = 0;
+    // This is a simplified count - you could enhance this to check for specific buff combinations
+    if (pvpHelpers.hasMajorDamageCooldown(unit, 5)) {
+      count++;
+      // You could add more specific checks here for different types of cooldowns
+    }
+    return count;
   }
 }

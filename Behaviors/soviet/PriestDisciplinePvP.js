@@ -34,7 +34,7 @@ export class PriestDisciplinePvP extends Behavior {
 
   // Define healTarget as a class property
   healTarget = null;
-  
+
   // Defensive cooldown tracking
   lastDefensiveCooldownTime = 0;
   lastPainSuppressionTime = 0;
@@ -58,9 +58,9 @@ export class PriestDisciplinePvP extends Behavior {
     {
       header: "Enhanced PVP Features",
       options: [
-              { type: "checkbox", uid: "UseAdvancedShadowWordDeath", text: "Use Advanced Shadow Word: Death (any enemy in range)", default: true },
-      { type: "checkbox", uid: "UseFadeForReflectSpells", text: "Use Fade for pvpReflect spells", default: true },
-      { type: "checkbox", uid: "UsePreemptiveFade", text: "Use Preemptive Fade (predict enemy CC)", default: true },
+        { type: "checkbox", uid: "UseAdvancedShadowWordDeath", text: "Use Advanced Shadow Word: Death (any enemy in range)", default: true },
+        { type: "checkbox", uid: "UseFadeForReflectSpells", text: "Use Fade for pvpReflect spells", default: true },
+        { type: "checkbox", uid: "UsePreemptiveFade", text: "Use Preemptive Fade (predict enemy CC)", default: true },
         { type: "checkbox", uid: "UseSmartMindControl", text: "Use Smart Mind Control (enemy healer)", default: true },
         { type: "checkbox", uid: "UseMindControlDPS", text: "Mind Control enemy DPS with major cooldowns", default: false },
         { type: "checkbox", uid: "UseVoidTendrils", text: "Use Void Tendrils when 2+ enemies nearby", default: true },
@@ -91,7 +91,7 @@ export class PriestDisciplinePvP extends Behavior {
         common.waitForNotWaitingForArenaToStart(),
         common.waitForNotSitting(),
         common.waitForNotMounted(),
-        
+
         // Interrupt our own casting if we can counter incoming CC with Shadow Word: Death or Fade
         new bt.Decorator(
           () => this.shouldStopCastingForCCCounter(),
@@ -101,29 +101,29 @@ export class PriestDisciplinePvP extends Behavior {
             return bt.Status.Success;
           })
         ),
-        
+
         // High priority Shadow Word: Death and Fade for incoming CC (after stopping cast)
-        spell.cast("Shadow Word: Death", on => this.findIncomingCCTarget(), ret => 
+        spell.cast("Shadow Word: Death", on => this.findIncomingCCTarget(), ret =>
           this.findIncomingCCTarget() !== undefined && !spell.isOnCooldown("Shadow Word: Death")
         ),
-        spell.cast("Fade", () => 
+        spell.cast("Fade", () =>
           this.hasIncomingCCForFade() && !spell.isOnCooldown("Fade")
         ),
 
         // Preemptive Fade for predicted enemy CC (priest within 8y, rogue within 4y)
-        spell.cast("Fade", () => 
+        spell.cast("Fade", () =>
           Settings.UsePreemptiveFade && this.shouldPreemptiveFade()
         ),
-        
+
         common.waitForCastOrChannel(),
         this.waitForNotJustCastPenitence(),
 
         spell.cast("Psychic Scream", on => this.psychicScreamTarget(), ret => this.psychicScreamTarget() !== undefined,
-        (ret) => {
-          if (ret === bt.Status.Success) {
-            toastError("Psychic Scream Fear!", 1.2, 2500);
-          }
-        }),
+          (ret) => {
+            if (ret === bt.Status.Success) {
+              toastError("Psychic Scream Fear!", 1.2, 2500);
+            }
+          }),
 
         // Healing rotation (doesn't need enemy target/facing)
         this.healRotation(),
@@ -156,7 +156,7 @@ export class PriestDisciplinePvP extends Behavior {
     // Check if we have Shadow Word: Death or Fade ready
     const swdReady = !spell.isOnCooldown("Shadow Word: Death");
     const fadeReady = !spell.isOnCooldown("Fade");
-    
+
     if (!swdReady && !fadeReady) {
       return false;
     }
@@ -170,7 +170,7 @@ export class PriestDisciplinePvP extends Behavior {
 
       const spellInfo = enemy.spellInfo;
       const target = spellInfo.spellTargetGuid;
-      
+
       // Check if the spell is targeting us
       if (!target || !target.equals(me.guid)) {
         continue;
@@ -205,13 +205,13 @@ export class PriestDisciplinePvP extends Behavior {
       118345: "Pulverize", // Warlock Pet
       30283: "Shadowfury", // Warlock
       5211: "Mighty Bash", // Druid
-      
+
       // Fears
       5782: "Fear", // Warlock
       6789: "Mortal Coil", // Warlock
       5484: "Howl of Terror", // Warlock
       261589: "Seduction", // Warlock Pet
-      
+
       // Incapacitates
       51514: "Hex", // Shaman
       118: "Polymorph", // Mage
@@ -228,17 +228,17 @@ export class PriestDisciplinePvP extends Behavior {
       161355: "Polymorph: Penguin", // Mage
       161372: "Polymorph: Peacock", // Mage
       217832: "Imprison", // Demon Hunter
-      
+
       // Silence/Disarm
       15487: "Silence", // Priest
       1330: "Garrote - Silence", // Rogue
       31935: "Avenger's Shield", // Paladin
-      
+
       // Roots
       339: "Entangling Roots", // Druid
       102359: "Mass Entanglement", // Druid
       170855: "Binding Shot", // Hunter
-      
+
       // Other important interrupts
       2139: "Counterspell", // Mage
       47528: "Mind Freeze", // Death Knight
@@ -280,7 +280,7 @@ export class PriestDisciplinePvP extends Behavior {
     const commonCCAuras = [
       // Stuns
       853, 408, 1833, 179057, 118345, 30283, 5211,
-      // Fears  
+      // Fears
       5782, 6789, 5484, 261589,
       // Incapacitates
       51514, 118, 61305, 28272, 61721, 61780, 28271, 277787, 277792, 126819, 161353, 161354, 161355, 161372, 217832,
@@ -311,7 +311,7 @@ export class PriestDisciplinePvP extends Behavior {
 
       const spellInfo = enemy.spellInfo;
       const target = spellInfo.spellTargetGuid;
-      
+
       // Check if the spell is targeting us
       if (!target || !target.equals(me.guid)) {
         continue;
@@ -345,7 +345,7 @@ export class PriestDisciplinePvP extends Behavior {
 
       const spellInfo = enemy.spellInfo;
       const target = spellInfo.spellTargetGuid;
-      
+
       // Check if the spell is targeting us
       if (!target || !target.equals(me.guid)) {
         continue;
@@ -389,8 +389,8 @@ export class PriestDisciplinePvP extends Behavior {
         const trackedSpells = {
           // Priest
           8122: 30000,    // Psychic Scream (30s cooldown)
-          // Rogue  
-          1833: 30000,    // Cheap Shot (30s cooldown)  
+          // Rogue
+          1833: 30000,    // Cheap Shot (30s cooldown)
           408: 20000,     // Kidney Shot (20s cooldown)
           // Other high-impact CC
           51514: 30000,   // Hex (30s cooldown)
@@ -402,7 +402,7 @@ export class PriestDisciplinePvP extends Behavior {
           if (!this.enemyCCTracker.has(guidKey)) {
             this.enemyCCTracker.set(guidKey, {});
           }
-          
+
           // Only update if we haven't recorded this cast yet (to avoid spam)
           const lastRecorded = this.enemyCCTracker.get(guidKey)[spellId];
           if (!lastRecorded || currentTime - lastRecorded > 5000) { // 5 second grace period
@@ -423,7 +423,7 @@ export class PriestDisciplinePvP extends Behavior {
 
     for (const [guidKey, spellData] of this.enemyCCTracker.entries()) {
       let shouldRemove = true;
-      
+
       // Check if any spells are still relevant (within reasonable timeframe)
       for (const [spellId, timestamp] of Object.entries(spellData)) {
         if (currentTime - timestamp < maxAge) {
@@ -431,7 +431,7 @@ export class PriestDisciplinePvP extends Behavior {
           break;
         }
       }
-      
+
       if (shouldRemove) {
         this.enemyCCTracker.delete(guidKey);
       }
@@ -460,21 +460,21 @@ export class PriestDisciplinePvP extends Behavior {
       if (enemy.classType === 5 && me.distanceTo(enemy) <= 8) { // Class 5 = Priest
         const lastPsychicScream = enemyTracking ? enemyTracking[8122] : null;
         const timeSinceLastUse = lastPsychicScream ? currentTime - lastPsychicScream : 999999;
-        
+
         if (timeSinceLastUse > 29000) { // 29+ seconds since last use (30s cooldown)
           console.log(`[Priest] Preemptive Fade - Enemy priest ${enemy.unsafeName} within 8y, Psychic Scream ready (${Math.floor(timeSinceLastUse/1000)}s ago)`);
           return true;
         }
       }
 
-      // Rogue CC prediction  
+      // Rogue CC prediction
       if (enemy.classType === 4 && me.distanceTo(enemy) <= 4) { // Class 4 = Rogue
         const lastCheapShot = enemyTracking ? enemyTracking[1833] : null;
         const lastKidneyShot = enemyTracking ? enemyTracking[408] : null;
-        
+
         const timeSinceCheapShot = lastCheapShot ? currentTime - lastCheapShot : 999999;
         const timeSinceKidneyShot = lastKidneyShot ? currentTime - lastKidneyShot : 999999;
-        
+
         if (timeSinceCheapShot > 29000 || timeSinceKidneyShot > 19000) { // Cheap Shot 30s, Kidney Shot 20s
           const readyAbility = timeSinceCheapShot > 29000 ? "Cheap Shot" : "Kidney Shot";
           console.log(`[Priest] Preemptive Fade - Enemy rogue ${enemy.unsafeName} within 4y, ${readyAbility} ready`);
@@ -488,7 +488,7 @@ export class PriestDisciplinePvP extends Behavior {
         if (enemy.classType === 8) { // Class 8 = Mage
           const lastPolymorph = enemyTracking ? enemyTracking[118] : null;
           const timeSincePolymorph = lastPolymorph ? currentTime - lastPolymorph : 999999;
-          
+
           if (timeSincePolymorph > 29000 && me.distanceTo(enemy) <= 30) {
             console.log(`[Priest] Preemptive Fade - Enemy mage ${enemy.unsafeName} within 30y, Polymorph ready (${Math.floor(timeSincePolymorph/1000)}s ago)`);
             return true;
@@ -499,7 +499,7 @@ export class PriestDisciplinePvP extends Behavior {
         if (enemy.classType === 7) { // Class 7 = Shaman
           const lastHex = enemyTracking ? enemyTracking[51514] : null;
           const timeSinceHex = lastHex ? currentTime - lastHex : 999999;
-          
+
           if (timeSinceHex > 29000 && me.distanceTo(enemy) <= 30) {
             console.log(`[Priest] Preemptive Fade - Enemy shaman ${enemy.unsafeName} within 30y, Hex ready (${Math.floor(timeSinceHex/1000)}s ago)`);
             return true;
@@ -527,24 +527,24 @@ export class PriestDisciplinePvP extends Behavior {
       spell.cast("Power Word: Life", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 50),
       spell.cast("Desperate Prayer", on => me, ret => me.effectiveHealthPercent < 40),
       spell.cast("Pain Suppression", on => this.healTarget, ret => this.shouldUsePainSuppression(this.healTarget),
-      (ret) => {
-        if (ret === bt.Status.Success) {
-          toastSuccess(`Pain Suppression → ${this.healTarget?.unsafeName || 'Target'}!`, 1.3, 3000);
-        }
-      }),
+        (ret) => {
+          if (ret === bt.Status.Success) {
+            toastSuccess(`Pain Suppression → ${this.healTarget?.unsafeName || 'Target'}!`, 1.3, 3000);
+          }
+        }),
       spell.cast("Void Shift", on => this.healTarget, ret => this.shouldUseVoidShift(this.healTarget),
-      (ret) => {
-        if (ret === bt.Status.Success) {
-          toastWarning(`Void Shift → ${this.healTarget?.unsafeName || 'Target'}!`, 1.2, 3000);
-        }
-      }),
+        (ret) => {
+          if (ret === bt.Status.Success) {
+            toastWarning(`Void Shift → ${this.healTarget?.unsafeName || 'Target'}!`, 1.2, 3000);
+          }
+        }),
       spell.cast("Mass Dispel", on => this.findMassDispelTarget(), ret => this.findMassDispelTarget() !== undefined,
-      (ret) => {
-        if (ret === bt.Status.Success) {
-          const target = this.findMassDispelTarget();
-          toastInfo(`Mass Dispel → ${target?.unsafeName || 'Target'}`, 1.1, 2000);
-        }
-      }),
+        (ret) => {
+          if (ret === bt.Status.Success) {
+            const target = this.findMassDispelTarget();
+            toastInfo(`Mass Dispel → ${target?.unsafeName || 'Target'}`, 1.1, 2000);
+          }
+        }),
       spell.cast("Premonition", on => me, ret => this.shouldCastPremonition(this.healTarget)),
       spell.cast("Evangelism", on => me, ret => me.inCombat() && (
         (this.getAtonementCount() > 3 && this.minAtonementDuration() < 4000)
@@ -552,11 +552,11 @@ export class PriestDisciplinePvP extends Behavior {
       ),
       this.noFacingSpellsImportant(),
       spell.cast("Power Word: Barrier", on => this.healTarget, ret => this.shouldUseBarrier(this.healTarget),
-      (ret) => {
-        if (ret === bt.Status.Success) {
-          toastSuccess("Power Word: Barrier!", 1.2, 2500);
-        }
-      }),
+        (ret) => {
+          if (ret === bt.Status.Success) {
+            toastSuccess("Power Word: Barrier!", 1.2, 2500);
+          }
+        }),
       spell.cast("Power Word: Shield", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 89 && !this.hasShield(this.healTarget)),
       spell.cast("Power Word: Radiance", on => this.healTarget, ret => this.shouldCastRadiance(this.healTarget, 2)),
       spell.cast("Flash Heal", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 85 && me.hasAura(auras.surgeOfLight)),
@@ -665,18 +665,18 @@ export class PriestDisciplinePvP extends Behavior {
     if (!Settings.UseSmartDefensiveCoordination) {
       return true; // If coordination is disabled, allow all defensives
     }
-    
+
     const currentTime = wow.frameTime;
     const timeSinceLastDefensive = currentTime - this.lastDefensiveCooldownTime;
     const minInterval = Settings.DefensiveCooldownInterval * 1000; // Convert to milliseconds
-    
+
     return timeSinceLastDefensive >= minInterval;
   }
-  
+
   updateDefensiveCooldownTime(spellName) {
     const currentTime = wow.frameTime;
     this.lastDefensiveCooldownTime = currentTime;
-    
+
     // Track individual spell times for additional logic if needed
     switch(spellName) {
       case "Pain Suppression":
@@ -689,103 +689,103 @@ export class PriestDisciplinePvP extends Behavior {
         this.lastBarrierTime = currentTime;
         break;
     }
-    
+
     console.log(`[Priest] Used defensive cooldown: ${spellName} - Next defensive available in ${Settings.DefensiveCooldownInterval}s`);
   }
-  
+
   shouldUsePainSuppression(target) {
     if (!target) return false;
-    
+
     // Check basic conditions first
     if (target.hasAura("Ice Block") || target.hasAura("Divine Shield")) {
       return false;
     }
-    
+
     // Check if already has Pain Suppression
     if (target.hasAuraByMe(auras.painSuppression)) {
       return false;
     }
-    
+
     // Check if spell is on cooldown
     if (spell.isOnCooldown("Pain Suppression")) {
       return false;
     }
-    
+
     // Check health threshold
     const healthThreshold = target.effectiveHealthPercent < Settings.PainSuppressionHealth || target.timeToDeath() < 3;
     if (!healthThreshold) {
       return false;
     }
-    
+
     // Check defensive coordination
     if (!this.canUseDefensiveCooldown()) {
       return false;
     }
-    
+
     // If we reach here, we're about to cast - update tracking
     this.updateDefensiveCooldownTime("Pain Suppression");
     return true;
   }
-  
+
   shouldUseVoidShift(target) {
     if (!target) return false;
-    
+
     // Check basic conditions
     if (target.hasAura("Ice Block") || target.hasAura("Divine Shield")) {
       return false;
     }
-    
+
     // Check if spell is on cooldown
     if (spell.isOnCooldown("Void Shift")) {
       return false;
     }
-    
+
     // Void Shift is more situational - only use if target is very low
     const isVeryLow = target.effectiveHealthPercent < Settings.VoidShiftHealth || target.timeToDeath() < 2;
     if (!isVeryLow) {
       return false;
     }
-    
+
     // Don't void shift if we're also very low (it swaps health)
     if (me.effectiveHealthPercent < 35) {
       return false;
     }
-    
+
     // Check defensive coordination
     if (!this.canUseDefensiveCooldown()) {
       return false;
     }
-    
+
     // If we reach here, we're about to cast - update tracking
     this.updateDefensiveCooldownTime("Void Shift");
     return true;
   }
-  
+
   shouldUseBarrier(target) {
     if (!target) return false;
-    
+
     // Check basic conditions
     if (target.hasAura("Ice Block") || target.hasAura("Divine Shield")) {
       return false;
     }
-    
+
     // Check if spell is on cooldown
     if (spell.isOnCooldown("Power Word: Barrier")) {
       return false;
     }
-    
+
     // Check health threshold
     const healthThreshold = target.effectiveHealthPercent < Settings.BarrierHealth || target.timeToDeath() < 3;
     if (!healthThreshold) {
       return false;
     }
-    
+
     // Barrier is area-based, so prefer it when multiple people need help
-    const friendsNearTarget = me.getFriends().filter(friend => 
-      friend.distanceTo(target) <= 10 && 
+    const friendsNearTarget = me.getFriends().filter(friend =>
+      friend.distanceTo(target) <= 10 &&
       friend.effectiveHealthPercent < 70
     ).length;
-    
+
     // If multiple people near target need help, prioritize barrier
     if (friendsNearTarget >= 2) {
       // Check defensive coordination
@@ -796,15 +796,15 @@ export class PriestDisciplinePvP extends Behavior {
       this.updateDefensiveCooldownTime("Power Word: Barrier");
       return true;
     }
-    
+
     // For single target, only use if no other defensives are better options
     if (target.effectiveHealthPercent < Settings.BarrierHealth) {
       // Check if Pain Suppression would be better (single target damage reduction)
-      if (target.effectiveHealthPercent > Settings.PainSuppressionHealth && 
-          !spell.isOnCooldown("Pain Suppression")) {
+      if (target.effectiveHealthPercent > Settings.PainSuppressionHealth &&
+        !spell.isOnCooldown("Pain Suppression")) {
         return false; // Let Pain Suppression handle it
       }
-      
+
       // Check defensive coordination
       if (!this.canUseDefensiveCooldown()) {
         return false;
@@ -813,10 +813,10 @@ export class PriestDisciplinePvP extends Behavior {
       this.updateDefensiveCooldownTime("Power Word: Barrier");
       return true;
     }
-    
+
     return false;
   }
-  
+
 
 
   isNotDeadAndInLineOfSight(friend) {
@@ -846,21 +846,21 @@ export class PriestDisciplinePvP extends Behavior {
 
     // Prioritize current target if it doesn't have SW:P and isn't immune
     if (me.targetUnit &&
-        me.targetUnit.isPlayer() &&
-        !this.hasShadowWordPain(me.targetUnit) &&
-        !pvpHelpers.hasImmunity(me.targetUnit) &&
-        me.distanceTo(me.targetUnit) <= 40 &&
-        me.withinLineOfSight(me.targetUnit)) {
+      me.targetUnit.isPlayer() &&
+      !this.hasShadowWordPain(me.targetUnit) &&
+      !pvpHelpers.hasImmunity(me.targetUnit) &&
+      me.distanceTo(me.targetUnit) <= 40 &&
+      me.withinLineOfSight(me.targetUnit)) {
       return me.targetUnit;
     }
 
     // Find any enemy without Shadow Word: Pain
     for (const enemy of enemies) {
       if (enemy.isPlayer() &&
-          me.distanceTo(enemy) <= 40 &&
-          me.withinLineOfSight(enemy) &&
-          !this.hasShadowWordPain(enemy) &&
-          !pvpHelpers.hasImmunity(enemy)) {
+        me.distanceTo(enemy) <= 40 &&
+        me.withinLineOfSight(enemy) &&
+        !this.hasShadowWordPain(enemy) &&
+        !pvpHelpers.hasImmunity(enemy)) {
         return enemy;
       }
     }
@@ -874,13 +874,13 @@ export class PriestDisciplinePvP extends Behavior {
 
     for (const unit of enemies) {
       if (unit.isPlayer() &&
-          unit.isHealer() &&
-          me.distanceTo(unit) <= 8 &&
-          me.withinLineOfSight(unit) &&
-          this.canCCTarget(unit) &&
-          unit.canCC() &&
-          !pvpHelpers.hasImmunity(unit) &&
-          drTracker.getDRStacks(unit.guid, "disorient") === 0) {
+        unit.isHealer() &&
+        me.distanceTo(unit) <= 8 &&
+        me.withinLineOfSight(unit) &&
+        this.canCCTarget(unit) &&
+        unit.canCC() &&
+        !pvpHelpers.hasImmunity(unit) &&
+        drTracker.getDRStacks(unit.guid, "disorient") === 0) {
         return unit;
       }
     }
@@ -902,9 +902,9 @@ export class PriestDisciplinePvP extends Behavior {
 
     for (const friend of friends) {
       if (!friend.isPlayer() ||
-          me.distanceTo(friend) > 40 ||
-          !me.withinLineOfSight(friend) ||
-          friend.hasAura(auras.powerInfusion)) { // Don't double-buff
+        me.distanceTo(friend) > 40 ||
+        !me.withinLineOfSight(friend) ||
+        friend.hasAura(auras.powerInfusion)) { // Don't double-buff
         continue;
       }
 
@@ -982,9 +982,9 @@ export class PriestDisciplinePvP extends Behavior {
     const enemies = me.getEnemies();
     for (const enemy of enemies) {
       if (enemy.isCastingOrChanneling &&
-          enemy.isPlayer() &&
-          me.distanceTo(enemy) <= 40 &&
-          me.withinLineOfSight(enemy)) {
+        enemy.isPlayer() &&
+        me.distanceTo(enemy) <= 40 &&
+        me.withinLineOfSight(enemy)) {
         const spellInfo = enemy.spellInfo;
         const target = spellInfo ? spellInfo.spellTargetGuid : null;
         if (enemy.spellInfo && target && target.equals(me.guid)) {
@@ -1065,13 +1065,13 @@ export class PriestDisciplinePvP extends Behavior {
     const enemies = me.getEnemies();
     for (const enemy of enemies) {
       if (enemy.isPlayer() &&
-          enemy.isHealer() &&
-          me.distanceTo(enemy) <= 30 &&
-          me.withinLineOfSight(enemy) &&
-          this.canCCTarget(enemy) &&
-          enemy.canCC() &&
-          drTracker.getDRStacks(enemy.guid, "disorient") <= Settings.MindControlMaxDR &&
-          !pvpHelpers.hasImmunity(enemy)) {
+        enemy.isHealer() &&
+        me.distanceTo(enemy) <= 30 &&
+        me.withinLineOfSight(enemy) &&
+        this.canCCTarget(enemy) &&
+        enemy.canCC() &&
+        drTracker.getDRStacks(enemy.guid, "disorient") <= Settings.MindControlMaxDR &&
+        !pvpHelpers.hasImmunity(enemy)) {
 
         console.log(`[Priest] Mind Control conditions met - targeting ${enemy.unsafeName}`);
         return enemy;
@@ -1100,13 +1100,13 @@ export class PriestDisciplinePvP extends Behavior {
     const enemies = me.getEnemies();
     for (const enemy of enemies) {
       if (enemy.isPlayer() &&
-          !enemy.isHealer() && // Target non-healers (DPS/Tanks)
-          me.distanceTo(enemy) <= 30 &&
-          me.withinLineOfSight(enemy) &&
-          this.canCCTarget(enemy) &&
-          enemy.canCC() &&
-          drTracker.getDRStacks(enemy.guid, "disorient") <= Settings.MindControlMaxDR &&
-          !pvpHelpers.hasImmunity(enemy)) {
+        !enemy.isHealer() && // Target non-healers (DPS/Tanks)
+        me.distanceTo(enemy) <= 30 &&
+        me.withinLineOfSight(enemy) &&
+        this.canCCTarget(enemy) &&
+        enemy.canCC() &&
+        drTracker.getDRStacks(enemy.guid, "disorient") <= Settings.MindControlMaxDR &&
+        !pvpHelpers.hasImmunity(enemy)) {
 
         // Check if this enemy has major cooldowns active
         const majorCooldown = pvpHelpers.hasMajorDamageCooldown(enemy, 3);
@@ -1131,10 +1131,10 @@ export class PriestDisciplinePvP extends Behavior {
     // First priority: Anyone casting spellBlacklist spells on us
     for (const enemy of enemies) {
       if (enemy.isCastingOrChanneling &&
-          enemy.isPlayer() &&
-          me.distanceTo(enemy) <= 46 &&
-          me.withinLineOfSight(enemy) &&
-          !pvpHelpers.hasImmunity(enemy)) {
+        enemy.isPlayer() &&
+        me.distanceTo(enemy) <= 46 &&
+        me.withinLineOfSight(enemy) &&
+        !pvpHelpers.hasImmunity(enemy)) {
         const spellInfo = enemy.spellInfo;
         const target = spellInfo ? spellInfo.spellTargetGuid : null;
         if (enemy.spellInfo && target && target.equals(me.guid)) {
@@ -1151,10 +1151,10 @@ export class PriestDisciplinePvP extends Behavior {
     // Second priority: Low health enemies (execute)
     for (const enemy of enemies) {
       if (enemy.isPlayer() &&
-          enemy.effectiveHealthPercent < 20 &&
-          me.distanceTo(enemy) <= 40 &&
-          me.withinLineOfSight(enemy) &&
-          !pvpHelpers.hasImmunity(enemy)) {
+        enemy.effectiveHealthPercent < 20 &&
+        me.distanceTo(enemy) <= 40 &&
+        me.withinLineOfSight(enemy) &&
+        !pvpHelpers.hasImmunity(enemy)) {
         return enemy;
       }
     }
@@ -1169,8 +1169,8 @@ export class PriestDisciplinePvP extends Behavior {
 
     for (const friend of friends) {
       if (friend.isPlayer() &&
-          me.distanceTo(friend) <= 40 &&
-          me.withinLineOfSight(friend)) {
+        me.distanceTo(friend) <= 40 &&
+        me.withinLineOfSight(friend)) {
         const majorCooldown = pvpHelpers.hasMajorDamageCooldown(friend, 3);
         if (majorCooldown) {
           friendsWithCDs.push(friend);
@@ -1187,8 +1187,8 @@ export class PriestDisciplinePvP extends Behavior {
 
     for (const enemy of enemies) {
       if (enemy.isPlayer() &&
-          me.distanceTo(enemy) <= 40 &&
-          me.withinLineOfSight(enemy)) {
+        me.distanceTo(enemy) <= 40 &&
+        me.withinLineOfSight(enemy)) {
         const majorCooldown = pvpHelpers.hasMajorDamageCooldown(enemy, 3);
         if (majorCooldown) {
           enemiesWithCDs.push(enemy);
@@ -1203,9 +1203,9 @@ export class PriestDisciplinePvP extends Behavior {
     const friends = me.getFriends();
     for (const friend of friends) {
       if (friend.isPlayer() &&
-          me.distanceTo(friend) <= 40 &&
-          me.withinLineOfSight(friend) &&
-          friend.effectiveHealthPercent < Settings.MindControlHealthThreshold) {
+        me.distanceTo(friend) <= 40 &&
+        me.withinLineOfSight(friend) &&
+        friend.effectiveHealthPercent < Settings.MindControlHealthThreshold) {
         return false;
       }
     }
@@ -1217,9 +1217,9 @@ export class PriestDisciplinePvP extends Behavior {
     const friends = me.getFriends();
     for (const friend of friends) {
       if (friend.isPlayer() &&
-          me.distanceTo(friend) <= 40 &&
-          me.withinLineOfSight(friend) &&
-          friend.effectiveHealthPercent < Settings.MindControlDPSHealthThreshold) {
+        me.distanceTo(friend) <= 40 &&
+        me.withinLineOfSight(friend) &&
+        friend.effectiveHealthPercent < Settings.MindControlDPSHealthThreshold) {
         return false;
       }
     }
