@@ -40,7 +40,7 @@ export const damageBuffs = {
   12472: { minDuration: 2, name: "Icy Veins" },
   51271: { minDuration: 2, name: "Pillar of Frost" },
   207289: { minDuration: 2, name: "Unholy Frenzy" },
-  31884: { minDuration: 2, name: "Avenging Wrath" },
+  454351: { minDuration: 2, name: "Avenging Wrath" },
   107574: { minDuration: 2, name: "Avatar" },
   114050: { minDuration: 2, name: "Ascendance" },
   113858: { minDuration: 2, name: "Dark Soul: Instability" },

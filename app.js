@@ -11,13 +11,14 @@ import Autolooter from './Extra/Autolooter';
 import AntiAFK from './Extra/AntiAFK';
 import General from './Extra/General';
 import PVP from './Extra/PVP';
+import ToastNotification from './Extra/ToastNotification';
 import commandListener from './Core/CommandListener';
 import colors from './Enums/Colors';
 import KeyBinding from './Core/KeyBinding';
 
 let pauseCore = false;
 
-const extraModules = [General, Radar, Autolooter, AntiAFK, PVP];
+const extraModules = [General, Radar, Autolooter, AntiAFK, PVP, ToastNotification];
 
 // Set up default keybinding for pausing the core
 KeyBinding.setDefault("pauseCore", imgui.Key.Pause);

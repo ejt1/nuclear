@@ -10,6 +10,8 @@ import Settings from "@/Core/Settings";
 import drTracker from "@/Core/DRTracker";
 import pvpData, { pvpHelpers, pvpReflect, pvpInterrupts } from "@/Data/PVPData";
 import { drHelpers } from "@/Data/PVPDRList";
+import { toastInfo, toastSuccess, toastWarning, toastError } from '@/Extra/ToastNotification';
+import CommandListener from '@/Core/CommandListener';
 
 export class JmrSimcBeastMasteryBehavior extends Behavior {
   context = BehaviorContext.Any;
@@ -27,7 +29,9 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
     counterShot: new imgui.MutableVariable(true),
     binding: new imgui.MutableVariable(true),
     intimidation: new imgui.MutableVariable(true),
-    defensives: new imgui.MutableVariable(true)
+    defensives: new imgui.MutableVariable(true),
+    manualTrap: new imgui.MutableVariable(true),
+    chimaeralSting: new imgui.MutableVariable(true)
   };
 
   // Burst mode toggle state
@@ -216,6 +220,11 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
       console.log("Beast Mastery Burst Mode:", this.burstModeActive ? "ACTIVATED" : "DEACTIVATED");
     }
 
+    // Handle manual Freezing Trap with 'Q' key
+    if (imgui.isKeyPressed(imgui.Key.H) && this.overlayToggles.manualTrap.value) {
+      this.castManualFreezingTrap();
+    }
+
     const viewport = imgui.getMainViewport();
     if (!viewport) {
       return;
@@ -308,6 +317,34 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
           imgui.pushStyleColor(imgui.Col.Text, intimidationColor);
           imgui.checkbox("Intimidation", this.overlayToggles.intimidation);
           imgui.popStyleColor();
+          
+          // Manual Freezing Trap keybind
+          imgui.spacing();
+          const manualTrapColor = this.overlayToggles.manualTrap.value ?
+            { r: 1.0, g: 0.7, b: 0.2, a: 1.0 } : { r: 0.6, g: 0.6, b: 0.6, a: 1.0 };
+          imgui.pushStyleColor(imgui.Col.Text, manualTrapColor);
+          imgui.checkbox("Manual Trap (H)", this.overlayToggles.manualTrap);
+          imgui.popStyleColor();
+          
+          if (this.overlayToggles.manualTrap.value) {
+            imgui.indent();
+            imgui.textColored({ r: 0.8, g: 0.8, b: 0.8, a: 1.0 }, "H = Trap mouseover or healer");
+            imgui.unindent();
+          }
+          
+          // Chimaeral Sting during Bestial Wrath
+          imgui.spacing();
+          const chimaeralStingColor = this.overlayToggles.chimaeralSting.value ?
+            { r: 0.8, g: 0.2, b: 1.0, a: 1.0 } : { r: 0.6, g: 0.6, b: 0.6, a: 1.0 };
+          imgui.pushStyleColor(imgui.Col.Text, chimaeralStingColor);
+          imgui.checkbox("Chimaeral Sting BW", this.overlayToggles.chimaeralSting);
+          imgui.popStyleColor();
+          
+          if (this.overlayToggles.chimaeralSting.value) {
+            imgui.indent();
+            imgui.textColored({ r: 0.8, g: 0.8, b: 0.8, a: 1.0 }, "Stings healer during Bestial Wrath");
+            imgui.unindent();
+          }
           
           imgui.unindent();
         }
@@ -493,7 +530,11 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
       // Interrupts
       new bt.Decorator(
         () => Settings.UseCounterShot && this.overlayToggles.interrupts.value && this.overlayToggles.counterShot.value,
-        spell.interrupt("Counter Shot")
+        spell.interrupt("Counter Shot", ret => {
+          if (ret === bt.Status.Success) {
+            toastWarning("Counter Shot Interrupt!", 1.1, 2000);
+          }
+        })
       ),
       // Intimidation interrupt (doesn't require facing)
       new bt.Decorator(
@@ -549,8 +590,12 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
       spell.cast("Bestial Wrath", () => 
         Settings.UseBestialWrath && 
         this.overlayToggles.bestialWrath.value &&
-        this.shouldUseCooldowns()
-      ),
+        this.shouldUseCooldowns(),
+      ret => {
+        if (ret === bt.Status.Success) {
+          toastSuccess("BESTIAL WRATH ACTIVATED!", 1.3, 2000);
+        }
+      }),
       
       // barbed_shot,target_if=min:dot.barbed_shot.remains,if=full_recharge_time<gcd|charges_fractional>=cooldown.kill_command.charges_fractional|talent.call_of_the_wild&cooldown.call_of_the_wild.ready|howl_summon_ready&full_recharge_time<8
       spell.cast("Barbed Shot", on => this.getTargetWithMinBarbedShot(), req => 
@@ -575,15 +620,23 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
       spell.cast("Call of the Wild", () => 
         Settings.UseCallOfTheWild && 
         this.overlayToggles.callOfTheWild.value &&
-        this.shouldUseCooldowns()
-      ),
+        this.shouldUseCooldowns(),
+      ret => {
+        if (ret === bt.Status.Success) {
+          toastSuccess("Call of the Wild!", 1.2, 2500);
+        }
+      }),
       
       // bloodshed
       spell.cast("Bloodshed", () => 
         Settings.UseBloodshed && 
         this.overlayToggles.bloodshed.value &&
-        this.shouldUseCooldowns()
-      ),
+        this.shouldUseCooldowns(),
+      ret => {
+        if (ret === bt.Status.Success) {
+          toastSuccess("Bloodshed!", 1.1, 2000);
+        }
+      }),
       
       // dire_beast,if=talent.shadow_hounds|talent.dire_cleave
       spell.cast("Dire Beast", () => 
@@ -766,14 +819,24 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
       spell.cast("Binding Shot", on => this.findBindingShotTargetPVP(), req => 
         Settings.UseBinding &&
         this.overlayToggles.binding.value &&
-        this.findBindingShotTargetPVP() !== null
-      ),
+        this.findBindingShotTargetPVP() !== null,
+      ret => {
+        if (ret === bt.Status.Success) {
+          const target = this.findBindingShotTargetPVP();
+          toastWarning(`Binding Shot → ${target?.unsafeName || 'Target'}!`, 1.1, 2500);
+        }
+      }),
       
       // Freezing Trap enemy healer when stunned with <1.5s stun remaining
       spell.cast("Freezing Trap", on => this.findFreezingTrapTargetPVP(), req => 
         Settings.UseFreezingTrap &&
-        this.findFreezingTrapTargetPVP() !== null
-      ),
+        this.findFreezingTrapTargetPVP() !== null,
+      ret => {
+        if (ret === bt.Status.Success) {
+          const target = this.findFreezingTrapTargetPVP();
+          toastError(`Freezing Trap → ${target?.unsafeName || 'Target'}!`, 1.2, 3000);
+        }
+      }),
       
       // Tar Trap any enemy within 10y of us
       spell.cast("Tar Trap", on => this.findTarTrapLocationPVP(), req => 
@@ -791,8 +854,13 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
       spell.cast("Intimidation", on => this.findIntimidationTargetPVP(), req => 
         Settings.UseIntimidation &&
         this.overlayToggles.intimidation.value &&
-        this.findIntimidationTargetPVP() !== null
-      ),
+        this.findIntimidationTargetPVP() !== null,
+      ret => {
+        if (ret === bt.Status.Success) {
+          const target = this.findIntimidationTargetPVP();
+          toastError(`Intimidation Stun → ${target?.unsafeName || 'Target'}!`, 1.2, 3000);
+        }
+      }),
       
       // Bursting Shot non-healers within 8y of us
       spell.cast("Bursting Shot", on => this.findBurstingShotTargetPVP(), req => 
@@ -850,8 +918,24 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
       spell.cast("Bestial Wrath", () => 
         Settings.UseBestialWrath && 
         this.overlayToggles.bestialWrath.value &&
-        this.burstModeActive
-      ),
+        this.burstModeActive,
+      ret => {
+        if (ret === bt.Status.Success) {
+          toastSuccess("BESTIAL WRATH ACTIVATED!", 1.3, 2000);
+        }
+      }),
+      
+      // Chimaeral Sting enemy healer during Bestial Wrath (when not CC'd)
+      spell.cast("Chimaeral Sting", on => this.findEnemyHealerNotCC(), req => 
+        this.overlayToggles.chimaeralSting.value &&
+        me.hasVisibleAura("Bestial Wrath") &&
+        this.findEnemyHealerNotCC() !== null,
+      ret => {
+        if (ret === bt.Status.Success) {
+          const target = this.findEnemyHealerNotCC();
+          toastWarning(`Chimaeral Sting → ${target?.unsafeName || 'Healer'}!`, 1.2, 3000);
+        }
+      }),
       
       // Bloodshed
       spell.cast("Bloodshed", () => 
@@ -899,6 +983,11 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
         this.getCurrentTargetPVP() !== null &&
         !me.hasVisibleAura("Bestial Wrath")
       ),
+
+    // Priority 6: Kill Shot
+    spell.cast("Kill Shot", on => this.getCurrentTargetPVP(), req => 
+        this.getCurrentTargetPVP() !== null
+        ),
       
       // Priority 4: Kill Command
       spell.cast("Kill Command", on => this.getCurrentTargetPVP(), req => 
@@ -908,12 +997,6 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
       // Priority 5: Dire Beast
       spell.cast("Dire Beast", on => this.getCurrentTargetPVP(), req => 
         this.getCurrentTargetPVP() !== null
-      ),
-      
-      // Priority 6: Kill Shot
-      spell.cast("Kill Shot", on => this.getCurrentTargetPVP(), req => 
-        this.getCurrentTargetPVP() !== null &&
-        this.getCurrentTargetPVP().pctHealth <= 20
       ),
       
       // Priority 7: Cobra Shot
@@ -1323,6 +1406,21 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
     return null;
   }
 
+  findEnemyHealerNotCC() {
+    // Find enemy healer that's not in crowd control
+    for (const enemy of me.getEnemies()) {
+      if (!enemy.isPlayer() || !enemy.isHealer()) continue;
+      if (pvpHelpers.hasImmunity(enemy)) continue;
+      
+      // Check if they're NOT in CC (not stunned, feared, etc.)
+      if (!enemy.isStunned() && !enemy.isFeared() && !enemy.isSilenced() && 
+          !enemy.hasAura("Freezing Trap") && !enemy.hasAura("Binding Shot")) {
+        return enemy;
+      }
+    }
+    return null;
+  }
+
   findFreezingTrapTargetPVP() {
     // Enemy healer when stunned with <1.5s stun remaining
     for (const enemy of me.getEnemies()) {
@@ -1331,24 +1429,93 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
       
       // Check if they're stunned
       if (enemy.isStunned()) {
-        // Find stun auras and check remaining time
+        // Find stun auras using DRTracker categories
         const stunAuras = enemy.auras.filter(aura => 
-          aura.isDebuff && (
-            aura.spellId === 853 || // Hammer of Justice
-            aura.spellId === 408 || // Kidney Shot
-            aura.spellId === 179057 || // Chaos Nova
-            aura.spellId === 30283 // Shadowfury
-          )
+          aura.isDebuff && drHelpers.getCategoryBySpellID(aura.spellId) === "stun"
         );
         
         for (const stunAura of stunAuras) {
-          if (stunAura.remaining <= 1500 && stunAura.remaining > 500) { // 0.5-1.5s remaining
+          if (stunAura.remaining <= 1500 && stunAura.remaining > 0) { // 0.5-1.5s remaining
             return enemy.position; // Return position for trap
           }
         }
       }
     }
     return null;
+  }
+
+  castManualFreezingTrap() {
+    try {
+      // Check if Freezing Trap is ready first (using same pattern as line 1270)
+      const freezingTrapSpell = spell.getSpell(187650);
+      if (!freezingTrapSpell || !freezingTrapSpell.isUsable || !freezingTrapSpell.cooldown.ready) {
+        toastWarning("Freezing Trap not ready!", 1.0, 2000);
+        return;
+      }
+
+      // Get target function and type for casting
+      let targetFunction = null;
+      let targetType = "";
+
+      // Check mouseover first - get unit at cast time
+      const mouseoverGuid = wow.GameUI.mouseOverGuid;
+      if (mouseoverGuid && !mouseoverGuid.isNull) {
+        targetFunction = () => {
+          const mouseoverUnit = mouseoverGuid.toUnit();
+          if (mouseoverUnit && me.canAttack(mouseoverUnit) && !pvpHelpers.hasImmunity(mouseoverUnit)) {
+            return mouseoverUnit;
+          }
+          return null;
+        };
+        
+        // Test if we have a valid mouseover target right now
+        const testTarget = targetFunction();
+        if (testTarget) {
+          targetType = `mouseover ${testTarget.unsafeName || 'enemy'}`;
+        } else {
+          targetFunction = null;
+        }
+      }
+
+      // Fall back to enemy healer if no valid mouseover
+      if (!targetFunction) {
+        targetFunction = () => this.findEnemyHealerNotCC();
+        const testTarget = targetFunction();
+        if (testTarget) {
+          targetType = "enemy healer";
+        }
+      }
+
+      // Cast the trap if we have a target function
+      if (targetFunction && targetType) {
+        console.log(`Manual casting Freezing Trap on ${targetType}`);
+        
+        // Get the actual target for casting
+        const actualTarget = targetFunction();
+        if (actualTarget) {
+          console.log(`Target found: ${actualTarget.unsafeName}, attempting direct cast...`);
+          
+          // Use the same direct casting pattern as RightArrow (line 127)
+          const freezingTrapSpell = spell.getSpell(187650);
+          if (freezingTrapSpell) {
+            console.log(`Casting Freezing Trap (ID: 187650) on ${actualTarget.unsafeName}`);
+            spell.castPrimitive(freezingTrapSpell, actualTarget);
+            toastSuccess(`Freezing Trap - ${targetType}!`, 1.2, 3000);
+            console.log(`Successfully cast Freezing Trap on ${targetType}`);
+          } else {
+            console.log("Freezing Trap spell object not found");
+            toastError("Freezing Trap spell not found!", 1.0, 2000);
+          }
+        } else {
+          toastWarning("Target became invalid", 1.0, 2000);
+        }
+      } else {
+        toastInfo("No valid Freezing Trap target", 1.0, 2000);
+      }
+    } catch (error) {
+      console.error("Error casting manual Freezing Trap:", error);
+      toastError("Freezing Trap error!", 1.0, 2000);
+    }
   }
 
   findTarTrapLocationPVP() {
@@ -1373,7 +1540,7 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
       if (me.distanceTo(enemy) > 10) continue;
       
       // Check if they have major cooldowns up
-      if (pvpHelpers.hasMajorCooldown(enemy)) {
+      if (this.hasMajorCooldowns(enemy)) {
         return enemy.position;
       }
     }
@@ -1386,7 +1553,7 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
       if (!enemy.isPlayer() || pvpHelpers.hasImmunity(enemy)) continue;
       if (me.distanceTo(enemy) > 30) continue; // Intimidation range
       
-      if (pvpHelpers.hasMajorCooldown(enemy) && drTracker.getDRStacks(enemy.guid, "stun") < 2) {
+      if (this.hasMajorCooldowns(enemy) && drTracker.getDRStacks(enemy.guid, "stun") < 2) {
         return enemy;
       }
     }
@@ -1435,5 +1602,11 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
     }
     
     return nearestEnemy;
+  }
+
+  hasMajorCooldowns(unit) {
+    // Check for major damage cooldowns with sufficient duration (same as JmrSimcArms.js)
+    const majorDamageCooldown = pvpHelpers.hasMajorDamageCooldown(unit, 3);
+    return majorDamageCooldown !== null;
   }
 } 
