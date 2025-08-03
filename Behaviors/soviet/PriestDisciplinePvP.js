@@ -134,8 +134,8 @@ export class PriestDisciplinePvP extends Behavior {
       }),
       spell.cast("Power Word: Life", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 50),
       spell.cast("Desperate Prayer", on => me, ret => me.effectiveHealthPercent < 40),
-      spell.cast("Pain Suppression", on => this.healTarget, ret => this.shouldCastWithHealthAndNotPainSupp(this.healTarget, 34)),
-      spell.cast("Void Shift", on => this.healTarget, ret => this.shouldCastWithHealthAndNotPainSupp(this.healTarget, 24)),
+      spell.cast("Pain Suppression", on => this.healTarget, ret => this.shouldCastWithHealthAndNotPainSupp(this.healTarget, 39)),
+      spell.cast("Void Shift", on => this.healTarget, ret => this.shouldCastWithHealthAndNotPainSupp(this.healTarget, 28)),
       spell.cast("Mass Dispel", on => this.findMassDispelTarget(), ret => this.findMassDispelTarget() !== undefined),
       spell.cast("Premonition", on => me, ret => this.shouldCastPremonition(this.healTarget)),
       spell.cast("Evangelism", on => me, ret => me.inCombat() && (
@@ -143,7 +143,7 @@ export class PriestDisciplinePvP extends Behavior {
         || (this.healTarget && this.healTarget.hasAura(auras.atonement) && this.healTarget.effectiveHealthPercent < 40))
       ),
       this.noFacingSpellsImportant(),
-      spell.cast("Power Word: Barrier", on => this.healTarget, ret => this.shouldCastWithHealthAndNotPainSupp(this.healTarget, 45)),
+      spell.cast("Power Word: Barrier", on => this.healTarget, ret => this.shouldCastWithHealthAndNotPainSupp(this.healTarget, 53)),
       spell.cast("Power Word: Shield", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 89 && !this.hasShield(this.healTarget)),
       spell.cast("Power Word: Radiance", on => this.healTarget, ret => this.shouldCastRadiance(this.healTarget, 2)),
       spell.cast("Flash Heal", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 85 && me.hasAura(auras.surgeOfLight)),
@@ -221,7 +221,7 @@ export class PriestDisciplinePvP extends Behavior {
     if (me.hasAura(auras.premonitionInsight) || me.hasAura(auras.premonitionSolace) || me.hasAura(auras.premonitionPiety)) {
       return false;
     }
-    return target.effectiveHealthPercent < 50 || target.timeToDeath() < 3;
+    return target.effectiveHealthPercent < 65 || target.timeToDeath() < 3;
   }
 
   hasAtonement(target) {
@@ -240,7 +240,7 @@ export class PriestDisciplinePvP extends Behavior {
     if (!target) {
       return false;
     }
-    if (target.hasAura("Ice Block") || target.hasAura("Divine Shield")) {
+    if (target.hasAura("Ice Block") || target.hasAura("Divine Shield") || target.hasAura("Aspect of the Turtle") || target.hasAura("Astral Shift")) {
       return false;
     }
     return (target.effectiveHealthPercent < health || target.timeToDeath() < 3) && !target.hasAuraByMe(auras.painSuppression);
