@@ -12,7 +12,6 @@ import { pvpHelpers } from "@/Data/PVPData";
 import drTracker from "@/Core/DRTracker";
 import Settings from "@/Core/Settings";
 import { PowerType } from "@/Enums/PowerType";
-import { toastSuccess } from "@/Extra/ToastNotification";
 
 const auras = {
   painSuppression: 33206,
@@ -537,16 +536,10 @@ export class PriestDisciplinePvP extends Behavior {
       spell.cast("Power Word: Life", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 50),
       spell.cast("Desperate Prayer", on => me, ret => me.effectiveHealthPercent < 40),
       spell.cast("Pain Suppression", on => this.healTarget, ret => this.shouldUsePainSuppression(this.healTarget), {
-        callback: () => {
-          this.updateDefensiveCooldownTime("Pain Suppression");
-          toastSuccess(`Pain Suppression on ${this.healTarget?.unsafeName || 'target'}`, 1.2, 3000);
-        }
+        callback: () => this.updateDefensiveCooldownTime("Pain Suppression")
       }),
       spell.cast("Void Shift", on => this.healTarget, ret => this.shouldUseVoidShift(this.healTarget), {
-        callback: () => {
-          this.updateDefensiveCooldownTime("Void Shift");
-          toastSuccess(`Void Shift with ${this.healTarget?.unsafeName || 'target'}`, 1.2, 3000);
-        }
+        callback: () => this.updateDefensiveCooldownTime("Void Shift")
       }),
       spell.cast("Mass Dispel", on => this.findMassDispelTarget(), ret => this.findMassDispelTarget() !== undefined),
       spell.cast("Premonition", on => me, ret => this.shouldCastPremonition(this.healTarget)),
@@ -556,10 +549,7 @@ export class PriestDisciplinePvP extends Behavior {
       ),
       this.noFacingSpellsImportant(),
       spell.cast("Power Word: Barrier", on => this.healTarget, ret => this.shouldUseBarrier(this.healTarget), {
-        callback: () => {
-          this.updateDefensiveCooldownTime("Power Word: Barrier");
-          toastSuccess(`Power Word: Barrier placed`, 1.2, 3000);
-        }
+        callback: () => this.updateDefensiveCooldownTime("Power Word: Barrier")
       }),
       spell.cast("Power Word: Shield", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 89 && !this.hasShield(this.healTarget)),
       spell.cast("Power Word: Radiance", on => this.healTarget, ret => this.shouldCastRadiance(this.healTarget, 2)),
