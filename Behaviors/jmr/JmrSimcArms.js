@@ -1474,12 +1474,15 @@ export class WarriorArmsNewBehavior extends Behavior {
 
   isMeleeClass(unit) {
     if (!unit.isPlayer()) return false;
-    return unit.isMeleeClass();
+    // PowerType: 1=Rage, 2=Focus, 3=Energy, 4=ComboPoints, 5=Runes, 6=RunicPower, 12=Fury, 17=Maelstrom, 18=Chi, 19=Insanity
+    const meleePowerTypes = [1, 2, 3, 4, 5, 6, 12, 17, 18, 19];
+    return meleePowerTypes.includes(unit.powerType);
   }
 
   isCasterClass(unit) {
     if (!unit.isPlayer()) return false;
-    return unit.isCasterClass();
+    // PowerType 0 = Mana (typically casters)
+    return unit.powerType === 0;
   }
 
   hasMajorCooldowns(unit) {
