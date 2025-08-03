@@ -29,6 +29,7 @@ const auras = {
   sigilOfFlame: 204596,
   artOfTheGlaive: 444661,
   netherwalk: 196555,
+  inertia: 427640,
 };
 
 export class DemonhunterHavocPvP extends Behavior {
@@ -86,7 +87,7 @@ export class DemonhunterHavocPvP extends Behavior {
             ret => Combat.burstToggle && me.target,
             this.burstDamage()
           ),
-          this.sustainedDamage()
+          this.miniBurst()
         )
       )
     );
@@ -164,7 +165,32 @@ export class DemonhunterHavocPvP extends Behavior {
       // Chaos Strike (bot handles Annihilation upgrade during meta)
       spell.cast("Chaos Strike", on => me.target),
       // Sigil of Spite for soul generation when we need it
-      spell.cast("Sigil of Spite", on => me.target, ret => this.getSoulFragments() < 3)
+      spell.cast("Sigil of Spite", on => me.target, ret => this.getSoulFragments() < 3),
+      // miniBurst()
+      this.miniBurst()
+    );
+  }
+
+  // Mini-Burst (When Hunt/Meta are on CD)
+  miniBurst() {
+    return new bt.Selector(
+      // Use Sigil of Spite if you have at least 2 souls to proc Reaver's Glaive Icon Reaver's Glaive if needed.
+      spell.cast("Sigil of Spite", on => me.target, ret => this.getSoulFragments() >= 2),
+      // Use Reaver's Glaive to empower Chaos Strike Icon Chaos Strike and Blade Dance Icon Blade Dance.
+      spell.cast("Throw Glaive", on => me.target, ret => me.hasAura(auras.reaversGlaive)),
+      // Use Vengeful Retreat to proc Inertia.
+      // Use Fel Blade to activate Inertia and buff our damage by 18%.
+      spell.cast("Felblade", on => me.target, ret => !me.hasAura(auras.inertia)),
+      // Use Eye Beam to enter Demon Form.
+      spell.cast("Eye Beam", on => me.target, ret => me.isWithinMeleeRange(me.target)),
+      // Use Essence Break.
+      spell.cast("Essence Break", on => me.target, ret => me.isWithinMeleeRange(me.target)),
+      // Use Annihilation.
+      spell.cast("Annihilation", on => me.target, ret => me.isWithinMeleeRange(me.target)),
+      // Use Death Sweep.
+      spell.cast("Death Sweep", on => me.target, ret => me.isWithinMeleeRange(me.target)),
+      // SustainedDamage()
+      this.sustainedDamage()
     );
   }
 

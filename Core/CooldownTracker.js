@@ -21,13 +21,20 @@ class CooldownTracker extends wow.EventListener {
     this.maxTrackingDistance = 40; // yards
     this.arenaOnly = true; // Start with arena only for performance
     this.debugLogs = false;
+    
+    // Performance optimization
+    this.lastUpdateTime = 0;
+    this.updateThrottle = 100; // Update every 500ms instead of every frame
+    this.lastCleanupTime = 0;
+    this.cleanupInterval = 5000; // Cleanup every 5 seconds
+    this.maxCooldownAge = 600000; // 10 minutes
   }
 
   /**
    * Initialize the cooldown tracker
    */
   initialize() {
-    console.log('Cooldown Tracker initialized');
+    //console.log('Cooldown Tracker initialized');
     this.debugLogs = Settings.CooldownTrackerDebugLogs || false;
   }
 
@@ -43,62 +50,82 @@ class CooldownTracker extends wow.EventListener {
   }
 
   /**
-   * Process combat log events for cooldown tracking
+   * Process combat log events for cooldown tracking (with improved error handling)
    */
   processCombatLogEvent(event) {
-    // Extract event data - following same pattern as DRTracker
-    const eventData = event.args?.[0] || event;
-    const eventType = eventData.eventType;
-    const spellId = eventData.args?.[0] || eventData.spellId;
-    const sourceGuid = eventData.source?.guid || eventData.sourceGuid;
-    const sourceName = eventData.source?.unsafeName || eventData.sourceName;
+    try {
+      // Extract event data - following same pattern as DRTracker
+      const eventData = event.args?.[0] || event;
+      if (!eventData) return;
+      
+      const eventType = eventData.eventType;
+      const spellId = eventData.args?.[0] || eventData.spellId;
+      const sourceGuid = eventData.source?.guid || eventData.sourceGuid;
+      const sourceName = eventData.source?.unsafeName || eventData.sourceName;
 
-    // Special logging for Wtfjmr offensive cooldowns (before hostility check)
-    if (sourceName === "Wtfjmr") {
-      const cooldownInfo = cooldownHelpers.getCooldownBySpellID(spellId);
-      if (cooldownInfo) {
-        const eventTypeName = getEventTypeName(eventType);
-        console.info(
-          `[Wtfjmr Cooldown] ${eventTypeName}:\n` +
-          `  Spell: ${cooldownInfo.name} (ID: ${spellId})\n` +
-          `  Category: ${cooldownInfo.category}\n` +
-          `  Priority: ${cooldownInfo.priority}\n` +
-          `  Cooldown: ${cooldownInfo.cooldown}ms\n` +
-          `  Source: ${sourceName} (${sourceGuid})\n`
-        );
-      }
-    }
+      // Validate required data
+      if (!eventType || !spellId || !sourceGuid) return;
 
-    // Only track hostile players for normal cooldown tracking
-    if (!sourceGuid || !this.isHostilePlayer(sourceGuid)) return;
-
-    // Check if we should track this spell
-    const cooldownInfo = cooldownHelpers.getCooldownBySpellID(spellId);
-    if (!cooldownInfo) return;
-
-    // Check zone restrictions - safely check if me exists and has inArena method
-    if (this.arenaOnly && (!me || !me.inArena || !me.inArena())) return;
-
-    // Check distance (if unit is available and me exists)
-    if (!me || !this.isWithinTrackingRange(sourceGuid)) return;
-
-    const currentTime = Date.now();
-    const eventTypeName = getEventTypeName(eventType);
-
-    // Handle relevant events for cooldown tracking
-    switch (eventType) {
-      case CombatLogEventTypes.SPELL_CAST_SUCCESS:
-      case CombatLogEventTypes.SPELL_AURA_APPLIED:
-      case CombatLogEventTypes.SPELL_SUMMON:
-        // Throttle duplicate casts
-        if (this.isRecentCast(sourceGuid, spellId, currentTime)) return;
-
-        if (this.debugLogs) {
-          console.info(`[Cooldown] ${eventTypeName} - ${sourceName}: ${cooldownInfo.name} (${cooldownInfo.category})`);
+      // Special logging for Wtfjmr offensive cooldowns (before hostility check)
+      if (sourceName === "Wtfjmr") {
+        const cooldownInfo = cooldownHelpers.getCooldownBySpellID(spellId);
+        if (cooldownInfo) {
+          const eventTypeName = getEventTypeName(eventType);
+          //console.info(
+          //   `[Wtfjmr Cooldown] ${eventTypeName}:\n` +
+          //   `  Spell: ${cooldownInfo.name} (ID: ${spellId})\n` +
+          //   `  Category: ${cooldownInfo.category}\n` +
+          //   `  Priority: ${cooldownInfo.priority}\n` +
+          //   `  Cooldown: ${cooldownInfo.cooldown}ms\n` +
+          //   `  Source: ${sourceName} (${sourceGuid})\n`
+          // );
         }
+      }
 
-        this.recordCooldownUsage(sourceGuid, spellId, cooldownInfo, currentTime);
-        break;
+      // Only track hostile players for normal cooldown tracking
+      if (!this.isHostilePlayer(sourceGuid)) return;
+
+      // Check if we should track this spell
+      const cooldownInfo = cooldownHelpers.getCooldownBySpellID(spellId);
+      if (!cooldownInfo) return;
+
+      // Check zone restrictions - safely check if me exists and has inArena method
+      if (this.arenaOnly) {
+        try {
+          if (!me || !me.inArena || !me.inArena()) return;
+        } catch (e) {
+          // If arena check fails, skip arena restriction
+          if (this.debugLogs) {
+            //console.warn(`[CooldownTracker] Arena check failed: ${e.message}`);
+          }
+        }
+      }
+
+      // Check distance (if unit is available and me exists)
+      if (!me || !this.isWithinTrackingRange(sourceGuid)) return;
+
+      const currentTime = Date.now();
+
+      // Handle relevant events for cooldown tracking
+      switch (eventType) {
+        case CombatLogEventTypes.SPELL_CAST_SUCCESS:
+        case CombatLogEventTypes.SPELL_AURA_APPLIED:
+        case CombatLogEventTypes.SPELL_SUMMON:
+          // Throttle duplicate casts
+          if (this.isRecentCast(sourceGuid, spellId, currentTime)) return;
+
+          if (this.debugLogs) {
+            const eventTypeName = getEventTypeName(eventType);
+            //console.info(`[Cooldown] ${eventTypeName} - ${sourceName}: ${cooldownInfo.name} (${cooldownInfo.category})`);
+          }
+
+          this.recordCooldownUsage(sourceGuid, spellId, cooldownInfo, currentTime);
+          break;
+      }
+    } catch (e) {
+      if (this.debugLogs) {
+        //console.warn(`[CooldownTracker] Error processing combat log event: ${e.message}`);
+      }
     }
   }
 
@@ -173,23 +200,40 @@ class CooldownTracker extends wow.EventListener {
       effectDuration: cooldownInfo.duration
     };
 
-    // Add visual threat line if enabled and spell has a duration
-    if (this.visualThreats && cooldownInfo.duration > 0) {
+    // Handle visual threat lines based on spell type
+    if (this.visualThreats && this.shouldShowThreatLine(cooldownInfo)) {
       const unit = objMgr.findObject(unitGuid);
       if (unit) {
-        this.activeThreatLines.set(guidHash, {
-          unit: unit,
-          endTime: currentTime + cooldownInfo.duration,
-          spellName: cooldownInfo.name,
-          category: cooldownInfo.category,
-          spellId: spellId
-        });
+        // Remove any existing threat line for this spell first
+        const existingThreatKey = Array.from(this.activeThreatLines.entries())
+          .find(([key, threat]) => threat.spellId === spellId && threat.unit && threat.unit.guid.hash === guidHash);
+        
+        if (existingThreatKey) {
+          this.activeThreatLines.delete(existingThreatKey[0]);
+        }
+
+        // For major offensive cooldowns, show during their active duration
+        if (this.isActiveDurationSpell(cooldownInfo.category) && cooldownInfo.duration > 0) {
+          this.activeThreatLines.set(guidHash + '_' + spellId, {
+            unit: unit,
+            endTime: currentTime + cooldownInfo.duration, // Show during active duration
+            spellName: cooldownInfo.name,
+            category: cooldownInfo.category,
+            spellId: spellId,
+            isActive: true // Currently active burst window
+          });
+          
+          if (this.debugLogs) {
+            //console.log(`[CooldownTracker] ${cooldownInfo.name} activated on ${unit.unsafeName} - showing burst window`);
+          }
+        }
+        // For CC/Interrupts, we'll handle them in the update loop when they become ready
       }
     }
 
     if (this.debugLogs) {
       const unitName = this.getUnitName(unitGuid);
-      console.log(`Cooldown Recorded: ${unitName} used ${cooldownInfo.name} - Available in ${Math.round(cooldownInfo.cooldown / 1000)}s`);
+      //console.log(`Cooldown Recorded: ${unitName} used ${cooldownInfo.name} - Available in ${Math.round(cooldownInfo.cooldown / 1000)}s`);
     }
   }
 
@@ -202,51 +246,91 @@ class CooldownTracker extends wow.EventListener {
   }
 
   /**
-   * Find unit by GUID hash - using similar pattern to Spell.js interrupt logic
+   * Find unit by GUID hash - optimized with proper error handling
    */
   findUnitByHash(guidHash) {
-    if (!me) return null;
+    if (!me || !guidHash) return null;
 
-    // Search through nearby enemy players using similar pattern to interrupt logic
+    // Use objMgr.findObject first (most efficient)
     try {
-      // Use getPlayerEnemies if available (from Extensions)
-      if (me.getPlayerEnemies) {
-        const enemies = me.getPlayerEnemies(this.maxTrackingDistance);
-        return enemies.find(unit => unit.guid.hash === guidHash) || null;
+      const unit = objMgr.findObject({ hash: guidHash });
+      if (unit && 
+          unit instanceof wow.CGUnit && 
+          unit.isPlayer() && 
+          unit.isEnemy && 
+          !unit.deadOrGhost &&
+          me.distanceTo(unit) <= this.maxTrackingDistance) {
+        return unit;
       }
+    } catch (e) {
+      if (this.debugLogs) {
+        //console.warn(`[CooldownTracker] Error finding unit by GUID: ${e.message}`);
+      }
+    }
 
-      // Fallback: search through object manager like interrupt logic does
-      for (const [hash, obj] of objMgr.objects) {
-        if (obj instanceof wow.CGUnit &&
-            obj.guid.hash === guidHash &&
-            obj.type === 6 &&
-            obj.isEnemy &&
-            me.distanceTo(obj) <= this.maxTrackingDistance) {
-          return obj;
+    // Fallback: search through getEnemies if available
+    try {
+      if (me.getEnemies) {
+        const enemies = me.getEnemies(this.maxTrackingDistance);
+        for (const enemy of enemies) {
+          if (enemy.isPlayer() && enemy.guid.hash === guidHash) {
+            return enemy;
+          }
         }
       }
-      return null;
     } catch (e) {
-      // If all else fails, return null
-      return null;
+      if (this.debugLogs) {
+        //console.warn(`[CooldownTracker] Error in getEnemies fallback: ${e.message}`);
+      }
     }
+
+    return null;
   }
 
   /**
-   * Main update loop - clean up expired data and render visual threats
+   * Main update loop - clean up expired data and render visual threats (throttled)
    */
   update() {
     if (!this.enabled || !me) return;
 
     const currentTime = Date.now();
+    
+    // Throttle updates for performance
+    if (currentTime - this.lastUpdateTime < this.updateThrottle) {
+      // Still render visual threats every frame if enabled
+      if (this.visualThreats) {
+        this.renderThreatLines();
+      }
+      return;
+    }
+    
+    this.lastUpdateTime = currentTime;
 
+    // Perform cleanup operations less frequently
+    if (currentTime - this.lastCleanupTime >= this.cleanupInterval) {
+      this.performCleanup(currentTime);
+      this.lastCleanupTime = currentTime;
+    }
+
+    // Update visual threats
+    this.updateVisualThreats(currentTime);
+  }
+  
+  /**
+   * Perform cleanup operations (throttled)
+   */
+  performCleanup(currentTime) {
     // Clean up old cast records
     for (const [guidHash, unitCasts] of this.recentCasts) {
+      const keysToDelete = [];
       for (const [spellId, timestamp] of Object.entries(unitCasts)) {
         if (currentTime - timestamp > this.castThrottleTime * 5) {
-          delete unitCasts[spellId];
+          keysToDelete.push(spellId);
         }
       }
+      
+      // Remove expired casts
+      keysToDelete.forEach(key => delete unitCasts[key]);
 
       if (Object.keys(unitCasts).length === 0) {
         this.recentCasts.delete(guidHash);
@@ -254,29 +338,41 @@ class CooldownTracker extends wow.EventListener {
     }
 
     // Clean up cooldown data for units that are no longer relevant
+    const guidHashesToDelete = [];
     for (const [guidHash, unitCooldowns] of this.cooldowns) {
       const unit = this.findUnitByHash(guidHash);
 
       // Remove if unit no longer exists or is too far away
-      if (!unit || !this.isWithinTrackingRange(unit.guid)) {
-        this.cooldowns.delete(guidHash);
+      if (!unit) {
+        guidHashesToDelete.push(guidHash);
         continue;
       }
 
-      // Clean up very old cooldown records (older than 10 minutes)
+      // Clean up very old cooldown records
+      const spellIdsToDelete = [];
       for (const [spellId, cooldownData] of Object.entries(unitCooldowns)) {
-        if (currentTime - cooldownData.lastUsed > 600000) { // 10 minutes
-          delete unitCooldowns[spellId];
+        if (currentTime - cooldownData.lastUsed > this.maxCooldownAge) {
+          spellIdsToDelete.push(spellId);
         }
       }
+      
+      // Remove expired cooldowns
+      spellIdsToDelete.forEach(spellId => delete unitCooldowns[spellId]);
 
       if (Object.keys(unitCooldowns).length === 0) {
-        this.cooldowns.delete(guidHash);
+        guidHashesToDelete.push(guidHash);
       }
     }
-
-    // Clean up expired threat lines and render active ones
-    this.updateVisualThreats(currentTime);
+    
+    // Remove units with no cooldowns
+    guidHashesToDelete.forEach(guidHash => {
+      this.cooldowns.delete(guidHash);
+      this.activeThreatLines.delete(guidHash); // Also clean up threat lines
+    });
+    
+    if (this.debugLogs && guidHashesToDelete.length > 0) {
+      //console.log(`[CooldownTracker] Cleaned up ${guidHashesToDelete.length} inactive units`);
+    }
   }
 
   /**
@@ -285,77 +381,308 @@ class CooldownTracker extends wow.EventListener {
   updateVisualThreats(currentTime) {
     if (!this.visualThreats) return;
 
-    // Clean up expired threat lines
+    // Clean up expired threat lines (spells that were used again)
     for (const [guidHash, threatData] of this.activeThreatLines) {
       if (currentTime >= threatData.endTime) {
         this.activeThreatLines.delete(guidHash);
       }
     }
 
+    // Add threat lines for spells that are now ready to use
+    this.addReadySpellThreatLines(currentTime);
+
     // Render active threat lines
     this.renderThreatLines();
   }
 
   /**
-   * Render red lines to enemies with active offensive cooldowns
+   * Add threat lines for spells that are ready to use (CC/Interrupts/Execute only)
+   */
+  addReadySpellThreatLines(currentTime) {
+    for (const [guidHash, unitCooldowns] of this.cooldowns) {
+      const unit = this.findUnitByHash(guidHash);
+      if (!unit) continue;
+
+      for (const [spellId, cooldownData] of Object.entries(unitCooldowns)) {
+        // Only handle spells that should show when ready to use
+        if (!this.isReadyToUseSpell(cooldownData.category)) {
+          continue;
+        }
+
+        // Check if spell is ready to use (off cooldown)
+        const isReady = currentTime >= cooldownData.estimatedAvailable;
+        
+        // Create a unique key for this threat line
+        const threatKey = `${guidHash}_${spellId}_ready`;
+        
+        if (isReady) {
+          // Only add if we don't already have an active threat line for this spell
+          const existingThreat = Array.from(this.activeThreatLines.values())
+            .find(threat => threat.spellId === parseInt(spellId) && threat.unit.guid.hash === guidHash && threat.isReady);
+
+          if (!existingThreat) {
+            this.activeThreatLines.set(threatKey, {
+              unit: unit,
+              endTime: Number.MAX_SAFE_INTEGER, // Show until spell is used again
+              spellName: cooldownData.name,
+              category: cooldownData.category,
+              spellId: parseInt(spellId),
+              isReady: true
+            });
+
+            if (this.debugLogs) {
+              //console.log(`[CooldownTracker] ${cooldownData.name} ready on ${unit.unsafeName}`);
+            }
+          }
+        } else {
+          // Remove threat line if spell is no longer ready (was used)
+          const existingThreat = Array.from(this.activeThreatLines.entries())
+            .find(([key, threat]) => threat.spellId === parseInt(spellId) && threat.unit.guid.hash === guidHash && threat.isReady);
+
+          if (existingThreat) {
+            this.activeThreatLines.delete(existingThreat[0]);
+            
+            if (this.debugLogs) {
+              //console.log(`[CooldownTracker] ${cooldownData.name} used on ${unit.unsafeName} - removed ready indicator`);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * Render threat lines to enemies with active offensive cooldowns (optimized)
    */
   renderThreatLines() {
-    if (!this.visualThreats || !me) return;
+    if (!this.visualThreats || !me || this.activeThreatLines.size === 0) return;
 
-    const canvas = imgui.getBackgroundDrawList();
+    try {
+      const canvas = imgui.getBackgroundDrawList();
+      if (!canvas) return;
 
-    // Position line from middle of character (add half display height)
-    const meCenter = new Vector3(me.position.x, me.position.y, me.position.z + (me.displayHeight / 2));
-    const mePos = wow.WorldFrame.getScreenCoordinates(meCenter);
-
-    for (const [guidHash, threatData] of this.activeThreatLines) {
-      const unit = threatData.unit;
-
-      // Check line of sight safely
+      // Cache player position for performance
+      let mePos = null;
       try {
-        if (!unit || !me || !me.withinLineOfSight(unit)) continue;
+        if (me.position) {
+          const meCenter = new Vector3(me.position.x, me.position.y, me.position.z + (me.displayHeight / 2));
+          mePos = wow.WorldFrame.getScreenCoordinates(meCenter);
+        }
       } catch (e) {
-        // If line of sight check fails, skip this unit
-        continue;
+        if (this.debugLogs) {
+          //console.warn(`[CooldownTracker] Error getting player position: ${e.message}`);
+        }
+        return;
       }
 
-      // Position line to middle of enemy unit as well
-      const unitCenter = new Vector3(unit.position.x, unit.position.y, unit.position.z + (unit.displayHeight / 2));
-      const unitPos = wow.WorldFrame.getScreenCoordinates(unitCenter);
-      if (!unitPos || unitPos.x === -1) continue; // Off screen
+      if (!mePos || mePos.x === -1) return; // Player off screen
 
-      // Choose color based on threat category
-      let lineColor = colors.red; // Default red for threats
-      let lineWidth = 2;
+      // Track invalid threats to clean up after iteration
+      const threatsToDelete = [];
 
-      switch (threatData.category) {
-        case CooldownCategories.EXECUTE_FINISHER:
-          lineColor = colors.purple; // Purple for execute abilities
-          lineWidth = 3;
-          break;
-        case CooldownCategories.MAGIC_BURST:
-          lineColor = colors.blue; // Blue for magic burst
-          break;
-        case CooldownCategories.PHYSICAL_BURST:
-          lineColor = colors.red; // Red for physical burst
-          break;
-        case CooldownCategories.MAJOR_OFFENSIVE:
-          lineColor = colors.orange; // Orange for major offensive
-          break;
-        default:
-          lineColor = colors.yellow; // Yellow for other threats
-          break;
+      for (const [guidHash, threatData] of this.activeThreatLines) {
+        let unit = threatData.unit;
+
+        // Validate unit exists and is still valid
+        if (!unit) {
+          threatsToDelete.push(guidHash);
+          continue;
+        }
+
+        // Check if unit is still alive and valid
+        try {
+          if (unit.deadOrGhost || !unit.isValid || !unit.guid) {
+            threatsToDelete.push(guidHash);
+            continue;
+          }
+        } catch (e) {
+          // Unit object is corrupted/invalid
+          threatsToDelete.push(guidHash);
+          continue;
+        }
+
+        // Re-find the unit if needed (in case reference became stale)
+        try {
+          if (!unit.position || !unit.displayHeight) {
+            // Try to re-find the unit by GUID hash
+            const guidHashFromThreat = unit.guid?.hash || guidHash.split('_')[0];
+            unit = this.findUnitByHash(guidHashFromThreat);
+            
+            if (!unit) {
+              threatsToDelete.push(guidHash);
+              continue;
+            }
+            
+            // Update the threat data with fresh unit reference
+            threatData.unit = unit;
+          }
+        } catch (e) {
+          threatsToDelete.push(guidHash);
+          continue;
+        }
+
+        // Validate essential properties exist
+        if (!unit.position || typeof unit.displayHeight !== 'number') {
+          threatsToDelete.push(guidHash);
+          continue;
+        }
+
+        // Check line of sight safely
+        try {
+          if (!me.withinLineOfSight(unit)) continue;
+        } catch (e) {
+          // If line of sight check fails, skip this unit but don't delete (might be temporary)
+          continue;
+        }
+
+        // Check distance
+        let distance = 0;
+        try {
+          distance = me.distanceTo(unit);
+          if (distance > this.maxTrackingDistance) {
+            threatsToDelete.push(guidHash); // Too far, clean up
+            continue;
+          }
+        } catch (e) {
+          // Distance check failed, probably invalid unit
+          threatsToDelete.push(guidHash);
+          continue;
+        }
+
+        // Get unit screen position safely
+        let unitPos = null;
+        try {
+          const unitCenter = new Vector3(
+            unit.position.x, 
+            unit.position.y, 
+            unit.position.z + (unit.displayHeight / 2)
+          );
+          unitPos = wow.WorldFrame.getScreenCoordinates(unitCenter);
+        } catch (e) {
+          if (this.debugLogs) {
+            //console.warn(`[CooldownTracker] Error getting unit screen position: ${e.message}`);
+          }
+          continue;
+        }
+
+        if (!unitPos || unitPos.x === -1) continue; // Off screen
+
+        // Choose color and width based on threat category
+        const { color, width } = this.getThreatVisuals(threatData.category);
+
+        // Draw the threat line safely
+        try {
+          canvas.addLine(mePos, unitPos, color, width);
+
+          // Draw spell name above the unit with appropriate indicator
+          const textPos = new Vector3(
+            unit.position.x, 
+            unit.position.y, 
+            unit.position.z + unit.displayHeight + 1
+          );
+          const textScreenPos = wow.WorldFrame.getScreenCoordinates(textPos);
+          
+          if (textScreenPos && textScreenPos.x !== -1) {
+            let displayText;
+            if (threatData.isReady) {
+              displayText = `[${threatData.spellName} READY]`; // CC/Interrupt ready to use
+            } else if (threatData.isActive) {
+              displayText = `[${threatData.spellName} ACTIVE]`; // Burst window active
+            } else {
+              displayText = `[${threatData.spellName}]`; // Default
+            }
+            canvas.addText(displayText, textScreenPos, color);
+          }
+        } catch (e) {
+          if (this.debugLogs) {
+            //console.warn(`[CooldownTracker] Error drawing threat line for ${threatData.spellName}: ${e.message}`);
+          }
+        }
       }
 
-      // Draw the threat line
-      canvas.addLine(mePos, unitPos, lineColor, lineWidth);
-
-      // Draw spell name above the unit
-      const textPos = new Vector3(unit.position.x, unit.position.y, unit.position.z + unit.displayHeight + 1);
-      const textScreenPos = wow.WorldFrame.getScreenCoordinates(textPos);
-      if (textScreenPos && textScreenPos.x !== -1) {
-        canvas.addText(`[${threatData.spellName}]`, textScreenPos, lineColor);
+      // Clean up invalid threats after iteration
+      if (threatsToDelete.length > 0) {
+        threatsToDelete.forEach(guidHash => {
+          this.activeThreatLines.delete(guidHash);
+        });
+        
+        if (this.debugLogs) {
+          //console.log(`[CooldownTracker] Cleaned up ${threatsToDelete.length} invalid threat lines`);
+        }
       }
+    } catch (e) {
+      if (this.debugLogs) {
+        //console.warn(`[CooldownTracker] Error in renderThreatLines: ${e.message}`);
+      }
+    }
+  }
+  
+  /**
+   * Determine if we should show a threat line for this cooldown category
+   */
+  shouldShowThreatLine(cooldownInfo) {
+    // Always show threat lines for high-priority abilities
+    const highPriorityCategories = [
+      CooldownCategories.CC_SETUP,
+      CooldownCategories.INTERRUPT,
+      CooldownCategories.EXECUTE_FINISHER,
+      CooldownCategories.MAGIC_BURST,
+      CooldownCategories.PHYSICAL_BURST,
+      CooldownCategories.MAJOR_OFFENSIVE
+    ];
+    
+    return highPriorityCategories.includes(cooldownInfo.category) && cooldownInfo.cooldown > 0;
+  }
+
+  /**
+   * Determine if this spell should show during its active duration (burst windows)
+   */
+  isActiveDurationSpell(category) {
+    // These categories should show when active (during their effect duration)
+    const activeDurationCategories = [
+      CooldownCategories.MAGIC_BURST,        // Show during Combustion, Icy Veins, etc.
+      CooldownCategories.PHYSICAL_BURST,     // Show during Avatar, Recklessness, etc.
+      CooldownCategories.MAJOR_OFFENSIVE,    // Show during major damage windows
+      CooldownCategories.DOT_AMPLIFICATION,  // Show during Vendetta, Deathmark, etc.
+      CooldownCategories.PET_SUMMON_BURST    // Show during pet summoning windows
+    ];
+    
+    return activeDurationCategories.includes(category);
+  }
+
+  /**
+   * Determine if this spell should show when ready to use (availability)
+   */
+  isReadyToUseSpell(category) {
+    // These categories should show when off cooldown (ready to use)
+    const readyToUseCategories = [
+      CooldownCategories.CC_SETUP,      // Show when CC is available
+      CooldownCategories.INTERRUPT,     // Show when interrupts are available  
+      CooldownCategories.EXECUTE_FINISHER // Show when execute abilities are available
+    ];
+    
+    return readyToUseCategories.includes(category);
+  }
+
+  /**
+   * Get visual styling for threat category
+   */
+  getThreatVisuals(category) {
+    switch (category) {
+      case CooldownCategories.EXECUTE_FINISHER:
+        return { color: colors.purple, width: 3 }; // Purple for execute abilities
+      case CooldownCategories.MAGIC_BURST:
+        return { color: colors.blue, width: 2 }; // Blue for magic burst
+      case CooldownCategories.PHYSICAL_BURST:
+        return { color: colors.red, width: 2 }; // Red for physical burst
+      case CooldownCategories.MAJOR_OFFENSIVE:
+        return { color: colors.orange, width: 2 }; // Orange for major offensive
+      case CooldownCategories.CC_SETUP:
+        return { color: colors.yellow, width: 2 }; // Yellow for crowd control
+      case CooldownCategories.INTERRUPT:
+        return { color: colors.cyan, width: 1 }; // Cyan for interrupts
+      default:
+        return { color: colors.yellow, width: 2 }; // Yellow for other threats
     }
   }
 

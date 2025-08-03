@@ -10,6 +10,7 @@ import Settings from "@/Core/Settings";
 import drTracker from "@/Core/DRTracker";
 import pvpData, { pvpHelpers, pvpReflect, pvpInterrupts } from "@/Data/PVPData";
 import { drHelpers } from "@/Data/PVPDRList";
+import ToastNotification, { toast, toastInfo, toastSuccess, toastWarning, toastError } from '@/Extra/ToastNotification';
 
 export class WarriorArmsNewBehavior extends Behavior {
   context = BehaviorContext.Any;
@@ -31,8 +32,10 @@ export class WarriorArmsNewBehavior extends Behavior {
     defensives: new imgui.MutableVariable(true)
   };
 
-  // Burst mode toggle state
-  burstModeActive = false;
+  // Note: Burst mode uses Combat.burstToggle value and Combat.toggleBurst() method for proper persistence
+  
+  // Intervene follow-up tracking
+  lastInterveneOnStunnedHealerTime = 0;
   
   // Manual spell casting
   spellIdInput = new imgui.MutableVariable("1161");
@@ -115,10 +118,10 @@ export class WarriorArmsNewBehavior extends Behavior {
 
           if (spellObject) {
             const spellName = spellObject.name || "Unknown Spell";
-            console.log(`Casting spell "${spellName}" (ID: ${spellId}) on ${target.unsafeName}`);
+            console.info(`Casting spell "${spellName}" (ID: ${spellId}) on ${target.unsafeName}`);
             spell.castPrimitive(spellObject, target);
           } else {
-            console.log(`Spell ID ${spellId} not found. Please enter a valid spell ID.`);
+            console.info(`Spell ID ${spellId} not found. Please enter a valid spell ID.`);
           }
         }
         
@@ -221,10 +224,22 @@ export class WarriorArmsNewBehavior extends Behavior {
       return;
     }
 
-    // Handle burst mode toggle with 'X' key
+    // Handle burst mode toggle with 'X' key (using proper Combat.toggleBurst() method)
     if (imgui.isKeyPressed(imgui.Key.X)) {
-      this.burstModeActive = !this.burstModeActive;
-      console.log("Arms Warrior Burst Mode:", this.burstModeActive ? "ACTIVATED" : "DEACTIVATED");
+      combat.toggleBurst();
+      console.info("Arms Warrior Burst Mode:", combat.burstToggle ? "ACTIVATED" : "DEACTIVATED");
+      //console.info(`[DEBUG] X pressed - combat.burstToggle: ${combat.burstToggle}, PVPRotation enabled: ${Settings.EnablePVPRotation}, target: ${me.target?.unsafeName || 'none'}`);
+      
+      // Toast notification for burst mode
+      if (combat.burstToggle) {
+        if (Settings.EnablePVPRotation) {
+          toastSuccess("BURST MODE ACTIVATED!", 1.3, 2500);
+        } else {
+          toastError("Burst enabled, but PVP Rotation is disabled in settings!", 1.5, 4000);
+        }
+      } else {
+        toastInfo("Burst mode deactivated", 1.0, 1500);
+      }
     }
 
     const viewport = imgui.getMainViewport();
@@ -247,6 +262,8 @@ export class WarriorArmsNewBehavior extends Behavior {
     
     // Make background more opaque
     imgui.setNextWindowBgAlpha(0.50);
+
+    // Removed unused isBurstMode variable (was referencing old this.burstModeActive)
     
     // Window flags for overlay behavior
     const windowFlags = 
@@ -263,13 +280,20 @@ export class WarriorArmsNewBehavior extends Behavior {
         imgui.text("PVP MODE ACTIVE");
         imgui.popStyleColor();
         
-        // Burst Mode Toggle - prominent display
-        const burstColor = this.burstModeActive ? 
-          { r: 1.0, g: 0.2, b: 0.2, a: 1.0 } : { r: 0.2, g: 1.0, b: 0.2, a: 1.0 };
+        // Burst Mode Toggle - prominent display (using Combat.burstToggle)
+        const burstColor = combat.burstToggle ? 
+           { r: 0.2, g: 1.0, b: 0.2, a: 1.0 } : { r: 1.0, g: 0.2, b: 0.2, a: 1.0 };
         imgui.pushStyleColor(imgui.Col.Text, burstColor);
-        const burstText = this.burstModeActive ? "BURST ACTIVE (Press X)" : "BURST READY (Press X)";
+        const burstText = combat.burstToggle ? "BURST ACTIVE (Press X)" : "BURST OFF (Press X)";
         imgui.text(burstText);
         imgui.popStyleColor();
+        
+        // Warning if burst is enabled but PVP rotation is disabled
+        if (combat.burstToggle && !Settings.EnablePVPRotation) {
+          imgui.pushStyleColor(imgui.Col.Text, { r: 1.0, g: 0.6, b: 0.0, a: 1.0 });
+          imgui.text("WARNING: Enable PVP Rotation in settings!");
+          imgui.popStyleColor();
+        }
         imgui.separator();
 
         // Build info
@@ -931,17 +955,381 @@ export class WarriorArmsNewBehavior extends Behavior {
     return target ? target.timeToDeath() : 0;
   }
 
-  // PVP Rotation Methods
+  // PVP Rotation Methods - Single flat selector with everything in one place
   buildPVPRotation() {
     return new bt.Selector(
-      // Always Perform actions
-      this.buildPVPAlwaysPerform(),
+      // === ALWAYS PERFORM ACTIONS FIRST ===
       
-      // Burst mode (toggle with 'X' key)
-      this.buildArmsBurst(),
+      // === HIGH PRIORITY CC (Major Cooldowns) ===
+      
+      // === AVATAR-ENHANCED CC (Highest Priority during Avatar) ===
+      // Storm Bolt healer during Avatar
+      spell.cast("Storm Bolt", on => this.findHealerForStunCC(), req => 
+        me.hasVisibleAura(389748) &&
+        this.findHealerForStunCC() !== null &&
+        this.overlayToggles.stormBolt.value
+      ),
+      
+      // Storm Bolt current target during Avatar if healer has DR
+      spell.cast("Storm Bolt", on => this.getCurrentTargetPVP(), req => 
+        me.hasVisibleAura(389748) &&
+        this.shouldStormBoltCurrentTarget() &&
+        this.overlayToggles.stormBolt.value
+      ),
+      
+      // === REGULAR CC (Major Cooldowns) ===
+      // Disarm enemies with major cooldowns
+      spell.cast(236077, on => this.findDisarmTarget(), req => this.findDisarmTarget() !== null),
+      
+      // Storm Bolt CC enemies with major cooldowns  
+      spell.cast("Storm Bolt", on => this.findStormBoltCCTarget(), req => this.findStormBoltCCTarget() !== null),
+      
+      // Storm Bolt healer priority (when not in Avatar)
+      spell.cast("Storm Bolt", on => this.findHealerForStunCC(), req => 
+        !me.hasVisibleAura(389748) &&
+        this.findHealerForStunCC() !== null &&
+        this.overlayToggles.stormBolt.value
+      ),
+      
+      // Intimidating Shout for multi-target fear
+      spell.cast("Intimidating Shout", on => this.findIntimidatingShoutTarget(), req => this.findIntimidatingShoutTarget() !== null),
+      
+      // Battle Shout
+      spell.cast("Battle Shout", () => !me.hasAura("Battle Shout")),
+      
+      // Stance management
+      spell.cast("Defensive Stance", () => 
+        me.pctHealth < Settings.DefensiveStanceHealthPct && 
+        !me.hasAura("Defensive Stance") &&
+        this.overlayToggles.defensives.value
+      ),
+      spell.cast("Battle Stance", () => 
+        me.pctHealth > (Settings.DefensiveStanceHealthPct + 10) && 
+        me.hasAura("Defensive Stance")
+      ),
+      
+      // Interrupts and CC
+      spell.interrupt("Pummel", () => 
+        Settings.UsePummel && 
+        this.overlayToggles.interrupts.value && 
+        this.overlayToggles.pummel.value
+      ),
+      
+      // Shattering Throw for Ice Block/Divine Shield
+      spell.cast("Shattering Throw", on => this.findShatteringThrowTarget(), req => this.findShatteringThrowTarget() !== null),
+      
+      // Protective Intervene for friendly healers under rogue CC
+      spell.cast("Intervene", on => this.findHealerUnderRogueCC(), req => 
+        Settings.UseProtectiveIntervene &&
+        this.findHealerUnderRogueCC() !== null &&
+        this.overlayToggles.defensives.value
+      ),
 
-      // Regular PVP Priority
-      this.buildPVPRegularPriority()
+      // Protective Intervene for friendly healers under hunter stun
+      spell.cast("Intervene", on => this.findHealerUnderHunterStun(), req => 
+        Settings.UseProtectiveIntervene &&
+        this.findHealerUnderHunterStun() !== null &&
+        this.overlayToggles.defensives.value,
+        ret => {
+          if (ret === bt.Status.Success) {
+            this.lastInterveneOnStunnedHealerTime = wow.frameTime;
+          }
+        }
+      ),
+
+      // Spell Reflection for incoming casts
+      spell.cast("Spell Reflection", () => 
+        this.shouldSpellReflectPVP()
+      ),
+
+      // Hamstring (with cooldown check)
+      spell.cast("Hamstring", on => this.getCurrentTargetPVP(), req => {
+        if (!Settings.UseHamstring) return false;
+        const target = this.getCurrentTargetPVP();
+        if (!target) return false;
+        
+        // Simple cooldown check - don't cast if we cast it recently
+        if (!this.lastHamstringTime) this.lastHamstringTime = 0;
+        const timeSince = wow.frameTime - this.lastHamstringTime;
+        if (timeSince < 12000) return false; // 12 second cooldown
+        
+        return true;
+      },
+      ret => {
+        if (ret === bt.Status.Success) {
+          this.lastHamstringTime = wow.frameTime;
+        }
+      }),
+      
+
+      
+      // Defensive abilities
+      spell.cast("Ignore Pain", () => 
+        Settings.UseIgnorePain &&
+        this.overlayToggles.defensives.value &&
+        me.pctHealth < Settings.IgnorePainHealthPct &&
+        me.powerByType(PowerType.Rage) >= Settings.IgnorePainRage &&
+        !me.hasAura("Ignore Pain")
+      ),
+      spell.cast("Die by the Sword", () => 
+        Settings.UseDieByTheSword &&
+        this.overlayToggles.defensives.value &&
+        me.pctHealth < 40 &&
+        this.shouldUseDieByTheSword()
+      ),
+      spell.cast("Victory Rush", on => this.getCurrentTargetPVP(), req => 
+        Settings.UseImpendingVictory &&
+        this.overlayToggles.defensives.value &&
+        this.shouldUseImpendingVictory()
+      ),
+      spell.cast("Rallying Cry", () => 
+        Settings.UseRallyingCry && 
+        this.overlayToggles.defensives.value &&
+        me.pctHealth < Settings.RallyingCryHealthPct
+      ),
+      
+      // Storm Bolt interrupts
+      spell.interrupt("Storm Bolt", () => 
+        Settings.UseStormBoltInterrupt && 
+        this.overlayToggles.interrupts.value && 
+        this.overlayToggles.stormBolt.value
+      ),
+      
+      // Piercing Howl
+      spell.cast("Piercing Howl", () => Settings.UsePiercingHowl && this.shouldCastPiercingHowl()),
+
+      // === BURST ACTIONS (SLAYER BUILD) ===
+      // Rend if target missing it - Slayer
+      spell.cast("Rend", on => this.getCurrentTargetPVP(), req => 
+        combat.burstToggle &&
+        this.hasTalent("Slayer's Dominance") &&
+        me.target &&
+        !this.getCurrentTargetPVP()?.hasAuraByMe("Rend")
+      ),
+      
+      // Champion's Spear - Slayer
+      spell.cast("Champion's Spear", on => this.getCurrentTargetPVP(), req => 
+        combat.burstToggle &&
+        this.hasTalent("Slayer's Dominance") &&
+        me.target &&
+        Settings.UseChampionsSpear
+      ),
+      
+      // Avatar - Slayer
+      spell.cast("Avatar", req => 
+        combat.burstToggle &&
+        this.hasTalent("Slayer's Dominance") &&
+        me.target &&
+        Settings.UseAvatar &&
+        this.overlayToggles.avatar.value
+      ),
+      
+      // Blood Fury - Slayer
+      spell.cast("Blood Fury", req => 
+        combat.burstToggle &&
+        this.hasTalent("Slayer's Dominance") &&
+        me.target
+      ),
+      
+
+      
+      // Colossus Smash - Slayer
+      spell.cast("Colossus Smash", req => 
+        combat.burstToggle &&
+        this.hasTalent("Slayer's Dominance") &&
+        me.target &&
+        Settings.UseColossusSmash &&
+        this.overlayToggles.colossusSmash.value
+      ),
+      
+      // Warbreaker - Slayer
+      spell.cast("Warbreaker", req => 
+        combat.burstToggle &&
+        this.hasTalent("Slayer's Dominance") &&
+        me.target &&
+        Settings.UseWarbreaker &&
+        this.overlayToggles.warbreaker.value
+      ),
+      
+      // Thunderous Roar - Slayer
+      spell.cast("Thunderous Roar", on => this.getCurrentTargetPVP(), req => 
+        combat.burstToggle &&
+        this.hasTalent("Slayer's Dominance") &&
+        me.target
+      ),
+      
+      // Sharpened Blade - Slayer
+      spell.cast("Sharpened Blade", on => this.getCurrentTargetPVP(), req => 
+        combat.burstToggle &&
+        this.hasTalent("Slayer's Dominance") &&
+        me.target
+      ),
+      
+      // Mortal Strike - Slayer
+      spell.cast("Mortal Strike", on => this.getCurrentTargetPVP(), req => 
+        combat.burstToggle &&
+        this.hasTalent("Slayer's Dominance") &&
+        me.target
+      ),
+      
+      // Overpower with 2 charges - Slayer
+      spell.cast("Overpower", on => this.getCurrentTargetPVP(), req => 
+        combat.burstToggle &&
+        this.hasTalent("Slayer's Dominance") &&
+        me.target &&
+        spell.getCharges("Overpower") >= 2
+      ),
+      
+      // Execute with Sudden Death - Slayer
+      spell.cast("Execute", on => this.getCurrentTargetPVP(), req => 
+        combat.burstToggle &&
+        this.hasTalent("Slayer's Dominance") &&
+        me.target &&
+        me.hasAura("Sudden Death")
+      ),
+      
+      // Overpower - Slayer
+      spell.cast("Overpower", on => this.getCurrentTargetPVP(), req => 
+        combat.burstToggle &&
+        this.hasTalent("Slayer's Dominance") &&
+        me.target
+      ),
+      
+      // Bladestorm - Slayer
+      spell.cast("Bladestorm", on => this.getCurrentTargetPVP(), req => 
+        combat.burstToggle &&
+        this.hasTalent("Slayer's Dominance") &&
+        me.target
+      ),
+
+      // === BURST ACTIONS (COLOSSUS BUILD) ===
+      // Champion's Spear - Colossus
+      spell.cast("Champion's Spear", on => this.getCurrentTargetPVP(), req => 
+        combat.burstToggle &&
+        !this.hasTalent("Slayer's Dominance") &&
+        me.target &&
+        Settings.UseChampionsSpear &&
+        me.getAuraStacks(440989) == 10
+      ),
+      
+      // Avatar - Colossus
+      spell.cast("Avatar", req => 
+        combat.burstToggle &&
+        !this.hasTalent("Slayer's Dominance") &&
+        me.target &&
+        me.getAuraStacks(440989) == 10 && 
+        spell.getCooldown(436358).timeleft < 1000
+      ),
+      
+      // Blood Fury - Colossus
+      spell.cast("Blood Fury", req => 
+        combat.burstToggle &&
+        !this.hasTalent("Slayer's Dominance") &&
+        me.target &&
+        me.getAuraStacks(440989) == 10 && 
+        spell.getCooldown(436358).timeleft < 1000
+      ),
+      
+      // Colossus Smash - Colossus
+      spell.cast("Colossus Smash", req => 
+        combat.burstToggle &&
+        !this.hasTalent("Slayer's Dominance") &&
+        me.target &&
+        Settings.UseColossusSmash &&
+        this.overlayToggles.colossusSmash.value &&
+        me.getAuraStacks(440989) == 10 &&
+        spell.getCooldown(436358).timeleft < 1000
+      ),
+      
+      // Warbreaker - Colossus
+      spell.cast("Warbreaker", req => 
+        combat.burstToggle &&
+        !this.hasTalent("Slayer's Dominance") &&
+        me.target &&
+        Settings.UseWarbreaker &&
+        this.overlayToggles.warbreaker.value &&
+        me.getAuraStacks(440989) == 10 &&
+        spell.getCooldown(436358).timeleft < 1000
+      ),
+      
+      // Thunderous Roar - Colossus
+      spell.cast("Thunderous Roar", on => this.getCurrentTargetPVP(), req => 
+        combat.burstToggle &&
+        !this.hasTalent("Slayer's Dominance") &&
+        me.target &&
+        me.getAuraStacks(440989) == 10 && 
+        spell.getCooldown(436358).timeleft < 1000
+      ),
+      
+
+      
+      // Demolish - Colossus
+      spell.cast("Demolish", on => this.getCurrentTargetPVP(), req => 
+        combat.burstToggle &&
+        !this.hasTalent("Slayer's Dominance") &&
+        me.target &&
+        me.getAuraStacks(440989) == 10 && 
+        this.getCurrentTargetPVP().hasVisibleAura(208086)
+      ),
+      
+      // Mortal Strike - Colossus
+      spell.cast("Mortal Strike", on => this.getCurrentTargetPVP(), req => 
+        combat.burstToggle &&
+        !this.hasTalent("Slayer's Dominance") &&
+        me.target &&
+        spell.getCooldown(436358).timeleft > 40000
+      ),
+      
+      // Bladestorm - Colossus
+      spell.cast("Bladestorm", on => this.getCurrentTargetPVP(), req => 
+        combat.burstToggle &&
+        !this.hasTalent("Slayer's Dominance") &&
+        me.target &&
+        spell.getCooldown(436358).timeleft > 40000
+      ),
+
+      // === REGULAR PRIORITY ACTIONS ===
+      // Sweeping Strikes if 2+ enemies
+      spell.cast("Sweeping Strikes", () => 
+        Settings.UseSweepingStrikes &&
+        this.getEnemiesInRange(8) >= 2 &&
+        !me.hasAura("Sweeping Strikes")
+      ),
+      
+      // Mortal Strike if target missing critical debuffs
+      spell.cast("Mortal Strike", on => this.getCurrentTargetPVP(), req => 
+        this.targetMissingCriticalDebuffs()
+      ),
+      
+      // Execute with Sudden Death (Slayer build)
+      spell.cast("Execute", on => this.getCurrentTargetPVP(), req => 
+        me.hasAura("Sudden Death") && 
+        this.hasTalent("Slayer's Dominance")
+      ),
+      
+      // Thunder Clap if 3+ enemies without Rend
+      spell.cast("Thunder Clap", on => this.getCurrentTargetPVP(), req => 
+        this.getEnemiesInRange(8) >= 3 &&
+        this.getEnemiesWithoutRend() >= 3
+      ),
+      
+      // Rend on nearby enemy without Rend (if < 3 enemies)
+      spell.cast("Rend", on => this.getNearbyEnemyWithoutRend(), req => 
+        this.getEnemiesInRange(8) < 3 &&
+        this.getNearbyEnemyWithoutRend() !== null
+      ),
+      
+      // Mortal Strike
+      spell.cast("Mortal Strike", on => this.getCurrentTargetPVP()),
+      
+      // Overpower
+      spell.cast("Overpower", on => this.getCurrentTargetPVP()),
+      
+      // Execute
+      spell.cast("Execute", on => this.getCurrentTargetPVP()),
+      
+      // Slam
+      spell.cast("Slam", on => this.getCurrentTargetPVP())
     );
   }
 
@@ -971,9 +1359,31 @@ export class WarriorArmsNewBehavior extends Behavior {
         this.findHealerUnderRogueCC() !== null &&
         this.overlayToggles.defensives.value
       ),
-      
-      // Spell Reflect for spells in blacklist targeting us
-      spell.cast(23920, () => this.shouldSpellReflectPVP()),
+
+             // Protective Intervene for friendly healers under hunter stun
+       spell.cast("Intervene", on => this.findHealerUnderHunterStun(), req => 
+         Settings.UseProtectiveIntervene &&
+         this.findHealerUnderHunterStun() !== null &&
+         this.overlayToggles.defensives.value,
+         ret => {
+           if (ret === bt.Status.Success) {
+             this.lastInterveneOnStunnedHealerTime = wow.frameTime;
+             console.info(`[Arms] Successfully intervened stunned healer - preparing follow-up Spell Reflect`);
+           }
+         }
+       ),
+       
+       // High-priority Spell Reflect after successful Intervene on stunned healer
+       spell.cast(23920, () => 
+         this.shouldSpellReflectAfterIntervene() ||
+         this.shouldSpellReflectPVP(),
+         ret => {
+           if (ret === bt.Status.Success && this.lastInterveneOnStunnedHealerTime > 0) {
+             console.info(`[Arms] Successfully cast follow-up Spell Reflect after Intervene`);
+             this.lastInterveneOnStunnedHealerTime = 0; // Reset to prevent repeated casts
+           }
+         }
+       ),
       
       // Pummel interrupts for PVP
       spell.interrupt("Pummel", () => 
@@ -1008,7 +1418,7 @@ export class WarriorArmsNewBehavior extends Behavior {
             return false;
           }
           
-          //console.log("Hamstring allowed - timeSinceSuccess:", timeSinceSuccess);
+          //console.info("Hamstring allowed - timeSinceSuccess:", timeSinceSuccess);
           return true;
         }),
       
@@ -1050,7 +1460,7 @@ export class WarriorArmsNewBehavior extends Behavior {
       ),
       
       // Piercing Howl
-      spell.cast("Piercing Howl", () => Settings.UsePiercingHowl && this.shouldCastPiercingHowl())
+      spell.cast("Piercing Howl", () => Settings.UsePiercingHowl && this.shouldCastPiercingHowl()),
     );
   }
 
@@ -1114,35 +1524,26 @@ export class WarriorArmsNewBehavior extends Behavior {
     );
   }
 
-  buildArmsBurst() {
-    if (this.hasTalent("Slayer's Dominance")) {
-      return this.buildSlayerBurst();
-    } else {
-      return this.buildColossusBurst();
-    }
-    return new bt.Action(() => bt.Status.Failure);
-  }
+
 
   buildColossusBurst() {
     return new bt.Selector(
       // Champion's Spear
       spell.cast("Champion's Spear", on => this.getCurrentTargetPVP(), req => 
         Settings.UseChampionsSpear &&
-        this.burstModeActive &&
         me.getAuraStacks(440989) == 10
       ),
       
       // Avatar
-      spell.cast("Avatar", req => this.burstModeActive && me.getAuraStacks(440989) == 10 && spell.getCooldown(436358).timeleft < 1000),
+      spell.cast("Avatar", req => me.getAuraStacks(440989) == 10 && spell.getCooldown(436358).timeleft < 1000),
       
       // Blood Fury
-      spell.cast("Blood Fury", req => this.burstModeActive && me.getAuraStacks(440989) == 10 && spell.getCooldown(436358).timeleft < 1000),
+      spell.cast("Blood Fury", req => me.getAuraStacks(440989) == 10 && spell.getCooldown(436358).timeleft < 1000),
       
       // Colossus Smash
       spell.cast("Colossus Smash", req => 
         Settings.UseColossusSmash && 
         this.overlayToggles.colossusSmash.value &&
-        this.burstModeActive &&
         me.getAuraStacks(440989) == 10 &&
         spell.getCooldown(436358).timeleft < 1000
       ),
@@ -1151,29 +1552,24 @@ export class WarriorArmsNewBehavior extends Behavior {
       spell.cast("Warbreaker", req => 
         Settings.UseWarbreaker && 
         this.overlayToggles.warbreaker.value &&
-        this.burstModeActive &&
         me.getAuraStacks(440989) == 10 &&
         spell.getCooldown(436358).timeleft < 1000
       ),
       
       // Thunderous Roar
-      spell.cast("Thunderous Roar", on => this.getCurrentTargetPVP(), req => this.burstModeActive && me.getAuraStacks(440989) == 10 && spell.getCooldown(436358).timeleft < 1000),
+      spell.cast("Thunderous Roar", on => this.getCurrentTargetPVP(), req => me.getAuraStacks(440989) == 10 && spell.getCooldown(436358).timeleft < 1000),
       
       // CC sequence
-      new bt.Decorator(
-        () => this.burstModeActive,
-        this.buildCCSequence(),
-        new bt.Action(() => bt.Status.Success)
-      ),
+      this.buildCCSequence(),
       
       // Demolish
-      spell.cast("Demolish", on => this.getCurrentTargetPVP(), req => this.burstModeActive && me.getAuraStacks(440989) == 10 && this.getCurrentTargetPVP().hasVisibleAura(208086)),
+      spell.cast("Demolish", on => this.getCurrentTargetPVP(), req => me.getAuraStacks(440989) == 10 && this.getCurrentTargetPVP().hasVisibleAura(208086)),
       
       // Mortal Strike
-      spell.cast("Mortal Strike", on => this.getCurrentTargetPVP(), req => this.burstModeActive && spell.getCooldown(436358).timeleft > 40000),
+      spell.cast("Mortal Strike", on => this.getCurrentTargetPVP(), req => spell.getCooldown(436358).timeleft > 40000),
 
       // Bladestorm
-      spell.cast("Bladestorm", on => this.getCurrentTargetPVP(), req => this.burstModeActive && spell.getCooldown(436358).timeleft > 40000),
+      spell.cast("Bladestorm", on => this.getCurrentTargetPVP(), req => spell.getCooldown(436358).timeleft > 40000),
       
       // Always fall back to regular rotation if no burst abilities are available
       new bt.Action(() => bt.Status.Failure)
@@ -1182,6 +1578,7 @@ export class WarriorArmsNewBehavior extends Behavior {
 
   buildSlayerBurst() {
     return new bt.Selector(
+      this.buildPVPAlwaysPerform(),
       spell.cast("Sweeping Strikes", () => 
         Settings.UseSweepingStrikes &&
         this.getEnemiesInRange(8) >= 2 &&
@@ -1189,73 +1586,65 @@ export class WarriorArmsNewBehavior extends Behavior {
       ),
       // Rend if target missing it
       spell.cast("Rend", on => this.getCurrentTargetPVP(), req => 
-        this.burstModeActive && 
         !this.getCurrentTargetPVP()?.hasAuraByMe("Rend")
       ),
       
       // Champion's Spear
       spell.cast("Champion's Spear", on => this.getCurrentTargetPVP(), req => 
-        Settings.UseChampionsSpear &&
-        this.burstModeActive
+        Settings.UseChampionsSpear
       ),
       
       // Avatar
       spell.cast("Avatar", req => 
         Settings.UseAvatar && 
-        this.overlayToggles.avatar.value &&
-        this.burstModeActive
+        this.overlayToggles.avatar.value
       ),
 
       // Blood Fury
-      spell.cast("Blood Fury", req => 
-        this.burstModeActive
-      ),
+      spell.cast("Blood Fury"),
       
       // CC with Avatar buff
       new bt.Decorator(
-        () => this.burstModeActive && me.hasAura("Avatar"),
-        this.buildCCSequence(),
-        new bt.Action(() => bt.Status.Success)
+        () => me.hasAura("Avatar"),
+        this.buildCCSequence()
       ),
       
       // Colossus Smash
       spell.cast("Colossus Smash", req => 
         Settings.UseColossusSmash && 
-        this.overlayToggles.colossusSmash.value &&
-        this.burstModeActive
+        this.overlayToggles.colossusSmash.value
       ),
       
       // Warbreaker
       spell.cast("Warbreaker", req => 
         Settings.UseWarbreaker && 
-        this.overlayToggles.warbreaker.value &&
-        this.burstModeActive
+        this.overlayToggles.warbreaker.value
       ),
       
       // Thunderous Roar
-      spell.cast("Thunderous Roar", on => this.getCurrentTargetPVP(), req => this.burstModeActive),
+      spell.cast("Thunderous Roar", on => this.getCurrentTargetPVP()),
       
       // Sharpened Blade
-      spell.cast("Sharpened Blade", on => this.getCurrentTargetPVP(), req => this.burstModeActive),
+      spell.cast("Sharpened Blade", on => this.getCurrentTargetPVP()),
       
       // Mortal Strike
-      spell.cast("Mortal Strike", on => this.getCurrentTargetPVP(), req => this.burstModeActive),
+      spell.cast("Mortal Strike", on => this.getCurrentTargetPVP()),
       
       // Overpower with 2 charges
       spell.cast("Overpower", on => this.getCurrentTargetPVP(), req => 
-        this.burstModeActive && spell.getCharges("Overpower") >= 2
+        spell.getCharges("Overpower") >= 2
       ),
       
       // Execute with Sudden Death
       spell.cast("Execute", on => this.getCurrentTargetPVP(), req => 
-        this.burstModeActive && me.hasAura("Sudden Death")
+        me.hasAura("Sudden Death")
       ),
       
       // Overpower
-      spell.cast("Overpower", on => this.getCurrentTargetPVP(), req => this.burstModeActive),
+      spell.cast("Overpower", on => this.getCurrentTargetPVP()),
       
       // Bladestorm
-      spell.cast("Bladestorm", on => this.getCurrentTargetPVP(), req => this.burstModeActive),
+      spell.cast("Bladestorm", on => this.getCurrentTargetPVP()),
       
       // Always fall back to regular rotation if no burst abilities are available
       new bt.Action(() => bt.Status.Failure)
@@ -1347,7 +1736,7 @@ export class WarriorArmsNewBehavior extends Behavior {
     }
     
     // Check if our healer is not in LOS or is CC'd
-    const healerNotInLOS = !me.hasLineOfSight(friendlyHealer);
+    const healerNotInLOS = !me.withinLineOfSight(friendlyHealer);
     const healerCCd = drTracker.isCCdByCategory(friendlyHealer.guid, "stun") ||
                       drTracker.isCCdByCategory(friendlyHealer.guid, "disorient") ||
                       friendlyHealer.hasAura("Polymorph") ||
@@ -1388,12 +1777,18 @@ export class WarriorArmsNewBehavior extends Behavior {
     for (const enemy of enemies) {
       if (enemy.isPlayer() && 
           me.isWithinMeleeRange(enemy) && 
-          this.isMeleeClass(enemy) && 
-          this.hasMajorCooldowns(enemy) &&
           drTracker.getDRStacks(enemy.guid, "disarm") < 2 &&
           !pvpHelpers.hasImmunity(enemy) &&
           !enemy.isCCd()) {
-        return enemy;
+        
+        // Check for major damage cooldowns (like Priest does)
+        const majorCooldown = pvpHelpers.hasMajorDamageCooldown(enemy, 3);
+        const disarmableBuff = pvpHelpers.hasDisarmableBuff(enemy, false, 3);
+        
+        if (disarmableBuff) {
+          //console.log(`[Arms] Disarm target found: ${enemy.unsafeName} - ${majorCooldown ? `Major CD: ${majorCooldown.name}` : ''} ${disarmableBuff ? `Disarmable: ${disarmableBuff.name}` : ''}`);
+          return enemy;
+        }
       }
     }
     return null;
@@ -1404,13 +1799,18 @@ export class WarriorArmsNewBehavior extends Behavior {
     for (const enemy of enemies) {
       if (enemy.isPlayer() && 
           me.distanceTo(enemy) > 7 && 
-          me.distanceTo(enemy) <= 30 &&
-          this.isCasterClass(enemy) && 
-          this.hasMajorCooldowns(enemy) &&
+          me.distanceTo(enemy) <= 20 &&
           drTracker.getDRStacks(enemy.guid, "stun") < 2 &&
           !pvpHelpers.hasImmunity(enemy) &&
           !enemy.isCCd()) {
-        return enemy;
+        
+        // Check for major damage cooldowns (like Priest does)
+        const majorCooldown = pvpHelpers.hasMajorDamageCooldown(enemy, 3);
+        
+        if (majorCooldown) {
+          console.log(`[Arms] Storm Bolt CC target found: ${enemy.unsafeName} - Major CD: ${majorCooldown.name} (${majorCooldown.remainingTime.toFixed(1)}s remaining)`);
+          return enemy;
+        }
       }
     }
     return null;
@@ -1485,12 +1885,43 @@ export class WarriorArmsNewBehavior extends Behavior {
     return unit.powerType === 0;
   }
 
+
+
+  shouldSpellReflectAfterIntervene() {
+    // Cast Spell Reflect within 2.5 seconds after successful Intervene on stunned healer
+    const timeSinceIntervene = wow.frameTime - this.lastInterveneOnStunnedHealerTime;
+    
+    // Reset timer if too much time has passed (failsafe)
+    if (this.lastInterveneOnStunnedHealerTime > 0 && timeSinceIntervene > 2500) {
+      this.lastInterveneOnStunnedHealerTime = 0;
+      return false;
+    }
+    
+    const shouldReflect = this.lastInterveneOnStunnedHealerTime > 0 && 
+                         timeSinceIntervene <= 2500 && 
+                         !spell.isOnCooldown(23920) &&
+                         !me.hasAura("Spell Reflection");
+    
+    if (shouldReflect) {
+      console.info(`[Arms] Casting follow-up Spell Reflect (${timeSinceIntervene}ms after Intervene)`);
+      return true;
+    }
+    
+    return false;
+  }
+
   hasMajorCooldowns(unit) {
     if (!unit.isPlayer()) return false;
-    // Check for major damage cooldowns with sufficient duration
-    const majorDamageCooldown = pvpHelpers.hasMajorDamageCooldown(unit, 3);
-    const disarmableBuff = pvpHelpers.hasDisarmableBuff(unit, false, 3);
-    return majorDamageCooldown !== null || disarmableBuff !== null;
+    // Check for major damage cooldowns with sufficient duration (like Priest does)
+    const majorDamageCooldown = pvpHelpers.hasMajorDamageCooldown(unit);
+    const disarmableBuff = pvpHelpers.hasDisarmableBuff(unit, false);
+    
+    // Debug logging to see what's happening
+    if (majorDamageCooldown || disarmableBuff) {
+      console.log(`[Arms] Major cooldowns detected on ${unit.unsafeName}: ${majorDamageCooldown ? `Damage CD: ${majorDamageCooldown.name}` : ''} ${disarmableBuff ? `Disarmable: ${disarmableBuff.name}` : ''}`);
+    }
+    
+    return majorDamageCooldown || disarmableBuff;
   }
 
   findEnhancedCCTarget() {
@@ -1560,7 +1991,22 @@ export class WarriorArmsNewBehavior extends Behavior {
         const hasGarrote = friend.hasAura(703);      // Garrote (silence)
         
         if (hasCheapShot || hasKidneyShot || hasGarrote) {
-          console.log(`[Arms] Found healer ${friend.unsafeName} under rogue CC - attempting Intervene`);
+          console.info(`[Arms] Found healer ${friend.unsafeName} under rogue CC - attempting Intervene`);
+          return friend;
+        }
+      }
+    }
+    return null;
+  }
+
+  findHealerUnderHunterStun() {
+    const friends = me.getFriends();
+    for (const friend of friends) {
+      if (friend.isPlayer() && friend.isHealer() && me.distanceTo(friend) <= 25) {
+        const hasIntimidation = friend.hasAura("Intimidation");
+
+        if (hasIntimidation) {
+          console.info(`[Arms] Found healer ${friend.unsafeName} under Hunter Stun - attempting Intervene`);
           return friend;
         }
       }

@@ -82,7 +82,7 @@ class SpellTrackingEventHandler extends wow.EventListener {
   onEvent(event) {
     if (event.name === "COMBAT_LOG_EVENT_UNFILTERED") {
       const [eventData] = event.args;
-      //console.info(`Combat Log Event Type: ${eventData.eventType}`);
+      ////console.info(`Combat Log Event Type: ${eventData.eventType}`);
       
       // if (!eventData.source || !eventData.source.guid) {
       //   return;
@@ -154,7 +154,7 @@ class SpellTrackingEventHandler extends wow.EventListener {
                 Math.abs(x) > 1 && Math.abs(y) > 1 && Math.abs(z) >= 0 &&
                 Math.abs(x) < 50000 && Math.abs(y) < 50000 && Math.abs(z) < 10000) {
               worldCoords = { x: x, y: y, z: z };
-              console.info(`[Wtfjmr Debug] Found coords at index ${startIdx}: ${val1},${val2},${val3} -> ${x.toFixed(2)},${y.toFixed(2)},${z.toFixed(2)}`);
+              //console.info(`[Wtfjmr Debug] Found coords at index ${startIdx}: ${val1},${val2},${val3} -> ${x.toFixed(2)},${y.toFixed(2)},${z.toFixed(2)}`);
               break;
             }
           }
@@ -176,7 +176,7 @@ class SpellTrackingEventHandler extends wow.EventListener {
               Math.abs(val1) > 1 && Math.abs(val2) > 1 && Math.abs(val3) >= 0 &&
               Math.abs(val1) < 50000 && Math.abs(val2) < 50000 && Math.abs(val3) < 10000) {
             worldCoords = { x: val1, y: val2, z: val3 };
-            console.info(`[Wtfjmr Debug] Found direct coords at index ${i}: ${val1},${val2},${val3}`);
+            //console.info(`[Wtfjmr Debug] Found direct coords at index ${i}: ${val1},${val2},${val3}`);
             break;
           }
           
@@ -198,7 +198,7 @@ class SpellTrackingEventHandler extends wow.EventListener {
                 Math.abs(x) > 1 && Math.abs(y) > 1 && Math.abs(z) >= 0 &&
                 Math.abs(x) < 50000 && Math.abs(y) < 50000 && Math.abs(z) < 10000) {
               worldCoords = { x: x, y: y, z: z };
-              console.info(`[Wtfjmr Debug] Found IEEE coords at index ${i}: ${val1},${val2},${val3} -> ${x.toFixed(2)},${y.toFixed(2)},${z.toFixed(2)}`);
+              //console.info(`[Wtfjmr Debug] Found IEEE coords at index ${i}: ${val1},${val2},${val3} -> ${x.toFixed(2)},${y.toFixed(2)},${z.toFixed(2)}`);
               break;
             }
           }
@@ -208,7 +208,7 @@ class SpellTrackingEventHandler extends wow.EventListener {
 
     // Log spells targeting Jmrzz
     if (destination && destination.name === "Jmrzz" && me.inCombatWith(eventData.source.guid)) {
-      // console.info(
+      // //console.info(
       //   `Spell Started:\n` +
       //   `  Type: ${eventData.eventType}\n` +
       //   `  Name: ${spellName}\n` +
@@ -226,18 +226,18 @@ class SpellTrackingEventHandler extends wow.EventListener {
       
              // Debug the guid structure more deeply
        if (destination && destination.guid) {
-         console.info(`[Wtfjmr Debug] GUID Analysis:`);
-         console.info(`  typeof guid: ${typeof destination.guid}`);
-         console.info(`  guid toString(): "${destination.guid.toString()}"`);
-         console.info(`  guid object keys:`, Object.keys(destination.guid));
-         console.info(`  guid constructor:`, destination.guid.constructor.name);
+         //console.info(`[Wtfjmr Debug] GUID Analysis:`);
+         //console.info(`  typeof guid: ${typeof destination.guid}`);
+         //console.info(`  guid toString(): "${destination.guid.toString()}"`);
+         //console.info(`  guid object keys:`, Object.keys(destination.guid));
+         //console.info(`  guid constructor:`, destination.guid.constructor.name);
        }
        
        // Force the condition for Dark Leap to always trigger for analysis
        const isDarkLeap = spellName === "Dark Leap";
        const isTrap = spellName === "Tar Trap" || spellName === "Implosive Trap";
        
-       console.info(`[Wtfjmr Debug] Forcing analysis for Dark Leap: ${isDarkLeap}`);
+       //console.info(`[Wtfjmr Debug] Forcing analysis for Dark Leap: ${isDarkLeap}`);
        
        if (isDarkLeap || isTrap) {
          // Get player position before/during cast
@@ -254,7 +254,7 @@ class SpellTrackingEventHandler extends wow.EventListener {
              };
            }
          } catch (e) {
-           console.info(`[Wtfjmr Debug] Error getting player position:`, e);
+           //console.info(`[Wtfjmr Debug] Error getting player position:`, e);
          }
          
                              // Helper function to safely extract numeric position from objects
@@ -273,8 +273,8 @@ class SpellTrackingEventHandler extends wow.EventListener {
          if (spellName === "Tar Trap" || spellName === "Implosive Trap" || spellName === "Freezing Trap") {
              setTimeout(() => {
                try {
-                 console.info(`[Wtfjmr Debug] === SEARCHING FOR TRAP OBJECTS ===`);
-                 console.info(`[Wtfjmr Debug] Looking for ${spellName} (Cast ID: ${spellId}) objects...`);
+                 //console.info(`[Wtfjmr Debug] === SEARCHING FOR TRAP OBJECTS ===`);
+                 //console.info(`[Wtfjmr Debug] Looking for ${spellName} (Cast ID: ${spellId}) objects...`);
                  
                  // Use elegant pattern: cast spell ID + 1 = effect spell ID for traps
                  // This works because:
@@ -282,7 +282,7 @@ class SpellTrackingEventHandler extends wow.EventListener {
                  // 2. CGAreaTrigger extends CGObject (has position, rawPosition, etc.)
                  // 3. Pattern: Tar Trap 187698 -> AreaTrigger 187699, Implosive Trap 462031 -> 462032
                  const effectSpellId = spellId + 1;
-                 console.info(`[Wtfjmr Debug] Using trap pattern: Cast ID ${spellId} -> Effect ID ${effectSpellId} (Cast+1)`);
+                 //console.info(`[Wtfjmr Debug] Using trap pattern: Cast ID ${spellId} -> Effect ID ${effectSpellId} (Cast+1)`);
                  
                  const trapObjects = [];
                  const allAreaTriggers = [];
@@ -368,7 +368,7 @@ class SpellTrackingEventHandler extends wow.EventListener {
                        }
                        
                        // Log all available properties
-                       console.info(`[Wtfjmr Debug] AreaTrigger detailed info:`, JSON.stringify(objInfo, null, 2));
+                       //console.info(`[Wtfjmr Debug] AreaTrigger detailed info:`, JSON.stringify(objInfo, null, 2));
                        
                        // Also log all property names for discovery
                        try {
@@ -380,15 +380,15 @@ class SpellTrackingEventHandler extends wow.EventListener {
                            name === 'x' || name === 'y' || name === 'z'
                          );
                          if (propNames.length > 0) {
-                           console.info(`[Wtfjmr Debug] Position-related properties found: ${propNames.join(', ')}`);
+                           //console.info(`[Wtfjmr Debug] Position-related properties found: ${propNames.join(', ')}`);
                          }
                        } catch (e) {
-                         console.info(`[Wtfjmr Debug] Could not enumerate object properties`);
+                         //console.info(`[Wtfjmr Debug] Could not enumerate object properties`);
                        }
                        
                        // Only add if position is valid (not 0,0,0)
                        if (position && (position.x !== 0 || position.y !== 0 || position.z !== 0)) {
-                         console.info(`[Wtfjmr Debug] Found valid trap AreaTrigger: SpellID=${obj.spellId}, Position=${JSON.stringify(position)}, Reason=${reason.join(', ')}`);
+                         //console.info(`[Wtfjmr Debug] Found valid trap AreaTrigger: SpellID=${obj.spellId}, Position=${JSON.stringify(position)}, Reason=${reason.join(', ')}`);
                          trapObjects.push({
                            type: 'AreaTrigger',
                            position: position,
@@ -398,11 +398,11 @@ class SpellTrackingEventHandler extends wow.EventListener {
                            reason: reason.join(', ')
                          });
                        } else {
-                         console.info(`[Wtfjmr Debug] Found AreaTrigger with invalid position (0,0,0): SpellID=${obj.spellId}, trying alternatives...`);
+                         //console.info(`[Wtfjmr Debug] Found AreaTrigger with invalid position (0,0,0): SpellID=${obj.spellId}, trying alternatives...`);
                          
                          // Try rawPosition if position is invalid
                          if (rawPosition && (rawPosition.x !== 0 || rawPosition.y !== 0 || rawPosition.z !== 0)) {
-                           console.info(`[Wtfjmr Debug] Using rawPosition: ${JSON.stringify(rawPosition)}`);
+                           //console.info(`[Wtfjmr Debug] Using rawPosition: ${JSON.stringify(rawPosition)}`);
                            trapObjects.push({
                              type: 'AreaTrigger',
                              position: rawPosition,
@@ -412,7 +412,7 @@ class SpellTrackingEventHandler extends wow.EventListener {
                              reason: reason.join(', ') + ' (used rawPosition)'
                            });
                          } else {
-                           console.info(`[Wtfjmr Debug] Both position and rawPosition are invalid, skipping this AreaTrigger`);
+                           //console.info(`[Wtfjmr Debug] Both position and rawPosition are invalid, skipping this AreaTrigger`);
                          }
                        }
                      }
@@ -436,7 +436,7 @@ class SpellTrackingEventHandler extends wow.EventListener {
                        Math.abs(obj.position.z - playerPos.z) < 5;
                      
                      if (isCreatedByUs || isNearCastPosition) {
-                       console.info(`[Wtfjmr Debug] Found potential trap GameObject: Type=${obj.goType}, Position=${JSON.stringify(obj.position)}, CreatedBy=${obj.goCreatedBy}, Reason=${isCreatedByUs ? 'Created by us' : 'Near cast position'}`);
+                       //console.info(`[Wtfjmr Debug] Found potential trap GameObject: Type=${obj.goType}, Position=${JSON.stringify(obj.position)}, CreatedBy=${obj.goCreatedBy}, Reason=${isCreatedByUs ? 'Created by us' : 'Near cast position'}`);
                        trapObjects.push({
                          type: 'GameObject',
                          position: obj.position,
@@ -449,12 +449,12 @@ class SpellTrackingEventHandler extends wow.EventListener {
                  });
                  
                  // Log summary of all objects for debugging
-                 console.info(`[Wtfjmr Debug] Total AreaTriggers: ${allAreaTriggers.length}, GameObjects: ${allGameObjects.length}`);
+                 //console.info(`[Wtfjmr Debug] Total AreaTriggers: ${allAreaTriggers.length}, GameObjects: ${allGameObjects.length}`);
                  if (allAreaTriggers.length > 0) {
-                   console.info(`[Wtfjmr Debug] All AreaTriggers:`, JSON.stringify(allAreaTriggers.slice(0, 10))); // Show first 3
+                   //console.info(`[Wtfjmr Debug] All AreaTriggers:`, JSON.stringify(allAreaTriggers.slice(0, 10))); // Show first 3
                  }
                  if (allGameObjects.length > 0) {
-                   console.info(`[Wtfjmr Debug] Sample GameObjects:`, JSON.stringify(allGameObjects.slice(0, 3))); // Show first 3
+                   //console.info(`[Wtfjmr Debug] Sample GameObjects:`, JSON.stringify(allGameObjects.slice(0, 3))); // Show first 3
                    
                    // Look for recently created GameObjects by us
                    const recentGameObjects = allGameObjects.filter(go => 
@@ -463,7 +463,7 @@ class SpellTrackingEventHandler extends wow.EventListener {
                    );
                    
                    if (recentGameObjects.length > 0) {
-                     console.info(`[Wtfjmr Debug] GameObjects created by us:`, JSON.stringify(recentGameObjects));
+                     //console.info(`[Wtfjmr Debug] GameObjects created by us:`, JSON.stringify(recentGameObjects));
                    }
                  }
                  
@@ -477,23 +477,23 @@ class SpellTrackingEventHandler extends wow.EventListener {
                  );
                  
                  if (invalidTrapObjects.length > 0) {
-                   console.info(`[Wtfjmr Debug] Found ${invalidTrapObjects.length} trap objects with invalid positions (0,0,0) - positions may not be loaded yet`);
+                   //console.info(`[Wtfjmr Debug] Found ${invalidTrapObjects.length} trap objects with invalid positions (0,0,0) - positions may not be loaded yet`);
                  }
                  
                  if (validTrapObjects.length > 0) {
-                   console.info(`[Wtfjmr Debug] *** FOUND ${validTrapObjects.length} TRAP OBJECTS WITH VALID POSITIONS ***`);
+                   //console.info(`[Wtfjmr Debug] *** FOUND ${validTrapObjects.length} TRAP OBJECTS WITH VALID POSITIONS ***`);
                    validTrapObjects.forEach((trap, index) => {
-                     console.info(`  Trap ${index + 1}: Type=${trap.type}, Position=(${trap.position.x.toFixed(2)}, ${trap.position.y.toFixed(2)}, ${trap.position.z.toFixed(2)})`);
+                     //console.info(`  Trap ${index + 1}: Type=${trap.type}, Position=(${trap.position.x.toFixed(2)}, ${trap.position.y.toFixed(2)}, ${trap.position.z.toFixed(2)})`);
                      
                      // Now correlate with combat log args!
-                     console.info(`[Wtfjmr Debug] === CORRELATING TRAP POSITION WITH COMBAT LOG ===`);
+                     //console.info(`[Wtfjmr Debug] === CORRELATING TRAP POSITION WITH COMBAT LOG ===`);
                      const trapX = trap.position.x;
                      const trapY = trap.position.y;
                      const trapZ = trap.position.z;
                      
                                             // Skip correlation if trap position is invalid (0,0,0)
                        if (trapX === 0 && trapY === 0 && trapZ === 0) {
-                         console.info(`[Wtfjmr Debug] Skipping correlation for trap with invalid position (0,0,0)`);
+                         //console.info(`[Wtfjmr Debug] Skipping correlation for trap with invalid position (0,0,0)`);
                          return;
                        }
                        
@@ -544,25 +544,25 @@ class SpellTrackingEventHandler extends wow.EventListener {
                      });
                      
                      if (matches.length > 0) {
-                       console.info(`[Wtfjmr Debug] *** TRAP COORDINATE MATCHES FOUND ***`);
+                       //console.info(`[Wtfjmr Debug] *** TRAP COORDINATE MATCHES FOUND ***`);
                        matches.forEach(match => {
                          const coordInfo = [];
                          if (match.matchesX) coordInfo.push('X');
                          if (match.matchesY) coordInfo.push('Y');
                          if (match.matchesZ) coordInfo.push('Z');
                          
-                         console.info(`  Index ${match.index}: ${match.value} ${match.floatValue ? `(${match.floatValue.toFixed(6)})` : ''} - Matches: ${coordInfo.join(', ')}`);
+                         //console.info(`  Index ${match.index}: ${match.value} ${match.floatValue ? `(${match.floatValue.toFixed(6)})` : ''} - Matches: ${coordInfo.join(', ')}`);
                        });
                      } else {
-                       console.info(`[Wtfjmr Debug] No combat log matches for trap position`);
+                       //console.info(`[Wtfjmr Debug] No combat log matches for trap position`);
                      }
                    });
                  } else {
-                   console.info(`[Wtfjmr Debug] No trap objects found`);
-                   console.info(`[Wtfjmr Debug] === DIAGNOSTIC INFO ===`);
-                   console.info(`[Wtfjmr Debug] Cast position: (${playerPos.x.toFixed(2)}, ${playerPos.y.toFixed(2)}, ${playerPos.z.toFixed(2)})`);
-                   console.info(`[Wtfjmr Debug] Player GUID: ${me ? me.guid.toString() : 'unknown'}`);
-                   console.info(`[Wtfjmr Debug] Looking for spell ID: ${spellId}`);
+                   //console.info(`[Wtfjmr Debug] No trap objects found`);
+                   //console.info(`[Wtfjmr Debug] === DIAGNOSTIC INFO ===`);
+                   //console.info(`[Wtfjmr Debug] Cast position: (${playerPos.x.toFixed(2)}, ${playerPos.y.toFixed(2)}, ${playerPos.z.toFixed(2)})`);
+                   //console.info(`[Wtfjmr Debug] Player GUID: ${me ? me.guid.toString() : 'unknown'}`);
+                   //console.info(`[Wtfjmr Debug] Looking for spell ID: ${spellId}`);
                    
                    // Show any objects near our position for debugging
                    const nearbyObjects = [];
@@ -600,26 +600,26 @@ class SpellTrackingEventHandler extends wow.EventListener {
                    });
                    
                    if (nearbyObjects.length > 0) {
-                     console.info(`[Wtfjmr Debug] Objects near cast position:`, JSON.stringify(nearbyObjects.slice(0, 10)));
+                     //console.info(`[Wtfjmr Debug] Objects near cast position:`, JSON.stringify(nearbyObjects.slice(0, 10)));
                    } else {
-                     console.info(`[Wtfjmr Debug] No objects found near cast position`);
+                     //console.info(`[Wtfjmr Debug] No objects found near cast position`);
                    }
                  }
                } catch (e) {
-                 console.info(`[Wtfjmr Debug] Error searching for trap objects:`, e);
-                 console.info(`[Wtfjmr Debug] Error type: ${typeof e}, name: ${e.name}, message: ${e.message}`);
+                 //console.info(`[Wtfjmr Debug] Error searching for trap objects:`, e);
+                 //console.info(`[Wtfjmr Debug] Error type: ${typeof e}, name: ${e.name}, message: ${e.message}`);
                }
                             }, 1500); // Check for traps 1.5 seconds after cast
                
                // Also do a second check with longer delay in case positions need more time to load
                setTimeout(() => {
                  try {
-                   console.info(`[Wtfjmr Debug] === SECOND TRAP SEARCH (3s delay) ===`);
-                   console.info(`[Wtfjmr Debug] Re-checking for ${spellName} (Cast ID: ${spellId}) objects with proper positions...`);
+                   //console.info(`[Wtfjmr Debug] === SECOND TRAP SEARCH (3s delay) ===`);
+                   //console.info(`[Wtfjmr Debug] Re-checking for ${spellName} (Cast ID: ${spellId}) objects with proper positions...`);
                    
                    // Use elegant Cast+1 pattern for trap detection
                    const effectSpellId = spellId + 1;
-                   console.info(`[Wtfjmr Debug] Looking for cast ID ${spellId} or effect ID ${effectSpellId} (Cast+1 pattern)`);
+                   //console.info(`[Wtfjmr Debug] Looking for cast ID ${spellId} or effect ID ${effectSpellId} (Cast+1 pattern)`);
                    
                    const laterTrapObjects = [];
                                         objMgr.objects.forEach((obj, hash) => {
@@ -633,7 +633,7 @@ class SpellTrackingEventHandler extends wow.EventListener {
                          const position = obj.position || obj.rawPosition;
                                                     if (position && (position.x !== 0 || position.y !== 0 || position.z !== 0)) {
                              const spellIdNote = obj.spellId === spellId ? '(exact match)' : obj.spellId === effectSpellId ? '(effect ID +1)' : '(other)';
-                             console.info(`[Wtfjmr Debug] Found AreaTrigger with valid position: SpellID=${obj.spellId} ${spellIdNote}, Position=${JSON.stringify(position)}`);
+                             //console.info(`[Wtfjmr Debug] Found AreaTrigger with valid position: SpellID=${obj.spellId} ${spellIdNote}, Position=${JSON.stringify(position)}`);
                              laterTrapObjects.push({
                                type: 'AreaTrigger',
                                position: position,
@@ -646,10 +646,10 @@ class SpellTrackingEventHandler extends wow.EventListener {
                    });
                    
                                         if (laterTrapObjects.length > 0) {
-                       console.info(`[Wtfjmr Debug] *** FOUND ${laterTrapObjects.length} TRAPS WITH VALID POSITIONS ***`);
+                       //console.info(`[Wtfjmr Debug] *** FOUND ${laterTrapObjects.length} TRAPS WITH VALID POSITIONS ***`);
                        laterTrapObjects.forEach((trap, index) => {
                          const spellIdNote = trap.spellId === spellId ? '(exact match)' : trap.spellId === effectSpellId ? '(effect ID +1)' : '(other)';
-                         console.info(`  Trap ${index + 1}: SpellID=${trap.spellId} ${spellIdNote}, Position=(${trap.position.x.toFixed(2)}, ${trap.position.y.toFixed(2)}, ${trap.position.z.toFixed(2)})`);
+                         //console.info(`  Trap ${index + 1}: SpellID=${trap.spellId} ${spellIdNote}, Position=(${trap.position.x.toFixed(2)}, ${trap.position.y.toFixed(2)}, ${trap.position.z.toFixed(2)})`);
                          
                          // Correlate with combat log args
                          const trapX = trap.position.x;
@@ -702,23 +702,23 @@ class SpellTrackingEventHandler extends wow.EventListener {
                        });
                        
                        if (matches.length > 0) {
-                         console.info(`[Wtfjmr Debug] *** FINAL COORDINATE CORRELATION SUCCESS ***`);
+                         //console.info(`[Wtfjmr Debug] *** FINAL COORDINATE CORRELATION SUCCESS ***`);
                          matches.forEach(match => {
                            const coordInfo = [];
                            if (match.matchesX) coordInfo.push('X');
                            if (match.matchesY) coordInfo.push('Y');
                            if (match.matchesZ) coordInfo.push('Z');
                            
-                           console.info(`  Index ${match.index}: ${match.value} ${match.floatValue ? `(${match.floatValue.toFixed(6)})` : ''} - Matches: ${coordInfo.join(', ')}`);
+                           //console.info(`  Index ${match.index}: ${match.value} ${match.floatValue ? `(${match.floatValue.toFixed(6)})` : ''} - Matches: ${coordInfo.join(', ')}`);
                          });
                        }
                      });
                    } else {
-                     console.info(`[Wtfjmr Debug] Still no traps with valid positions found after 3 seconds`);
+                     //console.info(`[Wtfjmr Debug] Still no traps with valid positions found after 3 seconds`);
                    }
                  } catch (e) {
-                   console.info(`[Wtfjmr Debug] Error in second trap search:`, e);
-                   console.info(`[Wtfjmr Debug] Error type: ${typeof e}, name: ${e.name}, message: ${e.message}`);
+                   //console.info(`[Wtfjmr Debug] Error in second trap search:`, e);
+                   //console.info(`[Wtfjmr Debug] Error type: ${typeof e}, name: ${e.name}, message: ${e.message}`);
                  }
                }, 3000); // Check again after 3 seconds
            }
@@ -736,18 +736,18 @@ class SpellTrackingEventHandler extends wow.EventListener {
                      rawY: me.rawPosition ? me.rawPosition.y : 'N/A',
                      rawZ: me.rawPosition ? me.rawPosition.z : 'N/A'
                    };
-                   console.info(`[Wtfjmr Debug] === DARK LEAP RESULT ===`);
-                   console.info(`[Wtfjmr Debug] Before:`, JSON.stringify(playerPos));
-                   console.info(`[Wtfjmr Debug] After:`, JSON.stringify(afterPos));
-                   console.info(`[Wtfjmr Debug] Delta:`, JSON.stringify({
-                     x: afterPos.x - playerPos.x,
-                     y: afterPos.y - playerPos.y,
-                     z: afterPos.z - playerPos.z
-                   }));
+                   //console.info(`[Wtfjmr Debug] === DARK LEAP RESULT ===`);
+                   //console.info(`[Wtfjmr Debug] Before:`, JSON.stringify(playerPos));
+                   //console.info(`[Wtfjmr Debug] After:`, JSON.stringify(afterPos));
+                   //console.info(`[Wtfjmr Debug] Delta:`, JSON.stringify({
+                  //    x: afterPos.x - playerPos.x,
+                  //    y: afterPos.y - playerPos.y,
+                  //    z: afterPos.z - playerPos.z
+                  //  }));
                    
                    // Now check if any args match the destination coordinates
-                   console.info(`[Wtfjmr Debug] === DESTINATION COORDINATE ANALYSIS ===`);
-                   console.info(`[Wtfjmr Debug] Looking for destination coordinates near: ${afterPos.x.toFixed(2)}, ${afterPos.y.toFixed(2)}, ${afterPos.z.toFixed(2)}`);
+                   //console.info(`[Wtfjmr Debug] === DESTINATION COORDINATE ANALYSIS ===`);
+                   //console.info(`[Wtfjmr Debug] Looking for destination coordinates near: ${afterPos.x.toFixed(2)}, ${afterPos.y.toFixed(2)}, ${afterPos.z.toFixed(2)}`);
                    
                    const destTolerance = 50; // Same tolerance as used earlier
                    const destMatches = [];
@@ -796,50 +796,50 @@ class SpellTrackingEventHandler extends wow.EventListener {
                    });
                    
                    if (destMatches.length > 0) {
-                     console.info(`[Wtfjmr Debug] *** FOUND DESTINATION COORDINATE MATCHES ***`);
+                     //console.info(`[Wtfjmr Debug] *** FOUND DESTINATION COORDINATE MATCHES ***`);
                      destMatches.forEach(match => {
                        const coordInfo = [];
                        if (match.matchesDestX) coordInfo.push('DestX');
                        if (match.matchesDestY) coordInfo.push('DestY');
                        if (match.matchesDestZ) coordInfo.push('DestZ');
                        
-                       console.info(`  Index ${match.index}: ${match.value} ${match.floatValue ? `(${match.floatValue.toFixed(6)})` : ''} - Matches: ${coordInfo.join(', ')}`);
+                       //console.info(`  Index ${match.index}: ${match.value} ${match.floatValue ? `(${match.floatValue.toFixed(6)})` : ''} - Matches: ${coordInfo.join(', ')}`);
                      });
                    } else {
-                     console.info(`[Wtfjmr Debug] No destination coordinate matches found`);
+                     //console.info(`[Wtfjmr Debug] No destination coordinate matches found`);
                    }
                  }
                } catch (e) {
-                 console.info(`[Wtfjmr Debug] Error getting after position:`, e);
+                 //console.info(`[Wtfjmr Debug] Error getting after position:`, e);
                }
              }, 1000); // Check position 1 second after cast
            }
         
-                 console.info(`[Wtfjmr Debug] === GROUND TARGETED SPELL ANALYSIS ===`);
-         console.info(`[Wtfjmr Debug] Spell: ${spellName} (ID: ${spellId})`);
-         console.info(`[Wtfjmr Debug] Player Position:`, JSON.stringify(playerPos));
-         console.info(`[Wtfjmr Debug] Event Type: ${eventData.eventType}`);
-         console.info(`[Wtfjmr Debug] Args length:`, eventData.args ? eventData.args.length : 0);
+                 //console.info(`[Wtfjmr Debug] === GROUND TARGETED SPELL ANALYSIS ===`);
+         //console.info(`[Wtfjmr Debug] Spell: ${spellName} (ID: ${spellId})`);
+         //console.info(`[Wtfjmr Debug] Player Position:`, JSON.stringify(playerPos));
+         //console.info(`[Wtfjmr Debug] Event Type: ${eventData.eventType}`);
+         //console.info(`[Wtfjmr Debug] Args length:`, eventData.args ? eventData.args.length : 0);
         
         if (eventData.args) {
           // Show full args array for correlation
-          console.info(`[Wtfjmr Debug] Full Args:`, eventData.args);
+          //console.info(`[Wtfjmr Debug] Full Args:`, eventData.args);
           
           // Check specific coordinate candidates
           const coordCandidates = eventData.args.slice(170, 185);
-          console.info(`[Wtfjmr Debug] Args 170-185:`, coordCandidates);
+          //console.info(`[Wtfjmr Debug] Args 170-185:`, coordCandidates);
           
           // Try to correlate with player position
           if (playerPos) {
-            console.info(`[Wtfjmr Debug] === CORRELATION ANALYSIS ===`);
+            //console.info(`[Wtfjmr Debug] === CORRELATION ANALYSIS ===`);
             
                          // Look for values that match player coordinates (within reasonable tolerance)
              const tolerance = 50; // Increased tolerance to catch scaled coordinates
              const matchingIndices = [];
              
-             console.info(`[Wtfjmr Debug] Looking for coordinates near:`);
-             console.info(`  Position: ${playerPos.x.toFixed(2)}, ${playerPos.y.toFixed(2)}, ${playerPos.z.toFixed(2)}`);
-             console.info(`  RawPosition: ${playerPos.rawX.toFixed(6)}, ${playerPos.rawY.toFixed(6)}, ${playerPos.rawZ.toFixed(6)}`);
+             //console.info(`[Wtfjmr Debug] Looking for coordinates near:`);
+             //console.info(`  Position: ${playerPos.x.toFixed(2)}, ${playerPos.y.toFixed(2)}, ${playerPos.z.toFixed(2)}`);
+             //console.info(`  RawPosition: ${playerPos.rawX.toFixed(6)}, ${playerPos.rawY.toFixed(6)}, ${playerPos.rawZ.toFixed(6)}`);
             
                          eventData.args.forEach((val, index) => {
                if (typeof val === 'number' && val !== 0 && Math.abs(val) > 0.001) { // Skip zeros but allow small rawPosition values
@@ -901,7 +901,7 @@ class SpellTrackingEventHandler extends wow.EventListener {
              });
             
                          if (matchingIndices.length > 0) {
-               console.info(`[Wtfjmr Debug] *** FOUND POTENTIAL COORDINATE MATCHES ***`);
+               //console.info(`[Wtfjmr Debug] *** FOUND POTENTIAL COORDINATE MATCHES ***`);
                matchingIndices.forEach(match => {
                  const coordInfo = [];
                  if (match.matchesX) coordInfo.push('X');
@@ -911,20 +911,20 @@ class SpellTrackingEventHandler extends wow.EventListener {
                  if (match.matchesRawY) coordInfo.push('RawY');
                  if (match.matchesRawZ) coordInfo.push('RawZ');
                  
-                 console.info(`  Index ${match.index}: ${match.value} ${match.floatValue ? `(${match.floatValue.toFixed(6)})` : ''} - Matches: ${coordInfo.join(', ')}`);
+                 //console.info(`  Index ${match.index}: ${match.value} ${match.floatValue ? `(${match.floatValue.toFixed(6)})` : ''} - Matches: ${coordInfo.join(', ')}`);
                });
              } else {
-               console.info(`[Wtfjmr Debug] No coordinate matches found`);
+               //console.info(`[Wtfjmr Debug] No coordinate matches found`);
              }
           }
         }
-        console.info(`[Wtfjmr Debug] === END ANALYSIS ===`);
+        //console.info(`[Wtfjmr Debug] === END ANALYSIS ===`);
       } else {
         // Regular logging for non-ground-targeted spells
-        console.info(`[Wtfjmr Debug] Event Type: ${eventData.eventType}`);
-        console.info(`[Wtfjmr Debug] Spell: ${spellName} (ID: ${spellId})`);
-        console.info(`[Wtfjmr Debug] Source:`, JSON.stringify(eventData.source));
-        console.info(`[Wtfjmr Debug] Destination:`, JSON.stringify(eventData.destination));
+        //console.info(`[Wtfjmr Debug] Event Type: ${eventData.eventType}`);
+        //console.info(`[Wtfjmr Debug] Spell: ${spellName} (ID: ${spellId})`);
+        //console.info(`[Wtfjmr Debug] Source:`, JSON.stringify(eventData.source));
+        //console.info(`[Wtfjmr Debug] Destination:`, JSON.stringify(eventData.destination));
       }
       
       let targetInfo;
@@ -932,28 +932,28 @@ class SpellTrackingEventHandler extends wow.EventListener {
         targetInfo = `${destination.name || "unknown"} (${destination.guid})`;
       } else if (worldCoords) {
         targetInfo = `World Position (${worldCoords.x.toFixed(2)}, ${worldCoords.y.toFixed(2)}, ${worldCoords.z.toFixed(2)})`;
-        console.info(`[Wtfjmr Debug] Found world coordinates:`, worldCoords);
+        //console.info(`[Wtfjmr Debug] Found world coordinates:`, worldCoords);
       } else {
         targetInfo = "no target/unknown position";
-        console.info(`[Wtfjmr Debug] No world coordinates found in args array`);
+        //console.info(`[Wtfjmr Debug] No world coordinates found in args array`);
       }
       
       // Debug: Show args array for ground-targeted spells to help identify coordinate position
       if (!destination && eventData.args) {
-        console.info(`[Wtfjmr Debug] Args array length: ${eventData.args.length}, last 15 values:`, eventData.args.slice(-15));
-        console.info(`[Wtfjmr Debug] Full args array:`, eventData.args);
+        //console.info(`[Wtfjmr Debug] Args array length: ${eventData.args.length}, last 15 values:`, eventData.args.slice(-15));
+        //console.info(`[Wtfjmr Debug] Full args array:`, eventData.args);
       }
       
-      console.info(
-        `[Wtfjmr Cast] Spell:\n` +
-        `  Type: ${eventData.eventType}\n` +
-        `  Name: ${spellName}\n` +
-        `  ID: ${spellId}\n` +
-        `  School: ${getSchoolName(school)} (${school})\n` +
-        `  From: ${eventData.source.name || "unknown"} (${eventData.source.guid})\n` +
-        `  To: ${targetInfo}\n` +
-        `  Cast End: ${castEnd}\n`
-      );
+      //console.info(
+      //   `[Wtfjmr Cast] Spell:\n` +
+      //   `  Type: ${eventData.eventType}\n` +
+      //   `  Name: ${spellName}\n` +
+      //   `  ID: ${spellId}\n` +
+      //   `  School: ${getSchoolName(school)} (${school})\n` +
+      //   `  From: ${eventData.source.name || "unknown"} (${eventData.source.guid})\n` +
+      //   `  To: ${targetInfo}\n` +
+      //   `  Cast End: ${castEnd}\n`
+      // );
     }
     
     // Only track spells with destinations for the spell tracking system
@@ -972,7 +972,7 @@ class SpellTrackingEventHandler extends wow.EventListener {
   cleanupSpell(eventData) {
     if (eventData.source?.guid && eventData.destination) {
       const key = `${eventData.destination.guid.hash}_${eventData.args[0]}`;
-      //console.info(`Cleaning up spell: ${eventData.args[0]} (${eventData.eventType})`);
+      ////console.info(`Cleaning up spell: ${eventData.args[0]} (${eventData.eventType})`);
       spellTracking.targetedSpells.delete(key);
       spellTracking.spellSchoolCache.delete(eventData.args[0]);
     }
