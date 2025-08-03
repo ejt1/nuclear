@@ -12,7 +12,7 @@ import { pvpHelpers } from "@/Data/PVPData";
 import drTracker from "@/Core/DRTracker";
 import Settings from "@/Core/Settings";
 import { PowerType } from "@/Enums/PowerType";
-import { toastInfo, toastSuccess, toastWarning, toastError } from '@/Extra/ToastNotification';
+import { toastSuccess } from "@/Extra/ToastNotification";
 
 const auras = {
   painSuppression: 33206,
@@ -91,39 +91,49 @@ export class PriestDisciplinePvP extends Behavior {
         common.waitForNotWaitingForArenaToStart(),
         common.waitForNotSitting(),
         common.waitForNotMounted(),
+        this.waitForNotJustCastPenitence(),
 
-        // Interrupt our own casting if we can counter incoming CC with Shadow Word: Death or Fade
+        // Check if we're not channeling Ultimate Penitence before casting CC counters
         new bt.Decorator(
-          () => this.shouldStopCastingForCCCounter(),
-          new bt.Action(() => {
-            me.stopCasting();
-            console.log(`[Priest] Stopped casting to counter incoming CC`);
-            return bt.Status.Success;
-          })
-        ),
+          ret => {
+            // Check if we're channeling Ultimate Penitence (spell ID: 421453)
+            if (me.isChanneling) {
+              const currentSpellId = me.currentChannel;
+              if (currentSpellId === 421453) { // Ultimate Penitence
+                return false;
+              }
+            }
+            return true;
+          },
+          new bt.Selector(
+            // Interrupt our own casting if we can counter incoming CC with Shadow Word: Death or Fade
+            new bt.Decorator(
+              () => this.shouldStopCastingForCCCounter(),
+              new bt.Action(() => {
+                me.stopCasting();
+                console.log(`[Priest] Stopped casting to counter incoming CC`);
+                return bt.Status.Success;
+              })
+            ),
 
-        // High priority Shadow Word: Death and Fade for incoming CC (after stopping cast)
-        spell.cast("Shadow Word: Death", on => this.findIncomingCCTarget(), ret =>
-          this.findIncomingCCTarget() !== undefined && !spell.isOnCooldown("Shadow Word: Death")
-        ),
-        spell.cast("Fade", () =>
-          this.hasIncomingCCForFade() && !spell.isOnCooldown("Fade")
-        ),
+            // High priority Shadow Word: Death for incoming CC
+            spell.cast("Shadow Word: Death", on => this.findIncomingCCTarget(), ret =>
+              this.findIncomingCCTarget() !== undefined && !spell.isOnCooldown("Shadow Word: Death")
+            ),
+            spell.cast("Fade", () =>
+              this.hasIncomingCCForFade() && !spell.isOnCooldown("Fade")
+            ),
 
-        // Preemptive Fade for predicted enemy CC (priest within 8y, rogue within 4y)
-        spell.cast("Fade", () =>
-          Settings.UsePreemptiveFade && this.shouldPreemptiveFade()
+            // Preemptive Fade for predicted enemy CC (priest within 8y, rogue within 4y)
+            spell.cast("Fade", () =>
+              Settings.UsePreemptiveFade && this.shouldPreemptiveFade()
+            )
+          )
         ),
 
         common.waitForCastOrChannel(),
-        this.waitForNotJustCastPenitence(),
 
-        spell.cast("Psychic Scream", on => this.psychicScreamTarget(), ret => this.psychicScreamTarget() !== undefined,
-          (ret) => {
-            if (ret === bt.Status.Success) {
-              toastError("Psychic Scream Fear!", 1.2, 2500);
-            }
-          }),
+        spell.cast("Psychic Scream", on => this.psychicScreamTarget(), ret => this.psychicScreamTarget() !== undefined),
 
         // Healing rotation (doesn't need enemy target/facing)
         this.healRotation(),
@@ -526,37 +536,31 @@ export class PriestDisciplinePvP extends Behavior {
       }),
       spell.cast("Power Word: Life", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 50),
       spell.cast("Desperate Prayer", on => me, ret => me.effectiveHealthPercent < 40),
-      spell.cast("Pain Suppression", on => this.healTarget, ret => this.shouldUsePainSuppression(this.healTarget),
-        (ret) => {
-          if (ret === bt.Status.Success) {
-            toastSuccess(`Pain Suppression → ${this.healTarget?.unsafeName || 'Target'}!`, 1.3, 3000);
-          }
-        }),
-      spell.cast("Void Shift", on => this.healTarget, ret => this.shouldUseVoidShift(this.healTarget),
-        (ret) => {
-          if (ret === bt.Status.Success) {
-            toastWarning(`Void Shift → ${this.healTarget?.unsafeName || 'Target'}!`, 1.2, 3000);
-          }
-        }),
-      spell.cast("Mass Dispel", on => this.findMassDispelTarget(), ret => this.findMassDispelTarget() !== undefined,
-        (ret) => {
-          if (ret === bt.Status.Success) {
-            const target = this.findMassDispelTarget();
-            toastInfo(`Mass Dispel → ${target?.unsafeName || 'Target'}`, 1.1, 2000);
-          }
-        }),
+      spell.cast("Pain Suppression", on => this.healTarget, ret => this.shouldUsePainSuppression(this.healTarget), {
+        callback: () => {
+          this.updateDefensiveCooldownTime("Pain Suppression");
+          toastSuccess(`Pain Suppression on ${this.healTarget?.unsafeName || 'target'}`, 1.2, 3000);
+        }
+      }),
+      spell.cast("Void Shift", on => this.healTarget, ret => this.shouldUseVoidShift(this.healTarget), {
+        callback: () => {
+          this.updateDefensiveCooldownTime("Void Shift");
+          toastSuccess(`Void Shift with ${this.healTarget?.unsafeName || 'target'}`, 1.2, 3000);
+        }
+      }),
+      spell.cast("Mass Dispel", on => this.findMassDispelTarget(), ret => this.findMassDispelTarget() !== undefined),
       spell.cast("Premonition", on => me, ret => this.shouldCastPremonition(this.healTarget)),
       spell.cast("Evangelism", on => me, ret => me.inCombat() && (
         (this.getAtonementCount() > 3 && this.minAtonementDuration() < 4000)
         || (this.healTarget && this.healTarget.hasAura(auras.atonement) && this.healTarget.effectiveHealthPercent < 40))
       ),
       this.noFacingSpellsImportant(),
-      spell.cast("Power Word: Barrier", on => this.healTarget, ret => this.shouldUseBarrier(this.healTarget),
-        (ret) => {
-          if (ret === bt.Status.Success) {
-            toastSuccess("Power Word: Barrier!", 1.2, 2500);
-          }
-        }),
+      spell.cast("Power Word: Barrier", on => this.healTarget, ret => this.shouldUseBarrier(this.healTarget), {
+        callback: () => {
+          this.updateDefensiveCooldownTime("Power Word: Barrier");
+          toastSuccess(`Power Word: Barrier placed`, 1.2, 3000);
+        }
+      }),
       spell.cast("Power Word: Shield", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 89 && !this.hasShield(this.healTarget)),
       spell.cast("Power Word: Radiance", on => this.healTarget, ret => this.shouldCastRadiance(this.healTarget, 2)),
       spell.cast("Flash Heal", on => this.healTarget, ret => this.healTarget?.effectiveHealthPercent < 85 && me.hasAura(auras.surgeOfLight)),
@@ -722,8 +726,6 @@ export class PriestDisciplinePvP extends Behavior {
       return false;
     }
 
-    // If we reach here, we're about to cast - update tracking
-    this.updateDefensiveCooldownTime("Pain Suppression");
     return true;
   }
 
@@ -756,8 +758,6 @@ export class PriestDisciplinePvP extends Behavior {
       return false;
     }
 
-    // If we reach here, we're about to cast - update tracking
-    this.updateDefensiveCooldownTime("Void Shift");
     return true;
   }
 
@@ -792,25 +792,22 @@ export class PriestDisciplinePvP extends Behavior {
       if (!this.canUseDefensiveCooldown()) {
         return false;
       }
-      // If we reach here, we're about to cast - update tracking
-      this.updateDefensiveCooldownTime("Power Word: Barrier");
       return true;
     }
 
     // For single target, only use if no other defensives are better options
     if (target.effectiveHealthPercent < Settings.BarrierHealth) {
       // Check if Pain Suppression would be better (single target damage reduction)
-      if (target.effectiveHealthPercent > Settings.PainSuppressionHealth &&
+      // Fixed logic: if target is above Pain Suppression threshold OR Pain Suppression is on cooldown, use Barrier
+      if (target.effectiveHealthPercent < Settings.PainSuppressionHealth &&
         !spell.isOnCooldown("Pain Suppression")) {
-        return false; // Let Pain Suppression handle it
+        return false; // Let Pain Suppression handle it (target is low enough for PS and PS is available)
       }
 
       // Check defensive coordination
       if (!this.canUseDefensiveCooldown()) {
         return false;
       }
-      // If we reach here, we're about to cast - update tracking
-      this.updateDefensiveCooldownTime("Power Word: Barrier");
       return true;
     }
 
