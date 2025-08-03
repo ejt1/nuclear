@@ -65,6 +65,8 @@ export const PVPImmuneToCC = {
   NetherWard: 212295, // Warlock - nether ward
   // Demon hunter
   NetherWalk: 196555, // Netherwalk
+  // Hunter
+  AspectOfTheTurtle: 186265 // turtle
 }
 
 
