@@ -614,10 +614,10 @@ Object.defineProperties(wow.CGUnit.prototype, {
   isCastingOrChanneling: {
     /**
      * Check if the unit is currently casting or channeling
-     * @returns {boolean} - Returns true if the current cast or channel is interruptible, false otherwise.
+     * @returns {boolean} - Returns true if the unit is currently casting or channeling
      */
     get: function () {
-      return this.currentCastOrChannel !== undefined
+      return this.currentCast && me.currentCast !== 0
     }
   },
 
