@@ -617,7 +617,7 @@ Object.defineProperties(wow.CGUnit.prototype, {
      * @returns {boolean} - Returns true if the unit is currently casting or channeling
      */
     get: function () {
-      return this.currentCast && me.currentCast !== 0
+      return (this.currentCast && this.currentCast !== 0) || (me.isChanneling)
     }
   },
 
@@ -810,6 +810,33 @@ Object.defineProperties(wow.CGUnit.prototype, {
       return this.auras.some(aura =>
         aura && aura.name && healerSpecs.includes(aura.name)
       );
+    }
+  },
+
+  currentChannel: {
+    /**
+     * Get the current channel spell ID, but only if channelEnd >= current time
+     * @returns {number} - Returns the channel spell ID if still active, otherwise 0
+     */
+    get: function () {
+      if (this.spellInfo && this.spellInfo.spellChannelId !== 0) {
+        // Check if channelEnd < curTime - if so, channel has expired
+        if (this.spellInfo.channelEnd < wow.frameTime) {
+          return 0;
+        }
+        return this.spellInfo.spellChannelId;
+      }
+      return 0;
+    }
+  },
+
+  isChanneling: {
+    /**
+     * Check if the unit is currently channeling (using the time-validated currentChannel)
+     * @returns {boolean} - Returns true if the unit is actively channeling
+     */
+    get: function () {
+      return this.currentChannel !== 0;
     }
   }
 

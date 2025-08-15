@@ -126,7 +126,7 @@ export class PriestDisciplinePvP extends Behavior {
 
             // Preemptive Fade for predicted enemy CC (priest within 8y, rogue within 4y)
             spell.cast("Fade", () =>
-              Settings.UsePreemptiveFade && this.shouldPreemptiveFade()
+              Settings.UsePreemptiveFade && !spell.isOnCooldown("Fade") && this.shouldPreemptiveFade()
             )
           )
         ),
@@ -467,7 +467,7 @@ export class PriestDisciplinePvP extends Behavior {
       const enemyTracking = this.enemyCCTracker.get(guidKey);
 
       // Priest Psychic Scream prediction
-      if (enemy.classType === 5 && me.distanceTo(enemy) <= 8) { // Class 5 = Priest
+      if (enemy.hasAura("Priest") && me.distanceTo(enemy) <= 8) {
         const lastPsychicScream = enemyTracking ? enemyTracking[8122] : null;
         const timeSinceLastUse = lastPsychicScream ? currentTime - lastPsychicScream : 999999;
 
@@ -478,7 +478,7 @@ export class PriestDisciplinePvP extends Behavior {
       }
 
       // Rogue CC prediction
-      if (enemy.classType === 4 && me.distanceTo(enemy) <= 4) { // Class 4 = Rogue
+      if (enemy.hasAura("Rogue") && me.distanceTo(enemy) <= 4) {
         const lastCheapShot = enemyTracking ? enemyTracking[1833] : null;
         const lastKidneyShot = enemyTracking ? enemyTracking[408] : null;
 
@@ -495,7 +495,7 @@ export class PriestDisciplinePvP extends Behavior {
       // Additional high-threat CC predictions
       if (me.distanceTo(enemy) <= 30) {
         // Mage Polymorph
-        if (enemy.classType === 8) { // Class 8 = Mage
+        if (enemy.hasAura("Mage")) {
           const lastPolymorph = enemyTracking ? enemyTracking[118] : null;
           const timeSincePolymorph = lastPolymorph ? currentTime - lastPolymorph : 999999;
 
@@ -506,7 +506,7 @@ export class PriestDisciplinePvP extends Behavior {
         }
 
         // Shaman Hex
-        if (enemy.classType === 7) { // Class 7 = Shaman
+        if (enemy.hasAura("Shaman")) {
           const lastHex = enemyTracking ? enemyTracking[51514] : null;
           const timeSinceHex = lastHex ? currentTime - lastHex : 999999;
 

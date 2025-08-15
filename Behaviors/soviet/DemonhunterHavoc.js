@@ -190,8 +190,6 @@ export class DemonhunterHavoc extends Behavior {
       // Cast Sigil of Spite
       spell.cast("Sigil of Spite", on => me.target),
 
-      // Cast Vengeful Retreat
-      spell.cast("Vengeful Retreat", on => me),
 
       // Cast The Hunt if you do NOT have a Reaver's Glaive charge ready
       spell.cast("The Hunt", on => me.target, ret =>
@@ -243,8 +241,6 @@ export class DemonhunterHavoc extends Behavior {
       spell.cast("Throw Glaive", on => me.target, ret =>
         !me.isWithinMeleeRange(me.target) || spell.getCharges('Throw Glaive') === 2),
 
-      spell.cast("Fel Rush", on => me.target, ret =>
-        !me.isWithinMeleeRange(me.target) && me.target.distanceTo(me) <= 20),
 
       // Demon's Bite as absolute filler
       spell.cast("Demon's Bite", on => me.target)
