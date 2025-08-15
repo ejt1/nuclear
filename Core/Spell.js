@@ -244,6 +244,10 @@ class Spell extends wow.EventListener {
       return false;
     }
 
+    if (!options.skipFacingCheck && (target instanceof wow.CGUnit && !losExclude[target.entryId]) && !me.isFacing(target)) {
+      return false;
+    }
+
     if (!options.skipRangeCheck && (target instanceof wow.CGUnit && !losExclude[target.entryId]) && !this.inRange(spell, target)) {
       return false;
     }
@@ -409,6 +413,9 @@ class Spell extends wow.EventListener {
           if (!me.isFacing(target)) {
             continue;
           }
+          if (!me.withinLineOfSight(target)) {
+            continue;
+          }
 
           const currentTime = wow.frameTime;
           const castRemains = castInfo.castEnd - currentTime;
@@ -532,6 +539,21 @@ class Spell extends wow.EventListener {
   }
 
   /**
+   * Checks if a spell is currently on cooldown.
+   * @param {number | string} spellNameOrId - The name or ID of the spell.
+   * @returns {boolean} - Returns true if the spell is on cooldown (timeleft > 0), false otherwise.
+   */
+  isOnCooldown(spellNameOrId) {
+    const cooldown = this.getCooldown(spellNameOrId);
+    if (!cooldown) {
+      // if it's undefined somehow - just let it be on cooldown.
+      console.error('Spell getCooldown(' + this.unsafeName + ') is null or undefined');
+      return true;
+    }
+    return cooldown.timeleft > 0;
+  }
+
+  /**
    * Retrieves the current charges of a spell.
    * @param {number | string} spellNameOrId - The name or ID of the spell.
    * @returns {number} - The charges
@@ -629,28 +651,28 @@ class Spell extends wow.EventListener {
 
   /**
    * Gets the last 5 successfully cast spells.
-   * 
+   *
    * @param {number} [count=5] - The number of spells to return (default is 5).
    * @param {boolean} [includeTimestamp=false] - Whether to include the timestamp in the returned data.
    * @returns {Array<{spellName: string, targetName: string0}>} - An array of the last successfully cast spells.
    */
   getLastSuccessfulSpells(count = 5, includeTimestamp = false) {
     const result = [...this._lastSuccessfulSpells];
-    
+
     // Only return the most recent spells up to the count
     const limitedResult = result.slice(-Math.min(count, result.length));
-    
+
     // Remove timestamp if not requested
-    
+
     return limitedResult.map(({ spellName, targetName }) => ({ spellName, targetName }));
-    
-    
+
+
     return limitedResult;
   }
 
   /**
    * Gets the last successfully cast spell.
-   * 
+   *
    * @param {boolean} [includeTimestamp=false] - Whether to include the timestamp in the returned data.
    * @returns {{spellName: string, targetName: string, timestamp?: number} | null} - The last successfully cast spell or null if none exist.
    */
@@ -665,57 +687,57 @@ class Spell extends wow.EventListener {
   /**
  * Gets the full recharge time for a spell with charges.
  * This is how long it would take to reach maximum charges from the current state.
- * 
+ *
  * @param {number | string} spellNameOrId - The name or ID of the spell.
  * @returns {number} - The time in milliseconds until all charges are available, or 0 if the spell doesn't use charges or is already at max charges.
  */
 getFullRechargeTime(spellNameOrId) {
   const spell = this.getSpell(spellNameOrId);
   const spellCooldown = this.getCooldown(spellNameOrId);
-  
+
   if (!spell) {
     console.error(`Spell ${spellNameOrId} not found`);
     return 0;
   }
-  
+
   // If the spell doesn't have charges system, return 0
   if (!spell.charges) {
     return 0;
   }
-  
+
   const currentCharges = spell.charges.charges || 0;
   const maxCharges = spell.charges.maxCharges || 0;
-  
+
   // If already at max charges, return 0
   if (currentCharges >= maxCharges) {
     return 0;
   }
-  
+
   // Get time until next charge
   const timeToNextCharge = spell.charges.start + spell.charges.duration - wow.frameTime;
-  
+
   // Calculate full recharge time: time to next charge + time for remaining charges
   const chargeDuration = spell.charges.duration;
   const remainingCharges = maxCharges - currentCharges - 1; // -1 because we're already waiting for one charge
-  
+
   return timeToNextCharge + (remainingCharges * chargeDuration);
 }
-  
+
   /**
    * Gets the charges of a spell as a fractional value (including partial progress toward next charge).
-   * 
+   *
    * @param {number | string} spellNameOrId - The name or ID of the spell.
    * @returns {number} - The current charges as a decimal number, or 0 if the spell doesn't use charges.
    */
   getChargesFractional(spellNameOrId) {
     const spell = this.getSpell(spellNameOrId);
     const spellCooldown = this.getCooldown(spellNameOrId);
-    
+
     if (!spell) {
       console.error(`Spell ${spellNameOrId} not found`);
       return 0;
     }
-    
+
     // If the spell doesn't have charges system, return 0
     if (!spell.charges) {
       return 0;
@@ -724,26 +746,26 @@ getFullRechargeTime(spellNameOrId) {
     if(spell.charges == spell.charges.maxCharges) {
       return spell.charges.maxCharges;
     }
-    
+
     const currentCharges = spell.charges.charges || 0;
     const maxCharges = spell.charges.maxCharges || 0;
-    
+
     // If already at max charges, return just the whole charges
     if (currentCharges >= maxCharges) {
       return currentCharges;
     }
-    
+
     // Calculate the fractional part based on cooldown progress
     const timeToNextCharge = spellCooldown.timeleft;
     const chargeDuration = spell.charges.duration;
-    
+
     // If charge duration is 0, avoid division by zero
     if (chargeDuration <= 0) {
       return currentCharges;
     }
     // The fractional part is the percentage of the charge cooldown that has completed
     const fractionalPart = 1 - ((spell.charges.start + spell.charges.duration - wow.frameTime) / chargeDuration);
-    
+
     return currentCharges + fractionalPart;
   }
 }

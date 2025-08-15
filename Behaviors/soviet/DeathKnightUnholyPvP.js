@@ -6,6 +6,7 @@ import {defaultCombatTargeting as Combat} from "@/Targeting/CombatTargeting";
 import Specialization from "@/Enums/Specialization";
 import common from "@/Core/Common";
 import Pet from "@/Core/Pet";
+import Spell from "@/Core/Spell";
 
 const auras = {
   darkSuccor: 101568,
@@ -14,6 +15,7 @@ const auras = {
   deathAndDecay: 188290,
   suddenDoom: 81340,
   virulentPlague: 191587,
+  darkTransform: 63560
 }
 
 export class DeathKnightUnholy extends Behavior {
@@ -27,12 +29,17 @@ export class DeathKnightUnholy extends Behavior {
       common.waitForNotMounted(),
       common.waitForCastOrChannel(),
       common.waitForTarget(),
-      spell.interrupt("Leap", true),
+      new bt.Decorator(
+        ret => me.pet && me.pet.hasVisibleAura(auras.darkTransform),
+        spell.interrupt("Leap", true)
+      ),
       spell.interrupt("Gnaw", true),
       common.waitForFacing(),
       spell.cast("Raise Dead", on => me, req => !Pet.current),
       spell.interrupt("Mind Freeze", true),
       spell.cast("Claw", on => me.target),
+      spell.cast("Strangulate", on => this.strangulateTarget(), ret => me.target && me.target.pctHealth < 70 && this.strangulateTarget() !== undefined),
+      spell.cast("Blinding Sleet", on => this.blindingSleetTarget(), ret => this.blindingSleetTarget() !== undefined),
       new bt.Decorator(
         ret => !spell.isGlobalCooldown(),
         new bt.Selector(
@@ -41,7 +48,7 @@ export class DeathKnightUnholy extends Behavior {
           common.waitForNotMounted(),
           common.waitForCastOrChannel(),
           spell.cast("Death Strike", ret => me.pctHealth < 95 && me.hasAura(auras.darkSuccor)),
-          spell.cast("Death Strike", ret => me.pctHealth < 45 && me.power > 55),
+          spell.cast("Death Strike", ret => me.pctHealth < 55 && (Spell.getTimeSinceLastCast("Death Strike") > 3000 || me.power > 50)),
           new bt.Decorator(
             ret => Combat.burstToggle && me.target && me.isWithinMeleeRange(me.target),
             this.burstDamage()
@@ -64,6 +71,7 @@ export class DeathKnightUnholy extends Behavior {
       spell.cast("Death and Decay", on => me, ret => this.shouldDeathAndDecay()),
       spell.cast("Dark Transformation", ret => true),
       spell.cast("Death Coil", on => me.target, ret => this.shouldDeathCoil(90) && me.targetUnit.hasAuraByMe(auras.festeringWound) >= 3 && this.apocalypseOnCooldown()),
+      spell.cast("Outbreak", on => me.target, ret => me.target && !me.targetUnit.hasAuraByMe(auras.virulentPlague)),
       spell.cast("Scourge Strike", on => me.target, ret => me.target && me.targetUnit.hasAuraByMe(auras.festeringWound) && this.apocalypseOnCooldown()),
       spell.cast("Death Coil", on => me.target, ret => this.shouldDeathCoil(60) && (this.apocalypseOnCooldown() || me.getReadyRunes() < 2)),
       spell.cast("Festering Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) < 5),
@@ -93,5 +101,36 @@ export class DeathKnightUnholy extends Behavior {
   apocalypseOnCooldown() {
     const apocalypse = wow.SpellBook.getSpellByName("Apocalypse");
     return apocalypse && apocalypse.cooldown.duration > 0;
+  }
+
+  strangulateTarget() {
+    // Get all enemy players within 20 yards and find the first valid healer target
+    const nearbyEnemies = me.getPlayerEnemies(20);
+
+    for (const unit of nearbyEnemies) {
+      if (unit.isHealer() && !unit.isCCd() && unit.canCC() && unit.getDR("silence") === 0) {
+        return unit;
+      }
+    }
+
+    return undefined;
+  }
+
+  blindingSleetTarget() {
+    // Get all enemy players within 10 yards
+    const nearbyEnemies = me.getPlayerEnemies(10);
+
+    for (const unit of nearbyEnemies) {
+      if (unit !== me.target &&
+          me.isFacing(unit) &&
+          unit.isHealer() &&
+          !unit.isCCd() &&
+          unit.canCC() &&
+          unit.getDR("disorient") === 0) {
+        return unit;
+      }
+    }
+
+    return undefined;
   }
 }
