@@ -123,7 +123,7 @@ export class EvokerDevastationBehavior extends Behavior {
       ),
       spell.cast("Dragonrage", on => me.target, req => me.target && Combat.burstToggle),
       spell.cast("Shattering Star", on => me.target, req => this.shouldCastShatteringStar()),
-      EvokerCommon.castEmpowered("Fire Breath", 4, on => me.target, ret => true),
+      EvokerCommon.castEmpowered("Fire Breath", 2, on => me.target, ret => true),
       this.castEternitySurge(),
       spell.cast("Disintegrate", on => me.target, req => me.hasAura(auras.massDisintegrate)),
       spell.cast("Living Flame", on => me.target, req => me.hasAura(auras.burnout) && me.powerByType(PowerType.Essence) < 4),
@@ -165,7 +165,7 @@ export class EvokerDevastationBehavior extends Behavior {
       return false;
     }
     // Check if we have a stored Deep Breath target and are within 1 yards
-    if (EvokerDevastationBehavior.deepBreathTarget &&
+    if (EvokerDevastationBehavior.deepBreathTarget !== null &&
       me.distanceTo(EvokerDevastationBehavior.deepBreathTarget) < 1) {
       // Clear the stored target once we cancel
       EvokerDevastationBehavior.deepBreathTarget = null;

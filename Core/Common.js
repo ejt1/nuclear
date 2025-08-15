@@ -6,24 +6,8 @@ import spell from "@/Core/Spell";
 
 class Common {
   static waitForCastOrChannel() {
-    return new bt.Selector(
-      Common.waitForCast(),
-      Common.waitForChannel(),
-    );
-  }
-
-  static waitForCast() {
     return new bt.Action(() => {
-      if (me.isCasting) {
-        return bt.Status.Success;
-      }
-      return bt.Status.Failure;
-    });
-  }
-
-  static waitForChannel() {
-    return new bt.Action(() => {
-      if (me.isChanneling) {
+      if (me.isCastingOrChanneling) {
         return bt.Status.Success;
       }
       return bt.Status.Failure;
