@@ -97,9 +97,10 @@ export class PriestDisciplinePvP extends Behavior {
         new bt.Decorator(
           ret => {
             // Check if we're channeling Ultimate Penitence (spell ID: 421453)
-            if (me.isCastingOrChanneling) {
-              const currentSpellId = me.currentCast;
+            if (me.isChanneling) {
+              const currentSpellId = me.currentChannel;
               if (currentSpellId === 421453) { // Ultimate Penitence
+                console.info('not stopping cuz ultimate penitence.')
                 return false;
               }
             }

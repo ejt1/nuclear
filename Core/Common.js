@@ -7,7 +7,7 @@ import spell from "@/Core/Spell";
 class Common {
   static waitForCastOrChannel() {
     return new bt.Action(() => {
-      if (me.currentCast && me.currentCast !== 0) {
+      if (me.isCastingOrChanneling) {
         return bt.Status.Success;
       }
       return bt.Status.Failure;
