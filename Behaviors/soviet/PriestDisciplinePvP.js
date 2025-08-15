@@ -100,7 +100,6 @@ export class PriestDisciplinePvP extends Behavior {
             if (me.isChanneling) {
               const currentSpellId = me.currentChannel;
               if (currentSpellId === 421453) { // Ultimate Penitence
-                console.info('not stopping cuz ultimate penitence.')
                 return false;
               }
             }
