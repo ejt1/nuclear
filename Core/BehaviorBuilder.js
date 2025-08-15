@@ -44,7 +44,14 @@ export default class BehaviorBuilder {
     behaviorSettings = this.collectBehaviorSettings(selectedBehavior);
 
     console.debug(`Built ${behaviors.length} composites`);
-    behaviors.forEach(v => root.addChild(v.build()));
+    behaviors.forEach(v => {
+      try {
+        const composite = v.build();
+        root.addChild(composite);
+      } catch(err) {
+        console.error(err);
+      }
+    });
     enableDebug(root);
 
     nuclearWindow.initializeSettings();
