@@ -165,6 +165,8 @@ const herbs = {
   454065: "herb",   // Camouflaged Mycobloom
   454068: "herb",   // Camouflaged Mycobloom
   454073: "herb",   // Camouflaged Mycobloom
+  527488: "herb",   // phantom-bloom
+  527489: "herb",   // lush-phantom-bloom
 
 };
 
@@ -276,6 +278,8 @@ const ores = {
   452079: "vein",   // Bismuth
   452081: "vein",   // Bismuth
   452083: "vein",   // Ironclaw
+  523491: "vein",   // desolate-deposit
+  523512: "vein",   // rich-desolate-deposit
 };
 
 const treasures = {

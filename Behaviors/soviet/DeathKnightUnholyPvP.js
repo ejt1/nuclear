@@ -14,7 +14,15 @@ const auras = {
   festeringWound: 194310,
   deathAndDecay: 188290,
   suddenDoom: 81340,
+  plagueBringer: 390178,
+  frostFever: 55095,
+  bloodPlague: 55078,
   virulentPlague: 191587,
+  deathRot: 377540,
+  trollbaneChainsOfIce: 444826,
+  festeringScythe: 458123,
+  legionOfSouls: 383269,
+  rottenTouch: 390275,
   darkTransform: 63560
 }
 
@@ -59,34 +67,59 @@ export class DeathKnightUnholy extends Behavior {
     );
   }
 
-  // Merged Burst Damage
+  // Burst Damage Rotation
   burstDamage() {
     return new bt.Selector(
+      // Major cooldowns first
       spell.cast("Army of the Dead", ret => true),
-      //spell.cast("Chains of Ice", on => me.target, ret => me.target && me.targetUnit.isPlayer() && !me.targetUnit.hasAuraByMe(auras.chainsOfIce)),
       spell.cast("Summon Gargoyle", ret => true),
-      spell.cast("Abomination Limb", ret => true),
       spell.cast("Unholy Assault", ret => true),
-      spell.cast("Apocalypse", ret => true, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) >= 4),
-      spell.cast("Death and Decay", on => me, ret => this.shouldDeathAndDecay()),
-      spell.cast("Dark Transformation", ret => true),
-      spell.cast("Death Coil", on => me.target, ret => this.shouldDeathCoil(90) && me.targetUnit.hasAuraByMe(auras.festeringWound) >= 3 && this.apocalypseOnCooldown()),
+
+      // Core burst rotation
+      // Use Apocalypse - spend 4 wounds and transform pet
+      spell.cast("Apocalypse", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) >= 4),
+
+      // Use Scourge Strike to spend wounds
+      spell.cast("Scourge Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) > 0),
+
+      // Use Death Coil if high Runic Power or Sudden Doom proc with 3+ wounds
+      spell.cast("Death Coil", on => me.target, ret => me.target &&
+        (me.power > 80 || (me.hasAura(auras.suddenDoom) && me.targetUnit.getAuraStacks(auras.festeringWound) >= 3))),
+
+      // Maintain Virulent Plague
       spell.cast("Outbreak", on => me.target, ret => me.target && !me.targetUnit.hasAuraByMe(auras.virulentPlague)),
-      spell.cast("Scourge Strike", on => me.target, ret => me.target && me.targetUnit.hasAuraByMe(auras.festeringWound) && this.apocalypseOnCooldown()),
-      spell.cast("Death Coil", on => me.target, ret => this.shouldDeathCoil(60) && (this.apocalypseOnCooldown() || me.getReadyRunes() < 2)),
-      spell.cast("Festering Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) < 5),
+
+      // Use Rune Strike to reapply wounds when 1-2 remaining
+      spell.cast("Rune Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) <= 2),
+
+      // Death and Decay for area control
+      spell.cast("Death and Decay", on => me, ret => this.shouldDeathAndDecay()),
+
+      // Fallback Death Coil
+      spell.cast("Death Coil", on => me.target, ret => me.target && me.power > 60)
     );
   }
 
-  // Sustained Damage
+  // New Sustained Damage Rotation
   sustainedDamage() {
     return new bt.Selector(
-      //spell.cast("Chains of Ice", on => me.target, ret => me.target && me.targetUnit.isPlayer() && !me.targetUnit.hasAuraByMe(auras.chainsOfIce)),
+      // Maintain Virulent Plague on as many targets as possible
       spell.cast("Outbreak", on => me.target, ret => me.target && !me.targetUnit.hasAuraByMe(auras.virulentPlague)),
+
+      // Use Rune Strike to generate and refresh Festering Wounds
+      spell.cast("Rune Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) <= 2),
+
+      // Use Scourge Strike to spend wounds and maintain plaguebringer
+      spell.cast("Scourge Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) > 0),
+
+      // Use Death Coil if high Runic Power or Sudden Doom proc
+      spell.cast("Death Coil", on => me.target, ret => me.target && (me.power > 80 || me.hasAura(auras.suddenDoom))),
+
+      // Death and Decay for area control
       spell.cast("Death and Decay", ret => this.shouldDeathAndDecay()),
-      spell.cast("Festering Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) < 5),
-      spell.cast("Scourge Strike", on => me.target, ret => me.target && me.targetUnit.hasAuraByMe(auras.festeringWound)),
-      spell.cast("Death Coil", on => me.target, ret => this.shouldDeathCoil(60))
+
+      // Fallback Death Coil
+      spell.cast("Death Coil", on => me.target, ret => me.target && me.power > 60)
     );
   }
 
@@ -98,9 +131,66 @@ export class DeathKnightUnholy extends Behavior {
     return me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && !me.hasAura(auras.deathAndDecay)
   }
 
-  apocalypseOnCooldown() {
-    const apocalypse = wow.SpellBook.getSpellByName("Apocalypse");
-    return apocalypse && apocalypse.cooldown.duration > 0;
+
+  // Helper methods from PVE version
+  findTargetWithTrollbaneChainsOfIce() {
+    const enemies = me.getEnemies(8);
+
+    for (const enemy of enemies) {
+      const chainsOfIce = enemy.getAuraByMe(auras.trollbaneChainsOfIce);
+      if (me.isFacing(enemy) && chainsOfIce) {
+        return enemy;
+      }
+    }
+
+    return undefined;
+  }
+
+  findTargetWithFesteringWounds() {
+    const enemies = me.getEnemies(8);
+
+    for (const enemy of enemies) {
+      const festeringWounds = enemy.getAuraByMe(auras.festeringWound);
+      if (me.isFacing(enemy) && festeringWounds && festeringWounds.stacks > 0) {
+        return enemy;
+      }
+    }
+
+    return undefined;
+  }
+
+  findTargetWithLeastWounds() {
+    const enemies = me.getEnemies(8);
+    let bestTarget = undefined;
+    let leastWounds = 999;
+
+    for (const enemy of enemies) {
+      if (!me.isFacing(enemy)) continue;
+
+      const festeringWounds = enemy.getAuraByMe(auras.festeringWound);
+      const woundCount = festeringWounds ? festeringWounds.stacks : 0;
+
+      if (woundCount < leastWounds) {
+        bestTarget = enemy;
+        leastWounds = woundCount;
+      }
+    }
+
+    return bestTarget;
+  }
+
+  isDeathRotAboutToExpire() {
+    if (!me.target) {
+      return false;
+    }
+
+    const deathRot = me.target.getAuraByMe(auras.deathRot);
+    return !!(deathRot && deathRot.remaining < 2000);
+  }
+
+  isPlaguebringerAboutToExpire() {
+    const plaguebringer = me.getAura(auras.plagueBringer);
+    return !!(plaguebringer && plaguebringer.remaining < 3000);
   }
 
   strangulateTarget() {
