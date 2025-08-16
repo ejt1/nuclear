@@ -23,7 +23,7 @@ const auras = {
   trollbaneChainsOfIce: 444826,
   festeringScythe: 458123,
   legionOfSouls: 383269,
-  rottenTouch: 390275, // Need to verify this ID
+  rottenTouch: 390275,
 }
 
 export class DeathKnightUnholy extends Behavior {
