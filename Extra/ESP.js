@@ -617,7 +617,7 @@ class ESP {
   }
 
   static getActiveMajorCooldowns(unit) {
-    if (!unit || !unit.hasAura) return [];
+    if (!unit || !unit.getAura) return [];
     
     const activeCooldowns = [];
     const majorCategories = [
@@ -631,12 +631,22 @@ class ESP {
     // Check for major cooldown auras
     for (const [spellId, cooldownData] of Object.entries(offensiveCooldowns)) {
       if (majorCategories.includes(cooldownData.category)) {
-        if (unit.hasAura && unit.hasAura(parseInt(spellId))) {
-          // Try to get remaining duration if possible
+        const aura = unit.getAura(parseInt(spellId));
+        if (aura) {
+          // Get remaining duration in seconds
+          const remainingSeconds = Math.ceil(aura.remaining / 1000);
+          
+          // Build display name with duration
           let displayName = cooldownData.name;
-          if (unit.getAuraStacks && unit.getAuraStacks(parseInt(spellId)) > 1) {
-            displayName += ` (${unit.getAuraStacks(parseInt(spellId))})`;
+          if (remainingSeconds > 0) {
+            displayName += ` (${remainingSeconds}s)`;
           }
+          
+          // Add stack count if > 1
+          if (aura.stacks && aura.stacks > 1) {
+            displayName += ` [${aura.stacks}]`;
+          }
+          
           activeCooldowns.push(displayName);
         }
       }
