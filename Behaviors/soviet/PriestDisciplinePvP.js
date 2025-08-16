@@ -85,67 +85,51 @@ export class PriestDisciplinePvP extends Behavior {
   ];
 
   build() {
-    return new bt.Decorator(
-      ret => !spell.isGlobalCooldown(),
-      new bt.Selector(
-        common.waitForNotWaitingForArenaToStart(),
-        common.waitForNotSitting(),
-        common.waitForNotMounted(),
-        this.waitForNotJustCastPenitence(),
+    return new bt.Selector(
+      common.waitForNotWaitingForArenaToStart(),
+      common.waitForNotSitting(),
+      common.waitForNotMounted(),
+      this.waitForNotJustCastPenitence(),
+      // Stop casting for CC counter - this needs to be outside GCD check
+      new bt.Decorator(
+        () => this.shouldStopCastingForCCCounter(),
+        new bt.Action(_ => {
+          me.stopCasting();
+          console.log(`[Priest] Stopped casting to counter incoming CC`);
+          return bt.Status.Success;
+        })
+      ),
 
-        // Check if we're not channeling Ultimate Penitence before casting CC counters
-        new bt.Decorator(
-          ret => {
-            // Check if we're channeling Ultimate Penitence (spell ID: 421453)
-            if (me.isCastingOrChanneling) {
-              let currentSpellId = me.currentChannel;
-              if (currentSpellId === 0) {
-                currentSpellId = me.currentCast;
-              }
-              if (currentSpellId === 421453) { // Ultimate Penitence
-                return false;
-              }
-            }
-            return true;
-          },
-          new bt.Selector(
-            // Interrupt our own casting if we can counter incoming CC with Shadow Word: Death or Fade
-            new bt.Decorator(
-              () => this.shouldStopCastingForCCCounter(),
-              new bt.Action(() => {
-                me.stopCasting();
-                console.log(`[Priest] Stopped casting to counter incoming CC`);
-                return bt.Status.Success;
-              })
-            ),
+      // Main behavior tree with GCD check
+      new bt.Decorator(
+        ret => !spell.isGlobalCooldown(),
+        new bt.Selector(
+          // High priority Shadow Word: Death for incoming CC
+          spell.cast("Shadow Word: Death", on => this.findIncomingCCTarget(), ret =>
+            this.findIncomingCCTarget() !== undefined && !spell.isOnCooldown("Shadow Word: Death")
+          ),
+          spell.cast("Fade", () =>
+            this.hasIncomingCCForFade() && !spell.isOnCooldown("Fade")
+          ),
 
-            // High priority Shadow Word: Death for incoming CC
-            spell.cast("Shadow Word: Death", on => this.findIncomingCCTarget(), ret =>
-              this.findIncomingCCTarget() !== undefined && !spell.isOnCooldown("Shadow Word: Death")
-            ),
-            spell.cast("Fade", () =>
-              this.hasIncomingCCForFade() && !spell.isOnCooldown("Fade")
-            ),
+          // Preemptive Fade for predicted enemy CC (priest within 8y, rogue within 4y)
+          spell.cast("Fade", () =>
+            Settings.UsePreemptiveFade && !spell.isOnCooldown("Fade") && this.shouldPreemptiveFade()
+          ),
 
-            // Preemptive Fade for predicted enemy CC (priest within 8y, rogue within 4y)
-            spell.cast("Fade", () =>
-              Settings.UsePreemptiveFade && !spell.isOnCooldown("Fade") && this.shouldPreemptiveFade()
-            )
-          )
-        ),
+          common.waitForCastOrChannel(),
 
-        common.waitForCastOrChannel(),
+          spell.cast("Psychic Scream", on => this.psychicScreamTarget(), ret => this.psychicScreamTarget() !== undefined),
 
-        spell.cast("Psychic Scream", on => this.psychicScreamTarget(), ret => this.psychicScreamTarget() !== undefined),
+          // Healing rotation (doesn't need enemy target/facing)
+          this.healRotation(),
+          this.applyAtonement(),
 
-        // Healing rotation (doesn't need enemy target/facing)
-        this.healRotation(),
-        this.applyAtonement(),
-
-        // Spells that require target and/or facing
-        common.waitForTarget(),
-        common.waitForFacing(),
-        this.targetedDamageRotation()
+          // Spells that require target and/or facing
+          common.waitForTarget(),
+          common.waitForFacing(),
+          this.targetedDamageRotation()
+        )
       )
     );
   }
@@ -163,6 +147,15 @@ export class PriestDisciplinePvP extends Behavior {
   shouldStopCastingForCCCounter() {
     // Only check if we're currently casting something
     if (!me.isCastingOrChanneling) {
+      return false;
+    }
+
+    // Don't interrupt Ultimate Penitence (spell ID: 421453)
+    let currentSpellId = me.currentChannel;
+    if (currentSpellId === 0) {
+      currentSpellId = me.currentCast;
+    }
+    if (currentSpellId === 421453) { // Ultimate Penitence
       return false;
     }
 
@@ -227,6 +220,14 @@ export class PriestDisciplinePvP extends Behavior {
 
       // Incapacitates
       51514: "Hex", // Shaman
+      210873: "Hex (Compy)", // Shaman
+      211004: "Hex (Spider)", // Shaman
+      211015: "Hex (Cockroach)", // Shaman
+      211010: "Hex (Snake)", // Shaman
+      269352: "Hex (Skeletal Hatchling)", // Shaman
+      277778: "Hex (Zandalari Tendonripper)", // Shaman
+      277784: "Hex (Wicker Mongrel)", // Shaman
+      309328: "Hex (Living Honey)", // Shaman
       118: "Polymorph", // Mage
       61305: "Polymorph: Cat", // Mage
       28272: "Polymorph: Pig", // Mage
@@ -240,7 +241,11 @@ export class PriestDisciplinePvP extends Behavior {
       161354: "Polymorph: Monkey", // Mage
       161355: "Polymorph: Penguin", // Mage
       161372: "Polymorph: Peacock", // Mage
+      391622: "Polymorph (Duck)", // Mage
+      460392: "Polymorph (Mosswool)", // Mage
       217832: "Imprison", // Demon Hunter
+      20066: "Repentance", // Paladin
+      360806: "Sleep Walk", // Priest
 
       // Silence/Disarm
       15487: "Silence", // Priest
@@ -274,7 +279,9 @@ export class PriestDisciplinePvP extends Behavior {
       // Fade is especially good against fears, incapacitates, and some stuns
       const fadeGoodAgainst = [
         5782, 6789, 5484, 261589, // Fears
-        51514, 118, 61305, 28272, 61721, 61780, 28271, 277787, 277792, 126819, 161353, 161354, 161355, 161372, 217832, // Incapacitates
+        51514, 210873, 211004, 211015, 211010, 269352, 277778, 277784, 309328, // Hex variants
+        118, 61305, 28272, 61721, 61780, 28271, 277787, 277792, 126819, 161353, 161354, 161355, 161372, 391622, 460392, // Polymorph variants
+        217832, 20066, 360806, // Other incapacitates (Imprison, Repentance, Sleep Walk)
         853, 30283, 5211 // Some stuns
       ];
       return fadeGoodAgainst.includes(spellId);
@@ -420,7 +427,7 @@ export class PriestDisciplinePvP extends Behavior {
           const lastRecorded = this.enemyCCTracker.get(guidKey)[spellId];
           if (!lastRecorded || currentTime - lastRecorded > 5000) { // 5 second grace period
             this.enemyCCTracker.get(guidKey)[spellId] = currentTime;
-            console.log(`[Priest] Tracked enemy ${enemy.unsafeName} using spell ${spellId} - cooldown: ${trackedSpells[spellId]/1000}s`);
+            console.log(`[Priest] Tracked enemy ${enemy.unsafeName} using spell ${spellId} - cooldown: ${trackedSpells[spellId] / 1000}s`);
           }
         }
       }
@@ -475,7 +482,7 @@ export class PriestDisciplinePvP extends Behavior {
         const timeSinceLastUse = lastPsychicScream ? currentTime - lastPsychicScream : 999999;
 
         if (timeSinceLastUse > 29000) { // 29+ seconds since last use (30s cooldown)
-          console.log(`[Priest] Preemptive Fade - Enemy priest ${enemy.unsafeName} within 8y, Psychic Scream ready (${Math.floor(timeSinceLastUse/1000)}s ago)`);
+          console.log(`[Priest] Preemptive Fade - Enemy priest ${enemy.unsafeName} within 8y, Psychic Scream ready (${Math.floor(timeSinceLastUse / 1000)}s ago)`);
           return true;
         }
       }
@@ -511,20 +518,20 @@ export class PriestDisciplinePvP extends Behavior {
         }
       }
 
-      // Hunter pet prediction
-      if (enemy.hasAura("Hunter") && me.distanceTo(enemy) <= 40) {
-        for (const unit of me.getUnitsAround(8)) {
-          if (unit.summonedBy(enemy) || unit.createdBy(enemy)) {
-            const lastIntimidation = enemyTracking ? enemyTracking[24394] : null;
-            const timeSinceIntimidation = lastIntimidation ? currentTime - lastIntimidation : 999999;
+      // // Hunter pet prediction
+      // if (enemy.hasAura("Hunter") && me.distanceTo(enemy) <= 40) {
+      //   for (const unit of me.getUnitsAround(8)) {
+      //     if (unit.summonedBy(enemy) || unit.createdBy(enemy)) {
+      //       const lastIntimidation = enemyTracking ? enemyTracking[24394] : null;
+      //       const timeSinceIntimidation = lastIntimidation ? currentTime - lastIntimidation : 999999;
 
-            if (timeSinceIntimidation > 29000) { // Intimidation 30s
-              console.log(`[Priest] Preemptive Fade - Enemy hunter ${enemy.unsafeName} has pet within 8y, Intimidation ready`);
-              return true;
-            }
-          }
-        }
-      }
+      //       if (timeSinceIntimidation > 29000) { // Intimidation 30s
+      //         console.log(`[Priest] Preemptive Fade - Enemy hunter ${enemy.unsafeName} has pet within 8y, Intimidation ready`);
+      //         return true;
+      //       }
+      //     }
+      //   }
+      // }
     }
 
     return false;
@@ -691,7 +698,7 @@ export class PriestDisciplinePvP extends Behavior {
     this.lastDefensiveCooldownTime = currentTime;
 
     // Track individual spell times for additional logic if needed
-    switch(spellName) {
+    switch (spellName) {
       case "Pain Suppression":
         this.lastPainSuppressionTime = currentTime;
         break;
