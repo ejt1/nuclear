@@ -495,27 +495,33 @@ export class PriestDisciplinePvP extends Behavior {
         }
       }
 
-      // Additional high-threat CC predictions
-      if (me.distanceTo(enemy) <= 30) {
-        // Mage Polymorph
-        if (enemy.hasAura("Mage")) {
-          const lastPolymorph = enemyTracking ? enemyTracking[118] : null;
-          const timeSincePolymorph = lastPolymorph ? currentTime - lastPolymorph : 999999;
+      // Hunter trap prediction
+      if (enemy.hasAura("Hunter") && me.distanceTo(enemy) <= 4) {
+        const lastTrap = enemyTracking ? enemyTracking[187650] : null;
+        const lastTrap2 = enemyTracking ? enemyTracking[3355] : null;
+        const lastTrap3 = enemyTracking ? enemyTracking[203337] : null;
 
-          if (timeSincePolymorph > 29000 && me.distanceTo(enemy) <= 30) {
-            console.log(`[Priest] Preemptive Fade - Enemy mage ${enemy.unsafeName} within 30y, Polymorph ready (${Math.floor(timeSincePolymorph/1000)}s ago)`);
-            return true;
-          }
+        const timeSinceTrap = lastTrap ? currentTime - lastTrap : 999999;
+        const timeSinceTrap2 = lastTrap2 ? currentTime - lastTrap2 : 999999;
+        const timeSinceTrap3 = lastTrap3 ? currentTime - lastTrap3 : 999999;
+
+        if (timeSinceTrap > 29000 || timeSinceTrap2 > 29000 || timeSinceTrap3 > 29000) { // Trap 30s
+          console.log(`[Priest] Preemptive Fade - Enemy hunter ${enemy.unsafeName} within 4y, Trap ready`);
+          return true;
         }
+      }
 
-        // Shaman Hex
-        if (enemy.hasAura("Shaman")) {
-          const lastHex = enemyTracking ? enemyTracking[51514] : null;
-          const timeSinceHex = lastHex ? currentTime - lastHex : 999999;
+      // Hunter pet prediction
+      if (enemy.hasAura("Hunter") && me.distanceTo(enemy) <= 40) {
+        for (const unit of me.getUnitsAround(8)) {
+          if (unit.summonedBy(enemy) || unit.createdBy(enemy)) {
+            const lastIntimidation = enemyTracking ? enemyTracking[24394] : null;
+            const timeSinceIntimidation = lastIntimidation ? currentTime - lastIntimidation : 999999;
 
-          if (timeSinceHex > 29000 && me.distanceTo(enemy) <= 30) {
-            console.log(`[Priest] Preemptive Fade - Enemy shaman ${enemy.unsafeName} within 30y, Hex ready (${Math.floor(timeSinceHex/1000)}s ago)`);
-            return true;
+            if (timeSinceIntimidation > 29000) { // Intimidation 30s
+              console.log(`[Priest] Preemptive Fade - Enemy hunter ${enemy.unsafeName} has pet within 8y, Intimidation ready`);
+              return true;
+            }
           }
         }
       }
