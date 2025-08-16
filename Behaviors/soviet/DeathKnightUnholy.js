@@ -20,8 +20,10 @@ const auras = {
   bloodPlague: 55078,
   virulentPlague: 191587,
   deathRot: 377540,
-  trollbaneChainsOfIce: 444826, // untested
+  trollbaneChainsOfIce: 444826,
   festeringScythe: 458123,
+  legionOfSouls: 383269,
+  rottenTouch: 390275, // Need to verify this ID
 }
 
 export class DeathKnightUnholy extends Behavior {
@@ -29,7 +31,6 @@ export class DeathKnightUnholy extends Behavior {
   context = BehaviorContext.Any; // PvP or PvE
   specialization = Specialization.DeathKnight.Unholy
   static settings = [
-    {type: "checkbox", uid: "UnholyDKUseSmackyHands", text: "Use Smacky Hands", default: true},
   ];
 
   build() {
@@ -53,10 +54,6 @@ export class DeathKnightUnholy extends Behavior {
           spell.cast("Death Strike", ret => me.pctHealth < 95 && me.hasAura(auras.darkSuccor)),
           spell.cast("Death Strike", ret => me.pctHealth < 45 && me.power > 55),
           new bt.Decorator(
-            ret => Combat.burstToggle && me.target && me.isWithinMeleeRange(me.target),
-            this.burstDamage()
-          ),
-          new bt.Decorator(
             ret => me.target && me.isWithinMeleeRange(me.target) && me.getEnemies(12).length >= 2,
             this.aoeDamage()
           ),
@@ -66,175 +63,100 @@ export class DeathKnightUnholy extends Behavior {
     );
   }
 
-  // Merged Burst Damage
-  burstDamage() {
+  // CD Priority - Cooldown usage priority
+  cooldownPriority() {
     return new bt.Selector(
+      // Cast Legion of Souls
       spell.cast("Army of the Dead", ret => true),
-      this.useTrinkets(),
-      spell.cast("Summon Gargoyle", ret => true),
-      this.useAbomLimb(),
-      spell.cast("Dark Transformation", ret => true),
+      // Cast Rune Strike if we have fewer than 4 festering wounds after Legion of Souls during burst
+      spell.cast("Rune Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) < 4),
+      // Cast Apocalypse - moved from rotation priorities
+      spell.cast("Apocalypse", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) >= 4),
+      // Cast Apocalypse the target with the lowest Festering Wounds (AoE)
+      spell.cast("Apocalypse", on => this.findTargetWithLeastWounds(), ret => this.findTargetWithLeastWounds() !== undefined),
+      // Cast Unholy Assault
       spell.cast("Unholy Assault", ret => true),
-      spell.cast("Apocalypse", ret => true, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) >= 4),
-    )
-      ;
+      // Use Tempered Potion (or any other damage potion) - placeholder for future implementation
+      // Use Cursed Stone Idol (or any other stat trinket) - placeholder for future implementation
+      this.useTrinkets(),
+    );
   }
 
-  // Sustained Damage
+  // Base Priority - Single Target Damage rotation
   singleTargetDamage() {
     return new bt.Selector(
-      // actions.st=soul_reaper,if=target.health.pct<=35
-      spell.cast("Soul Reaper", on => me.target, ret => me.target && me.targetUnit.pctHealth <= 35 && this.canSpendRunes()),
-      // actions.st+=/wound_spender,if=debuff.chains_of_ice_trollbane_slow.up
-      spell.cast("Outbreak", on => me.target, ret => this.shouldCastOutbreak()),
-      spell.cast("Scourge Strike", on => this.findTargetWithTrollbaneChainsOfIce(), ret => this.findTargetWithTrollbaneChainsOfIce() !== undefined && this.canSpendRunes()),
-      // actions.st+=/any_dnd,if=talent.unholy_ground&!buff.death_and_decay.up&(pet.apoc_ghoul.active|pet.abomination.active|pet.gargoyle.active)
-      spell.cast("Death and Decay", ret => !me.hasAura(auras.deathAndDecay) && this.hasMagusOfTheDead()),
-      // actions.st+=/death_coil,if=!variable.pooling_runic_power&variable.spend_rp|fight_remains<10
-      spell.cast("Death Coil", on => me.target, ret => this.shouldDeathCoil(80) || me.hasVisibleAura(auras.suddenDoom)),
-      // actions.st+=/festering_strike,if=debuff.festering_wound.stack<4&(!variable.pop_wounds|buff.festering_scythe.react)
-      spell.cast("Rune Strike", on => this.findTargetWithLessThan2Wounds(), ret => this.findTargetWithLessThan2Wounds() !== undefined && (me.hasVisibleAura(auras.festeringScythe) || me.targetUnit.getAuraStacks(auras.festeringWound) < 4)),
-      // actions.st+=/wound_spender,if=debuff.festering_wound.stack>=1&cooldown.unholy_assault.remains<20&talent.unholy_assault
-      spell.cast("Scourge Strike", on => this.findTargetWithMostWounds(), ret => this.findTargetWithMostWounds() !== undefined && this.canSpendRunes()),
-      // actions.st+=/death_coil,if=!variable.pooling_runic_power
-      spell.cast("Death Coil", on => me.target, ret => this.shouldDeathCoil(80)),
-      // actions.st+=/wound_spender,if=!variable.pop_wounds&debuff.festering_wound.stack>=4
-      spell.cast("Scourge Strike", on => this.findTargetWithAtLeast2Wounds(), ret => this.findTargetWithAtLeast2Wounds() !== undefined && me.targetUnit.getAuraStacks(auras.festeringWound) >= 4 && this.canSpendRunes()),
+      // Follow the cooldown priority below if any of your cooldowns are ready
+      new bt.Decorator(
+        ret => this.hasCooldownsReady(),
+        this.cooldownPriority()
+      ),
+      // Cast Outbreak if no Virulent Plague or if Apocalypse has >7s left on its CD and Virulent Plague is not up
+      spell.cast("Outbreak", on => me.target, ret => this.shouldCastOutbreak() || this.shouldCastOutbreakForApocalypse()),
+      // Cast Scourge Strike if Trollbane's Chains of Ice is up
+      spell.cast("Scourge Strike", on => this.findTargetWithTrollbaneChainsOfIce(), ret => this.findTargetWithTrollbaneChainsOfIce() !== undefined),
+      // Cast Festering Scythe if it procs
+      spell.cast("Festering Scythe", on => me.target, ret => me.hasAura(auras.festeringScythe)),
+      // Cast Soul Reaper if the target is going to be <35% hp in <5 seconds
+      spell.cast("Soul Reaper", on => me.target, ret => me.target && me.targetUnit.pctHealth <= 35),
+      // Cast Death Coil if you have >80 Runic Power, or Sudden Doom is up
+      spell.cast("Death Coil", on => me.target, ret => me.power > 80 || me.hasAura(auras.suddenDoom)),
+      // Cast Rune Strike if target has less than 2 festering wounds
+      spell.cast("Rune Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) < 2),
+      // Cast Scourge Strike if Rotten Touch is active and you have any Festering Wounds
+      spell.cast("Scourge Strike", on => me.target, ret => me.hasAura(auras.rottenTouch) && me.target && me.targetUnit.getAuraStacks(auras.festeringWound) > 0),
+      // Cast Festering Strike if you have 2 or fewer Festering Wounds
+      spell.cast("Rune Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) <= 2),
+      // Cast Scourge Strike if Plaguebringer is not active
+      spell.cast("Scourge Strike", on => me.target, ret => !me.hasAura(auras.plagueBringer)),
+      // Cast Death Coil if Death Rot is about to expire
+      spell.cast("Death Coil", on => me.target, ret => this.isDeathRotAboutToExpire()),
+      // Cast Scourge Strike if you have 3 or more Festering Wounds
+      spell.cast("Scourge Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) >= 3),
+      // Cast Death Coil
+      spell.cast("Death Coil", on => me.target, ret => me.power >= 40),
     );
   }
 
-  // Sustained Damage
+  // AoE Damage - Combined Build and Burst Priority
   aoeDamage() {
     return new bt.Selector(
-      //actions.cds_aoe+=/outbreak,if=dot.virulent_plague.ticks_remain<5&dot.virulent_plague.refreshable&(!talent.unholy_blight|talent.unholy_blight&cooldown.dark_transformation.remains)&(!talent.raise_abomination|talent.raise_abomination&cooldown.raise_abomination.remains)
-      spell.cast("Outbreak", on => me.target, ret => this.shouldCastOutbreak()),
+      // Follow the cooldown priority if any cooldowns are ready
       new bt.Decorator(
-        ret => me.target && me.isWithinMeleeRange(me.target) && me.getEnemies(12).length >= 2 && (me.hasAura(auras.deathAndDecay) || this.enemiesWithFesteringWoundsCount() >= 3),
-        this.aoeBurst()
+        ret => this.hasCooldownsReady(),
+        this.cooldownPriority()
       ),
+      // Cast Festering Scythe if it procs
+      spell.cast("Festering Scythe", on => me.target, ret => me.hasAura(auras.festeringScythe)),
+      // Cast Scourge Strike if Trollbane's Chains of Ice is up
+      spell.cast("Scourge Strike", on => this.findTargetWithTrollbaneChainsOfIce(), ret => this.findTargetWithTrollbaneChainsOfIce() !== undefined),
+      // Use trinkets during burst windows
       new bt.Decorator(
-        ret => me.target && me.isWithinMeleeRange(me.target) && me.getEnemies(12).length >= 2 && !me.hasAura(auras.deathAndDecay) && spell.getCooldown("Death and Decay").timeleft < 10,
-        this.aoeSetup()
+        ret => this.shouldUseBurstPriority(),
+        this.useTrinkets()
       ),
-      // actions.aoe=festering_strike,if=buff.festering_scythe.react
-      spell.cast("Rune Strike", on => me.target, ret => me.target && me.hasAura(auras.festeringScythe)),
-      // actions.aoe+=/wound_spender,target_if=max:debuff.festering_wound.stack,if=debuff.festering_wound.stack>=1&buff.death_and_decay.up&talent.bursting_sores&cooldown.apocalypse.remains>variable.apoc_timing
-      spell.cast("Scourge Strike", on => this.findTargetWithMostWounds(), ret => this.findTargetWithMostWounds() !== undefined && me.hasAura(auras.deathAndDecay) && me.hasAura("Bursting Sores") && this.canSpendRunes()),
-      // actions.aoe+=/death_coil,if=!variable.pooling_runic_power&active_enemies<variable.epidemic_targets
-      spell.cast("Death Coil", on => me.target, ret => me.getEnemies(12).length < 3),
-      // actions.aoe+=/epidemic,if=!variable.pooling_runic_power
-      spell.cast("Epidemic", on => me.target, ret => true),
-      // actions.aoe+=/wound_spender,target_if=debuff.chains_of_ice_trollbane_slow.up
-      spell.cast("Scourge Strike", on => this.findTargetWithTrollbaneChainsOfIce(), ret => this.findTargetWithTrollbaneChainsOfIce() !== undefined && this.canSpendRunes()),
-      // actions.aoe+=/festering_strike,target_if=max:debuff.festering_wound.stack,if=cooldown.apocalypse.remains<variable.apoc_timing|buff.festering_scythe.react
-      spell.cast("Rune Strike", on => this.findTargetWithMostWounds(), ret => this.findTargetWithMostWounds() !== undefined && me.hasVisibleAura(auras.festeringScythe)),
-      // actions.aoe+=/festering_strike,target_if=min:debuff.festering_wound.stack,if=debuff.festering_wound.stack<2
-      spell.cast("Rune Strike", on => this.findTargetWithLessThan2Wounds(), ret => this.findTargetWithLessThan2Wounds() !== undefined),
-      // actions.aoe+=/wound_spender,target_if=max:debuff.festering_wound.stack,if=debuff.festering_wound.stack>=1&cooldown.apocalypse.remains>gcd|buff.vampiric_strike.react&dot.virulent_plague.ticking
-      spell.cast("Scourge Strike", on => this.findTargetWithMostWounds(), ret => this.findTargetWithMostWounds() !== undefined && this.canSpendRunes()),
-    );
-  }
-
-  aoeSetup() {
-    return new bt.Selector(
-      // actions.aoe_setup=festering_strike,if=buff.festering_scythe.react
-      spell.cast("Rune Strike", on => me.target, ret => me.target && me.hasAura(auras.festeringScythe)),
-      // actions.aoe_setup+=/any_dnd,if=!death_and_decay.ticking&(!talent.bursting_sores&!talent.vile_contagion|death_knight.fwounded_targets=active_enemies|death_knight.fwounded_targets>=8|raid_event.adds.exists&raid_event.adds.remains<=11&raid_event.adds.remains>5|!buff.death_and_decay.up&talent.defile)
+      // Cast Scourge Strike if Plaguebringer is about to expire or is not active
+      spell.cast("Scourge Strike", on => me.target, ret => !me.hasAura(auras.plagueBringer) || this.isPlaguebringerAboutToExpire()),
+      // Cast Outbreak if no Virulent Plague or if Apocalypse has >7s left on its CD and Virulent Plague is not on every target
+      spell.cast("Outbreak", on => me.target, ret => this.shouldCastOutbreak() || this.shouldCastOutbreakForApocalypse()),
+      // Cast Death Coil if Sudden Doom is up
+      spell.cast("Death Coil", on => me.target, ret => me.hasAura(auras.suddenDoom)),
+      // Cast Rune Strike if target has less than 2 festering wounds
+      spell.cast("Rune Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) < 2),
+      // Cast Death Coil if you have 4 or fewer Runes, or Sudden Doom is up
+      spell.cast("Death Coil", on => me.target, ret => me.powerByType(PowerType.Runes) <= 4 || me.hasAura(auras.suddenDoom)),
+      // Cast Death and Decay if it is not already active
       spell.cast("Death and Decay", ret => !me.hasAura(auras.deathAndDecay)),
-      // actions.aoe_setup+=/wound_spender,target_if=debuff.chains_of_ice_trollbane_slow.up
-      spell.cast("Scourge Strike", on => this.findTargetWithTrollbaneChainsOfIce(), ret => this.findTargetWithTrollbaneChainsOfIce() !== undefined && this.canSpendRunes()),
-      // actions.aoe_setup+=/festering_strike,target_if=min:debuff.festering_wound.stack,if=!talent.vile_contagion
-      spell.cast("Rune Strike", on => this.findTargetWithLessThan2Wounds(), ret => this.findTargetWithLessThan2Wounds() !== undefined),
-      // actions.aoe_setup+=/festering_strike,target_if=max:debuff.festering_wound.stack,if=cooldown.vile_contagion.remains<5|death_knight.fwounded_targets=active_enemies&debuff.festering_wound.stack<=4
-      spell.cast("Rune Strike", on => this.findTargetWithMostWounds(), ret => this.findTargetWithMostWounds() !== undefined && this.enemiesWithFesteringWoundsCount() === me.getEnemies(12).length),
-      // actions.aoe_setup+=/death_coil,if=!variable.pooling_runic_power&buff.sudden_doom.react&active_enemies<variable.epidemic_targets
-      spell.cast("Death Coil", on => me.target, ret => me.hasAura(auras.suddenDoom) && me.getEnemies(12).length < 3),
-      // actions.aoe_setup+=/epidemic,if=!variable.pooling_runic_power&buff.sudden_doom.react
-      spell.cast("Epidemic", on => me.target, ret => me.hasAura(auras.suddenDoom)),
-      // actions.aoe_setup+=/festering_strike,target_if=min:debuff.festering_wound.stack,if=cooldown.apocalypse.remains<gcd&debuff.festering_wound.stack=0|death_knight.fwounded_targets<active_enemies
-      spell.cast("Rune Strike", on => this.findTargetWithLessThan2Wounds(), ret => this.findTargetWithLessThan2Wounds() !== undefined && this.enemiesWithFesteringWoundsCount() < me.getEnemies(12).length),
-      // actions.aoe_setup+=/death_coil,if=!variable.pooling_runic_power&active_enemies<variable.epidemic_targets
-      spell.cast("Death Coil", on => me.target, ret => me.getEnemies(10).length < 3),
-      // actions.aoe_setup+=/epidemic,if=!variable.pooling_runic_power
-      spell.cast("Epidemic", on => me.target, ret => true),
+      // Cast Scourge Strike if any targets have Festering Wounds
+      spell.cast("Scourge Strike", on => this.findTargetWithFesteringWounds(), ret => this.findTargetWithFesteringWounds() !== undefined),
+      // Cast Death Coil if no targets have Festering Wounds
+      spell.cast("Death Coil", on => me.target, ret => this.enemiesWithFesteringWoundsCount() === 0),
+      // Cast Scourge Strike
+      spell.cast("Scourge Strike", on => me.target, ret => me.target),
+      // Cast Death Coil
+      spell.cast("Death Coil", on => me.target, ret => me.power >= 40),
+      // Cast Festering Strike the target with the least Festering Wounds
+      spell.cast("Rune Strike", on => this.findTargetWithLeastWounds(), ret => this.findTargetWithLeastWounds() !== undefined),
     );
-  }
-
-  aoeBurst() {
-    return new bt.Selector(
-      // actions.aoe=festering_strike,if=buff.festering_scythe.react
-      spell.cast("Rune Strike", on => me.target, ret => me.target && me.hasAura(auras.festeringScythe)),
-      // actions.aoe+=/wound_spender,target_if=max:debuff.festering_wound.stack,if=debuff.festering_wound.stack>=1&buff.death_and_decay.up&talent.bursting_sores
-      spell.cast("Scourge Strike", on => this.findTargetWithMostWounds, ret => this.findTargetWithMostWounds() !== undefined && me.hasAura(auras.deathAndDecay) && this.canSpendRunes()),
-      // actions.aoe+=/death_coil,if=!variable.pooling_runic_power&active_enemies<variable.epidemic_targets
-      //spell.cast("Death Coil", on => me.target, ret => me.getUnitsAroundCount(8) < 3),
-      // actions.aoe+=/epidemic,if=!variable.pooling_runic_power
-      spell.cast("Epidemic", on => me.target, ret => true),
-      // actions.aoe+=/wound_spender,target_if=debuff.chains_of_ice_trollbane_slow.up
-      spell.cast("Scourge Strike", on => this.findTargetWithTrollbaneChainsOfIce(), ret => this.findTargetWithTrollbaneChainsOfIce() !== undefined && this.canSpendRunes()),
-      // actions.aoe+=/festering_strike,target_if=max:debuff.festering_wound.stack,if=cooldown.apocalypse.remains<variable.apoc_timing|buff.festering_scythe.react
-      spell.cast("Rune Strike", on => this.findTargetWithMostWounds(), ret => this.findTargetWithMostWounds() !== undefined && this.apocalypseOnCooldown()),
-      // actions.aoe+=/festering_strike,target_if=min:debuff.festering_wound.stack,if=debuff.festering_wound.stack<2
-      spell.cast("Rune Strike", on => this.findTargetWithLessThan2Wounds(), ret => this.findTargetWithLessThan2Wounds() !== undefined),
-      // actions.aoe+=/wound_spender,target_if=max:debuff.festering_wound.stack,if=debuff.festering_wound.stack>=1&cooldown.apocalypse.remains>gcd|buff.vampiric_strike.react&dot.virulent_plague.ticking
-      spell.cast("Scourge Strike", on => this.findTargetWithMostWounds(), ret => this.findTargetWithMostWounds() !== undefined && this.canSpendRunes()),
-    );
-  }
-
-  // can spend runes if festeringScythe aura has less than 19 stacks and we have at least 2 runes
-  canSpendRunes() {
-    const fsStacks = me.getAuraStacks(459238);
-    const runes = me.powerByType(PowerType.Runes);
-
-    if (fsStacks !== undefined && fsStacks >= 18 && runes <= 2) {
-      return false;
-    }
-    return true;
-  }
-
-  // epidemic targets return 4 if has Improved Death Coil, otherwise 3
-  epidemicTargets() {
-    return me.hasAura(377580) ? 4 : 3;
-  }
-
-  findTargetWithLessThan2Wounds() {
-    const enemies = me.getEnemies(8);
-
-    for (const enemy of enemies) {
-      const festeringWounds = enemy.getAuraByMe(auras.festeringWound);
-      if (me.isFacing(enemy) && (!festeringWounds || festeringWounds.stacks <= 1)) {
-        return enemy;
-      }
-    }
-
-    return undefined
-  }
-
-  findTargetWithAtLeast2Wounds() {
-    const enemies = me.getEnemies(8);
-
-    for (const enemy of enemies) {
-      const festeringWounds = enemy.getAuraByMe(auras.festeringWound);
-      if (me.isFacing(enemy) && festeringWounds && festeringWounds.stacks > 2) {
-        return enemy;
-      }
-    }
-
-    return undefined
-  }
-
-  hasMagusOfTheDead() {
-    let hasMagus = false;
-    objMgr.objects.forEach(obj => {
-      if (obj instanceof wow.CGUnit &&
-        obj.unsafeName === "Magus of the Dead" &&
-        ((obj.createdBy && obj.createdBy.equals(me.guid)) ||
-          (obj.demonCreator && obj.demonCreator.equals(me.guid)))) {
-        hasMagus = true;
-        return false;
-      }
-    });
-    return hasMagus;
   }
 
   mouseoverIsDeadFriend() {
@@ -276,54 +198,36 @@ export class DeathKnightUnholy extends Behavior {
     return count;
   }
 
-  findTargetWithMostWounds() {
-    const enemies = me.getEnemies(8);
-    let targetWithMostWounds = undefined;
-    let maxWounds = 0;
-
-    for (const enemy of enemies) {
-      const festeringWounds = enemy.getAuraByMe(auras.festeringWound);
-      if (me.isFacing(enemy) && festeringWounds && festeringWounds.stacks > maxWounds) {
-        targetWithMostWounds = enemy;
-        maxWounds = festeringWounds.stacks;
-      }
-    }
-
-    return targetWithMostWounds;
-  }
-
-
-  shouldDeathCoil(minPowerForCoil) {
-    return me.power > minPowerForCoil || (me.power > (minPowerForCoil - 20) && me.hasAura(auras.suddenDoom));
-  }
-
-  shouldDeathAndDecay() {
-    return me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && !me.hasAura(auras.deathAndDecay)
-  }
-
-  apocalypseOnCooldown() {
-    const apocalypse = wow.SpellBook.getSpellByName("Apocalypse");
-    return apocalypse && apocalypse.cooldown.duration > 0;
-  }
-
   useTrinkets() {
     return new bt.Selector(
       common.useEquippedItemByName("Mark of Khardros"),
     );
   }
 
-  useAbomLimb() {
-    return new bt.Decorator(
-      req => Settings.UnholyDKUseSmackyHands === true,
-      spell.cast("Abomination Limb", on => me, ret => me.targetUnit && me.isWithinMeleeRange(me.targetUnit))
-    )
-  }
-
   shouldCastOutbreak() {
     if (!me.target) {
       return false;
     }
-    return !me.targetUnit.hasAuraByMe(auras.virulentPlague) || !me.targetUnit.hasAuraByMe(auras.bloodPlague) || !me.targetUnit.hasAuraByMe(auras.frostFever);
+    // Only check for Virulent Plague - the main DoT applied by Outbreak in current patch
+    return !me.targetUnit.hasAuraByMe(auras.virulentPlague);
+  }
+
+  shouldCastOutbreakForApocalypse() {
+    if (!me.target) {
+      return false;
+    }
+    // Cast Outbreak if Apocalypse has >7s left on its CD and Virulent Plague is not up
+    const apocalypseCooldown = spell.getCooldown("Apocalypse");
+    return apocalypseCooldown && apocalypseCooldown.timeleft > 7000 && !me.targetUnit.hasAuraByMe(auras.virulentPlague);
+  }
+
+  hasCooldownsReady() {
+    // Check if any major cooldowns are ready and burst toggle is enabled
+    return Combat.burstToggle && (
+      !spell.isOnCooldown("Legion of Souls") ||
+      !spell.isOnCooldown("Apocalypse") ||
+      !spell.isOnCooldown("Unholy Assault")
+    );
   }
 
   isDeathRotAboutToExpire() {
@@ -333,6 +237,61 @@ export class DeathKnightUnholy extends Behavior {
 
     const deathRot = me.target.getAuraByMe(auras.deathRot);
     return !!(deathRot && deathRot.remaining < 2000);
+  }
 
+  shouldUseBurstPriority() {
+    // Follow the Burst priority if Death and Decay or Legion of Souls is active
+    return me.hasAura(auras.deathAndDecay) || me.hasAura(auras.legionOfSouls);
+  }
+
+  // Consolidated target finding method
+  findTargetByWoundCriteria(criteria) {
+    const enemies = me.getEnemies(8);
+    let bestTarget = undefined;
+    let bestValue = criteria === 'most' ? 0 : 999;
+
+    for (const enemy of enemies) {
+      if (!me.isFacing(enemy)) continue;
+
+      const festeringWounds = enemy.getAuraByMe(auras.festeringWound);
+      const woundCount = festeringWounds ? festeringWounds.stacks : 0;
+      const chainsOfIce = enemy.getAuraByMe(auras.trollbaneChainsOfIce);
+
+      switch (criteria) {
+        case 'most':
+          if (woundCount > bestValue) {
+            bestTarget = enemy;
+            bestValue = woundCount;
+          }
+          break;
+        case 'least':
+          if (woundCount < bestValue) {
+            bestTarget = enemy;
+            bestValue = woundCount;
+          }
+          break;
+        case 'trollbane':
+          if (chainsOfIce) return enemy;
+          break;
+        case 'any_wounds':
+          if (woundCount > 0) return enemy;
+          break;
+      }
+    }
+
+    return bestTarget;
+  }
+
+  findTargetWithLeastWounds() {
+    return this.findTargetByWoundCriteria('least');
+  }
+
+  findTargetWithFesteringWounds() {
+    return this.findTargetByWoundCriteria('any_wounds');
+  }
+
+  isPlaguebringerAboutToExpire() {
+    const plaguebringer = me.getAura(auras.plagueBringer);
+    return !!(plaguebringer && plaguebringer.remaining < 3000);
   }
 }
