@@ -211,28 +211,32 @@ export class PaladinHolyBehavior extends Behavior {
 
   damageRotation() {
     return new bt.Selector(
-      spell.cast("Shield of the Righteous", on => combat.bestTarget),
-      req => me.powerByType(PowerType.HolyPower) >= 5 && combat.targets.find(unit => me.isFacing(unit) && me.distanceTo(unit) <= 8),
-      spell.cast("Judgment",
-        on => combat.bestTarget,
-        req => me.powerByType(PowerType.HolyPower) < 5
+      new bt.Decorator(
+        ret => me.powerByType(PowerType.HolyPower) >= 5 && combat.targets.find(unit => me.isFacing(unit) && me.distanceTo(unit) <= 8),
+        spell.cast("Shield of the Righteous", on => combat.bestTarget)
       ),
-      spell.cast("Crusader Strike",
-        on => combat.bestTarget,
-        req => me.powerByType(PowerType.HolyPower) < 5 && spell.getCooldown("Holy Shock").timeleft > 2000
+      new bt.Decorator(
+        ret => me.powerByType(PowerType.HolyPower) < 5,
+        spell.cast("Judgment", on => combat.bestTarget)
       ),
-      spell.cast("Hammer of Wrath",
-        on => combat.targets.find(unit => (unit.effectiveHealthPercent < 20 || me.hasAura(auras.veneration))),
-        req => me.powerByType(PowerType.HolyPower) < 5,
-        { skipUsableCheck: true }
+      new bt.Decorator(
+        ret => me.powerByType(PowerType.HolyPower) < 5 && spell.getCooldown("Holy Shock").timeleft > 2000,
+        spell.cast("Crusader Strike", on => combat.bestTarget)
       ),
-      spell.cast("Consecration",
-        on => me,
-        req => !me.isMoving() && combat.targets.find(unit => me.distanceTo(unit) <= 10)
+      new bt.Decorator(
+        ret => me.powerByType(PowerType.HolyPower) < 5,
+        spell.cast("Hammer of Wrath",
+          on => combat.targets.find(unit => (unit.effectiveHealthPercent < 20 || me.hasAura(auras.veneration))),
+          { skipUsableCheck: true }
+        )
       ),
-      spell.cast("Holy Shock",
-        on => combat.bestTarget,
-        req => me.powerByType(PowerType.HolyPower) < 5
+      new bt.Decorator(
+        ret => !me.isMoving() && combat.targets.find(unit => me.distanceTo(unit) <= 10),
+        spell.cast("Consecration", on => me)
+      ),
+      new bt.Decorator(
+        ret => me.powerByType(PowerType.HolyPower) < 5,
+        spell.cast("Holy Shock", on => combat.bestTarget)
       )
     );
   }

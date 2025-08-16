@@ -4,81 +4,84 @@ import Specialization from '@/Enums/Specialization';
 import common from '@/Core/Common';
 import spell from "@/Core/Spell";
 import { me } from "@/Core/ObjectManager";
-import { PowerType } from "@/Enums/PowerType";
 import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
-
-const auras = {
-  ironfur: 192081,
-  galacticguardian: 213708
-}
+import Settings from "@/Core/Settings";
+import { PowerType } from "@/Enums/PowerType";
+import { defaultHealTargeting as heal } from "@/Targeting/HealTargeting";
 
 export class DruidGuardianBehavior extends Behavior {
   context = BehaviorContext.Any;
   specialization = Specialization.Druid.Guardian;
-  name = "Druid [Guardian]"
+  name = "Druid [Guardian]";
+
+  static settings = [
+    {
+      header: "Defensives",
+      options: [
+        { type: "slider", uid: "GuardianDruidFrenziedRegenerationCharge2Percent", text: "Frenzied Regeneration Charge 2 Health Percent", min: 0, max: 100, default: 70 },
+        { type: "slider", uid: "GuardianDruidFrenziedRegenerationCharge1Percent", text: "Frenzied Regeneration Charge 1 Health Percent", min: 0, max: 100, default: 45 },
+        { type: "slider", uid: "GuardianDruidSurvivalInstinctsPercent", text: "Survival Instincts Health Percent", min: 0, max: 100, default: 30 },
+        { type: "slider", uid: "GuardianDruidBarkskinPercent", text: "Barkskin Health Percent", min: 0, max: 100, default: 75 },
+      ]
+    },
+    {
+      header: "Utility",
+      options: [
+        { type: "checkbox", uid: "GuardianDruidUseGrowl", text: "Use Growl", default: true },
+      ]
+    },
+  ];
 
   build() {
     return new bt.Selector(
       common.waitForNotMounted(),
+      common.waitForCastOrChannel(),
+      spell.interrupt("Skull Bash"),
+      this.tauntLogic(),
+      this.defensiveRotation(),
       new bt.Decorator(
         ret => !spell.isGlobalCooldown(),
         new bt.Selector(
+          this.utilityRotation(),
           common.waitForTarget(),
-          common.waitForCastOrChannel(),
-          common.waitForFacing(),
-
-          // Ensure Bear Form is active
-          spell.cast("Bear Form", on => me, req => !me.hasVisibleAura("Bear Form")),
-
-          // Cooldowns: Use unless holding is necessary
-          spell.cast("Rage of the Sleeper"),
-          spell.cast("Lunar Beam"),
-          spell.cast("Heart of the Wild"),
-          spell.cast("Berserk"),
-
-          // Spend rage on Ironfur
-          spell.cast("Ironfur", on => me, req => this.shouldCastIronfur()),
-
-          // Keep Moonfire up on the target
-          spell.cast("Moonfire", on => me.target, req => !me.target.hasAuraByMe("Moonfire")),
-
-          // Keep Thrash on cooldown
-          spell.cast("Thrash", on => me.target),
-
-          // Keep Mangle on cooldown
-          spell.cast("Mangle", on => me.target, req => me.powerByType(PowerType.Rage) < 90),
-
-          // Consume Tooth and Claw with Maul or Raze
-          spell.cast("Raze", on => me.target, req => combat.targets.filter(unit => unit.distanceTo(me) <= 8).length > 1),
-          spell.cast("Maul", on => me.target, req => combat.targets.filter(unit => unit.distanceTo(me) <= 8).length <= 1),
-
-          // Backup Moonfire application for Galactic Guardian proc
-          spell.cast("Moonfire", this.findMoonfireTarget),
-          spell.cast("Moonfire", on => me.target, req => me.getAura(auras.galacticguardian)?.remaining < 2000),
-
-          // Interrupts
-          spell.interrupt("Skull Bash"),
-
-          // Alternative spells or abilities
-          spell.cast("Swipe", on => me, req => combat.targets.filter(unit => unit.distanceTo(me) <= 8).length > 1),
+          this.damageRotation()
         )
       )
     );
   }
 
-  shouldCastIronfur() {
-    const currentStacks = me.getAura(auras.ironfur)?.stacks || 0;
-    const desiredStacks = Math.min(3, Math.ceil((100 - me.pctHealth) / 20));
-    return currentStacks < desiredStacks || me.powerByType(PowerType.Rage) == 100;
+  tauntLogic() {
+    return new bt.Selector(
+      spell.cast("Growl", on => combat.targets.find(unit => unit.inCombat && unit.target && !unit.isTanking(), req => Settings.GuardianDruidUseGrowl))
+    );
   }
 
-  shouldCastFrenziedRegeneration() {
-    const charges = spell.getCharges("Frenzied Regeneration");
-    return (charges === 2 && me.pctHealth < 80) || (charges === 1 && me.pctHealth < 40);
+  defensiveRotation() {
+    return new bt.Selector(
+      spell.cast("Survival Instincts", on => me, req => me.pctHealth < Settings.GuardianDruidSurvivalInstinctsPercent),
+      spell.cast("Frenzied Regeneration", on => me, req => me.pctHealth < Settings.GuardianDruidFrenziedRegenerationCharge2Percent),
+      spell.cast("Frenzied Regeneration", on => me, req => me.pctHealth < Settings.GuardianDruidFrenziedRegenerationCharge1Percent),
+      spell.cast("Ironfur", on => me, req => me.pctPowerByType(PowerType.Rage) > 60),
+      spell.cast("Barkskin", on => me, req => me.pctHealth < Settings.GuardianDruidBarkskinPercent),
+    );
   }
 
-  findMoonfireTarget() {
-    const moonFireTarget = combat.targets.find(unit => !unit.hasAuraByMe("Moonfire"));
-    return moonFireTarget ? moonFireTarget : false;
+  utilityRotation() {
+    return new bt.Selector(
+      spell.cast("Mark of the Wild", on => me, req => heal.friends.All.find(f => !f.hasAura("Mark of the Wild"))),
+    );
+  }
+
+  damageRotation() {
+    return new bt.Selector(
+      spell.cast("Bear Form", on => me, req => !me.hasVisibleAura("Bear Form") && me.inCombat),
+      spell.cast("Moonfire", on => me.target, req => !me.target.hasAuraByMe("Moonfire")),
+      spell.cast("Thrash", on => me, req => combat.getUnitsAroundUnit(me, 10).length > 0),
+      spell.cast("Mangle", on => me.target, req => me.pctPowerByType(PowerType.Rage) < 90),
+      spell.cast("Berserk", on => me, req => me.target && me.distanceTo(me.target) < 8),
+      spell.cast("Maul", on => me.target, req => me.hasAura("Tooth and Claw")),
+      spell.cast("Swipe", on => me, req => combat.getUnitsAroundUnit(me, 10).length > 1),
+      spell.cast("Moonfire", on => me.target)
+    );
   }
 }
