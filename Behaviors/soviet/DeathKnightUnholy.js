@@ -98,20 +98,14 @@ export class DeathKnightUnholy extends Behavior {
       spell.cast("Festering Scythe", on => me.target, ret => me.hasAura(auras.festeringScythe)),
       // Cast Soul Reaper if the target is going to be <35% hp in <5 seconds
       spell.cast("Soul Reaper", on => me.target, ret => me.target && me.targetUnit.pctHealth <= 35),
-      // Cast Death Coil if you have >80 Runic Power, or Sudden Doom is up
-      spell.cast("Death Coil", on => me.target, ret => me.power > 80 || me.hasAura(auras.suddenDoom)),
-      // Cast Rune Strike if target has less than 2 festering wounds
-      spell.cast("Rune Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) < 2),
-      // Cast Scourge Strike if Rotten Touch is active and you have any Festering Wounds
-      spell.cast("Scourge Strike", on => me.target, ret => me.hasAura(auras.rottenTouch) && me.target && me.targetUnit.getAuraStacks(auras.festeringWound) > 0),
-      // Cast Festering Strike if you have 2 or fewer Festering Wounds
+      // Cast Death Coil if you have >60 Runic Power, or Sudden Doom is up
+      spell.cast("Death Coil", on => me.target, ret => me.power > 60 || me.hasAura(auras.suddenDoom)),
+      // Cast Rune Strike if target has 2 or fewer festering wounds
       spell.cast("Rune Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) <= 2),
-      // Cast Scourge Strike if Plaguebringer is not active
-      spell.cast("Scourge Strike", on => me.target, ret => !me.hasAura(auras.plagueBringer)),
+      // Cast Scourge Strike if you have any Festering Wounds
+      spell.cast("Scourge Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) > 0),
       // Cast Death Coil if Death Rot is about to expire
       spell.cast("Death Coil", on => me.target, ret => this.isDeathRotAboutToExpire()),
-      // Cast Scourge Strike if you have 3 or more Festering Wounds
-      spell.cast("Scourge Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) >= 3),
       // Cast Death Coil
       spell.cast("Death Coil", on => me.target, ret => me.power >= 40),
     );
@@ -134,27 +128,27 @@ export class DeathKnightUnholy extends Behavior {
         ret => this.shouldUseBurstPriority(),
         this.useTrinkets()
       ),
-      // Cast Scourge Strike if Plaguebringer is about to expire or is not active
-      spell.cast("Scourge Strike", on => me.target, ret => !me.hasAura(auras.plagueBringer) || this.isPlaguebringerAboutToExpire()),
       // Cast Outbreak if no Virulent Plague or if Apocalypse has >7s left on its CD and Virulent Plague is not on every target
       spell.cast("Outbreak", on => me.target, ret => this.shouldCastOutbreak() || this.shouldCastOutbreakForApocalypse()),
+      // Cast Epidemic if Sudden Doom is up and multiple targets
+      spell.cast("Epidemic", ret => this.shouldUseEpidemic() && me.hasAura(auras.suddenDoom)),
       // Cast Death Coil if Sudden Doom is up
       spell.cast("Death Coil", on => me.target, ret => me.hasAura(auras.suddenDoom)),
-      // Cast Rune Strike if target has less than 2 festering wounds
-      spell.cast("Rune Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) < 2),
-      // Cast Death Coil if you have 4 or fewer Runes, or Sudden Doom is up
-      spell.cast("Death Coil", on => me.target, ret => me.powerByType(PowerType.Runes) <= 4 || me.hasAura(auras.suddenDoom)),
+      // Cast Rune Strike if target has 2 or fewer festering wounds
+      spell.cast("Rune Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) <= 2),
       // Cast Death and Decay if it is not already active
       spell.cast("Death and Decay", ret => !me.hasAura(auras.deathAndDecay)),
       // Cast Scourge Strike if any targets have Festering Wounds
       spell.cast("Scourge Strike", on => this.findTargetWithFesteringWounds(), ret => this.findTargetWithFesteringWounds() !== undefined),
-      // Cast Death Coil if no targets have Festering Wounds
-      spell.cast("Death Coil", on => me.target, ret => this.enemiesWithFesteringWoundsCount() === 0),
-      // Cast Scourge Strike
-      spell.cast("Scourge Strike", on => me.target, ret => me.target),
+      // Cast Epidemic if you have >60 Runic Power and multiple targets
+      spell.cast("Epidemic", ret => this.shouldUseEpidemic() && me.power > 60),
+      // Cast Death Coil if you have 4 or fewer Runes
+      spell.cast("Death Coil", on => me.target, ret => me.powerByType(PowerType.Runes) <= 4),
+      // Cast Epidemic for multiple targets
+      spell.cast("Epidemic", ret => this.shouldUseEpidemic() && me.power >= 40),
       // Cast Death Coil
       spell.cast("Death Coil", on => me.target, ret => me.power >= 40),
-      // Cast Festering Strike the target with the least Festering Wounds
+      // Cast Rune Strike on target with the least Festering Wounds
       spell.cast("Rune Strike", on => this.findTargetWithLeastWounds(), ret => this.findTargetWithLeastWounds() !== undefined),
     );
   }
@@ -217,14 +211,13 @@ export class DeathKnightUnholy extends Behavior {
       return false;
     }
     // Cast Outbreak if Apocalypse has >7s left on its CD and Virulent Plague is not up
-    const apocalypseCooldown = spell.getCooldown("Apocalypse");
-    return apocalypseCooldown && apocalypseCooldown.timeleft > 7000 && !me.targetUnit.hasAuraByMe(auras.virulentPlague);
+    return spell.isOnCooldown("Apocalypse") && !me.targetUnit.hasAuraByMe(auras.virulentPlague);
   }
 
   hasCooldownsReady() {
     // Check if any major cooldowns are ready and burst toggle is enabled
     return Combat.burstToggle && (
-      !spell.isOnCooldown("Legion of Souls") ||
+      !spell.isOnCooldown("Army of the Dead") ||
       !spell.isOnCooldown("Apocalypse") ||
       !spell.isOnCooldown("Unholy Assault")
     );
@@ -240,7 +233,7 @@ export class DeathKnightUnholy extends Behavior {
   }
 
   shouldUseBurstPriority() {
-    // Follow the Burst priority if Death and Decay or Legion of Souls is active
+    // Follow the Burst priority if Death and Decay or Army of the Dead is active
     return me.hasAura(auras.deathAndDecay) || me.hasAura(auras.legionOfSouls);
   }
 
@@ -293,5 +286,18 @@ export class DeathKnightUnholy extends Behavior {
   isPlaguebringerAboutToExpire() {
     const plaguebringer = me.getAura(auras.plagueBringer);
     return !!(plaguebringer && plaguebringer.remaining < 3000);
+  }
+
+  shouldUseEpidemic() {
+    if (!me.target || !me.targetUnit.hasAuraByMe(auras.virulentPlague)) {
+      return false;
+    }
+
+    const enemyCount = me.getEnemies(15).length;
+    const hasImprovedDeathCoil = me.hasVisibleAura(377580); // Improved Death Coil talent aura ID
+
+    // Use Epidemic at 4+ targets with Improved Death Coil, 3+ targets without it
+    const targetThreshold = hasImprovedDeathCoil ? 4 : 3;
+    return enemyCount >= targetThreshold;
   }
 }
