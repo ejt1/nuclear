@@ -3,7 +3,7 @@ import * as bt from '@/Core/BehaviorTree';
 import Specialization from '@/Enums/Specialization';
 import common from '@/Core/Common';
 import spell from "@/Core/Spell";
-import objMgr, { me } from "@/Core/ObjectManager";
+import { me } from "@/Core/ObjectManager";
 import { PowerType } from "@/Enums/PowerType";
 import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 import Settings from "@/Core/Settings";
@@ -253,82 +253,6 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
 
     const windowTitle = Settings.EnablePVPRotation ? "Beast Mastery PVP Controls" : "Beast Mastery Controls";
     if (imgui.begin(windowTitle, this.overlayToggles.showOverlay, windowFlags)) {
-
-      // Pet Info
-      // if (imgui.collapsingHeader("Pet Info", imgui.TreeNodeFlags.DefaultOpen)) {
-      //   imgui.indent();
-      //   const pet = me.pet;
-      //   if (pet) {
-      //     const petName = pet.unsafeName || "Unknown Pet";
-      //     const petHealth = pet.pctHealth || 0;
-      //     //imgui.textColored({ r: 0.2, g: 1.0, b: 0.2, a: 1.0 }, `Pet: ${petName} (${petHealth.toFixed(0)}%)`);
-      //     const beastCleaveStacks = pet.getAuraStacks ? pet.getAuraStacks("Beast Cleave") || 0 : 0;
-      //     if (beastCleaveStacks > 0) {
-      //       imgui.textColored({ r: 1.0, g: 1.0, b: 0.2, a: 1.0 }, `Beast Cleave: ${beastCleaveStacks}`);
-      //     }
-      //   } else {
-      //     imgui.textColored({ r: 1.0, g: 0.2, b: 0.2, a: 1.0 }, "No Pet Active");
-      //   }
-
-        // Pet testing code - commented out for now
-        /*
-        // Enhanced pet-to-player linking test using objMgr.objects directly
-        const nearbyUnits = [];
-        let totalObjectsChecked = 0;
-        
-        // Iterate through all objects in objMgr.objects
-        objMgr.objects.forEach((obj) => {
-          totalObjectsChecked++;
-          if (obj instanceof wow.CGUnit) {
-            const distance = me.distanceTo(obj);
-            if (distance <= 10) {
-              nearbyUnits.push(obj);
-            }
-          }
-        });
-        
-        imgui.textColored({ r: 1.0, g: 1.0, b: 0.2, a: 1.0 }, `Debug: Checked ${totalObjectsChecked} objects, found ${nearbyUnits.length} units within 40yd`);
-        
-        for (const unit of nearbyUnits) {
-          // Debug each unit's properties
-          const debugInfo = {
-            name: unit.unsafeName || "Unknown",
-            isPlayer: unit.isPlayer(),
-            summonedBy: unit.summonedBy ? (unit.summonedBy.isNull ? "null" : "has value") : "undefined",
-            createdBy: unit.createdBy ? (unit.createdBy.isNull ? "null" : "has value") : "undefined",
-            charmedBy: unit.charmedBy ? (unit.charmedBy.isNull ? "null" : "has value") : "undefined",
-            demonCreator: unit.demonCreator ? (unit.demonCreator.isNull ? "null" : "has value") : "undefined",
-            petNumber: unit.petNumber || 0,
-            creatureType: unit.creatureType || "undefined",
-            creatureFamily: unit.creatureFamily || "undefined"
-          };
-          
-          // Only show non-player units for debugging
-          if (!unit.isPlayer()) {
-            imgui.textColored({ r: 0.8, g: 0.8, b: 0.8, a: 1.0 }, 
-              `${debugInfo.name}: sumBy=${debugInfo.summonedBy}, creBy=${debugInfo.createdBy}, petNum=${debugInfo.petNumber}`);
-          }
-          
-          let petInfo = this.analyzePetOwnership(unit);
-          if (petInfo.isPlayerPet) {
-            const colorCode = petInfo.isMine ? { r: 0.2, g: 1.0, b: 0.2, a: 1.0 } : { r: 0.2, g: 0.2, b: 1.0, a: 1.0 };
-            const ownerName = petInfo.ownerName || "Unknown";
-            const displayText = petInfo.isMine ? 
-              `My Pet: ${unit.unsafeName} (${unit.pctHealth.toFixed(0)}%) [${petInfo.linkMethod}]` :
-              `${ownerName}'s Pet: ${unit.unsafeName} (${unit.pctHealth.toFixed(0)}%) [${petInfo.linkMethod}]`;
-            imgui.textColored(colorCode, displayText);
-            
-            // Additional pet details
-            if (petInfo.petType) {
-              imgui.sameLine();
-              imgui.textColored({ r: 0.8, g: 0.8, b: 0.8, a: 1.0 }, ` [${petInfo.petType}]`);
-            }
-          }
-        }
-        */
-        //   imgui.unindent();
-        // }
-
       
       // PVP Mode indicator
       if (Settings.EnablePVPRotation) {
@@ -375,6 +299,15 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
            if (frenzyStacks > 0) {
              imgui.textColored({ r: 1.0, g: 0.2, b: 0.2, a: 1.0 }, `Frenzy: ${frenzyStacks}/3`);
            }
+
+           // Howl of the Pack status
+           const isHowlReady = this.isHowlSummonReady();
+           if (isHowlReady) {
+             imgui.textColored({ r: 0.2, g: 1.0, b: 0.2, a: 1.0 }, "Howl: READY (Next Kill Command)");
+           } else {
+             imgui.textColored({ r: 0.5, g: 0.5, b: 0.5, a: 1.0 }, "Howl: Not Ready");
+           }
+           
            imgui.unindent();
          }
 
@@ -606,11 +539,7 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
       // Interrupts
       new bt.Decorator(
         () => Settings.UseCounterShot && this.overlayToggles.interrupts.value && this.overlayToggles.counterShot.value,
-        spell.interrupt("Counter Shot", ret => {
-          if (ret === bt.Status.Success) {
-            toastWarning("Counter Shot Interrupt!", 1.1, 2000);
-          }
-        })
+        spell.interrupt("Counter Shot")
       ),
       // Intimidation interrupt (doesn't require facing)
       new bt.Decorator(
@@ -666,12 +595,8 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
       spell.cast("Bestial Wrath", () => 
         Settings.UseBestialWrath && 
         this.overlayToggles.bestialWrath.value &&
-        this.shouldUseCooldowns(),
-      ret => {
-        if (ret === bt.Status.Success) {
-          toastSuccess("BESTIAL WRATH ACTIVATED!", 1.3, 2000);
-        }
-      }),
+        this.shouldUseCooldowns()
+      ),
       
       // barbed_shot,target_if=min:dot.barbed_shot.remains,if=full_recharge_time<gcd|charges_fractional>=cooldown.kill_command.charges_fractional|talent.call_of_the_wild&cooldown.call_of_the_wild.ready|howl_summon_ready&full_recharge_time<8
       spell.cast("Barbed Shot", on => this.getTargetWithMinBarbedShot(), req => 
@@ -686,33 +611,26 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
         this.getPetBeastCleaveRemaining() < (0.25 + 1.5) &&
         (!this.hasTalent("Bloody Frenzy") || spell.getCooldown("Call of the Wild").timeleft > 0)
       ),
+
+      spell.cast("Multi-Shot", on => this.getCurrentTarget(), req => !me.hasVisibleAura("Beast Cleave")),
       
       // black_arrow,if=buff.beast_cleave.remains
-      spell.cast("Black Arrow", on => this.getCurrentTarget(), req => 
-        me.pet && me.pet.hasAura("Beast Cleave")
+      spell.cast("Black Arrow", on => this.getCurrentTarget(), req => me.hasVisibleAura("Beast Cleave")
       ),
       
       // call_of_the_wild
       spell.cast("Call of the Wild", () => 
         Settings.UseCallOfTheWild && 
         this.overlayToggles.callOfTheWild.value &&
-        this.shouldUseCooldowns(),
-      ret => {
-        if (ret === bt.Status.Success) {
-          toastSuccess("Call of the Wild!", 1.2, 2500);
-        }
-      }),
+        this.shouldUseCooldowns()
+      ),
       
       // bloodshed
       spell.cast("Bloodshed", () => 
         Settings.UseBloodshed && 
         this.overlayToggles.bloodshed.value &&
-        this.shouldUseCooldowns(),
-      ret => {
-        if (ret === bt.Status.Success) {
-          toastSuccess("Bloodshed!", 1.1, 2000);
-        }
-      }),
+        this.shouldUseCooldowns()
+      ),
       
       // dire_beast,if=talent.shadow_hounds|talent.dire_cleave
       spell.cast("Dire Beast", () => 
@@ -888,66 +806,51 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
       // Tranquilizing Shot enemies we would Dispel Magic on
       spell.cast("Tranquilizing Shot", on => this.findTranquilizingShotTarget(), req => 
         Settings.UseTranquilizingShot &&
-        this.findTranquilizingShotTarget() !== null
+        this.findTranquilizingShotTarget() !== undefined
       ),
       
       // Binding Shot - enemies within 10y of us, or within 10y of our healer
       spell.cast("Binding Shot", on => this.findBindingShotTargetPVP(), req => 
         Settings.UseBinding &&
         this.overlayToggles.binding.value &&
-        this.findBindingShotTargetPVP() !== null,
-      ret => {
-        if (ret === bt.Status.Success) {
-          const target = this.findBindingShotTargetPVP();
-          toastWarning(`Binding Shot → ${target?.unsafeName || 'Target'}!`, 1.1, 2500);
-        }
-      }),
+        this.findBindingShotTargetPVP() !== undefined
+      ),
       
       // Freezing Trap enemy healer when stunned with <1.5s stun remaining
       spell.cast("Freezing Trap", on => this.findFreezingTrapTargetPVP(), req => 
         Settings.UseFreezingTrap &&
-        this.findFreezingTrapTargetPVP() !== null,
-      ret => {
-        if (ret === bt.Status.Success) {
-          const target = this.findFreezingTrapTargetPVP();
-          toastError(`Freezing Trap → ${target?.unsafeName || 'Target'}!`, 1.2, 3000);
-        }
-      }),
+        this.findFreezingTrapTargetPVP() !== undefined
+      ),
       
       // Tar Trap any enemy within 10y of us
       spell.cast("Tar Trap", on => this.findTarTrapLocationPVP(), req => 
         Settings.UseTarTrap &&
-        this.findTarTrapLocationPVP() !== null
+        this.findTarTrapLocationPVP() !== undefined
       ),
       
       // High Explosive Trap non-healers within 10y with major cooldowns up
       spell.cast("High Explosive Trap", on => this.findExplosiveTrapLocationPVP(), req => 
         Settings.UseExplosiveTrap &&
-        this.findExplosiveTrapLocationPVP() !== null
+        this.findExplosiveTrapLocationPVP() !== undefined
       ),
       
       // Intimidation enemies with major cooldowns or healer if no stun DR
       spell.cast("Intimidation", on => this.findIntimidationTargetPVP(), req => 
         Settings.UseIntimidation &&
         this.overlayToggles.intimidation.value &&
-        this.findIntimidationTargetPVP() !== null,
-      ret => {
-        if (ret === bt.Status.Success) {
-          const target = this.findIntimidationTargetPVP();
-          toastError(`Intimidation Stun → ${target?.unsafeName || 'Target'}!`, 1.2, 3000);
-        }
-      }),
+        this.findIntimidationTargetPVP() !== undefined
+      ),
       
       // Bursting Shot non-healers within 8y of us
       spell.cast("Bursting Shot", on => this.findBurstingShotTargetPVP(), req => 
         Settings.UseBurstingShot &&
-        this.findBurstingShotTargetPVP() !== null
+        this.findBurstingShotTargetPVP() !== undefined
       ),
       
       // Concussive Shot nearest enemy player without the aura
       spell.cast("Concussive Shot", on => this.findConcussiveShotTargetPVP(), req => 
         Settings.UseConcussiveShot &&
-        this.findConcussiveShotTargetPVP() !== null
+        this.findConcussiveShotTargetPVP() !== undefined
       ),
       
       // Defensives
@@ -994,24 +897,19 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
       spell.cast("Bestial Wrath", () => 
         Settings.UseBestialWrath && 
         this.overlayToggles.bestialWrath.value &&
-        this.burstModeActive,
-      ret => {
-        if (ret === bt.Status.Success) {
-          toastSuccess("BESTIAL WRATH ACTIVATED!", 1.3, 2000);
-        }
-      }),
+        this.burstModeActive
+      ),
+
+      spell.cast("Kill Shot", on => this.getCurrentTargetPVP(), req => 
+        this.getCurrentTargetPVP() !== undefined
+      ),
       
       // Chimaeral Sting enemy healer during Bestial Wrath (when not CC'd)
       spell.cast("Chimaeral Sting", on => this.findEnemyHealerNotCC(), req => 
         this.overlayToggles.chimaeralSting.value &&
         me.hasVisibleAura("Bestial Wrath") &&
-        this.findEnemyHealerNotCC() !== null,
-      ret => {
-        if (ret === bt.Status.Success) {
-          const target = this.findEnemyHealerNotCC();
-          toastWarning(`Chimaeral Sting → ${target?.unsafeName || 'Healer'}!`, 1.2, 3000);
-        }
-      }),
+        this.findEnemyHealerNotCC() !== undefined
+      ),
       
       // Bloodshed
       spell.cast("Bloodshed", () => 
@@ -1045,39 +943,39 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
     return new bt.Selector(
       // Priority 1: Barbed Shot
       spell.cast("Barbed Shot", on => this.getCurrentTargetPVP(), req => 
-        this.getCurrentTargetPVP() !== null
+        this.getCurrentTargetPVP() !== undefined
       ),
       
       // Priority 2: Kill Command if charges == 2
       spell.cast("Kill Command", on => this.getCurrentTargetPVP(), req => 
-        this.getCurrentTargetPVP() !== null &&
+        this.getCurrentTargetPVP() !== undefined &&
         this.getKillCommandCharges() >= 2
       ),
       
       // Priority 3: Dire Beast if we do not have Bestial Wrath buff active
       spell.cast("Dire Beast", on => this.getCurrentTargetPVP(), req => 
-        this.getCurrentTargetPVP() !== null &&
+        this.getCurrentTargetPVP() !== undefined &&
         !me.hasVisibleAura("Bestial Wrath")
       ),
 
-    // Priority 6: Kill Shot
-    spell.cast("Kill Shot", on => this.getCurrentTargetPVP(), req => 
-        this.getCurrentTargetPVP() !== null
-        ),
+      // Priority 6: Kill Shot
+      spell.cast("Kill Shot", on => this.getCurrentTargetPVP(), req => 
+        this.getCurrentTargetPVP() !== undefined
+      ),
       
       // Priority 4: Kill Command
       spell.cast("Kill Command", on => this.getCurrentTargetPVP(), req => 
-        this.getCurrentTargetPVP() !== null
+        this.getCurrentTargetPVP() !== undefined
       ),
       
       // Priority 5: Dire Beast
       spell.cast("Dire Beast", on => this.getCurrentTargetPVP(), req => 
-        this.getCurrentTargetPVP() !== null
+        this.getCurrentTargetPVP() !== undefined
       ),
       
       // Priority 7: Cobra Shot
       spell.cast("Cobra Shot", on => this.getCurrentTargetPVP(), req => 
-        this.getCurrentTargetPVP() !== null
+        this.getCurrentTargetPVP() !== undefined
       )
     );
   }
@@ -1086,7 +984,7 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
   getCurrentTarget() {
     const targetPredicate = unit => common.validTarget(unit) && me.distanceTo(unit) <= 40 && me.isFacing(unit);
     const target = me.target;
-    if (target !== null && targetPredicate(target)) {
+    if (target !== undefined && targetPredicate(target)) {
       return target;
     }
     return combat.targets.find(targetPredicate) || null;
@@ -1095,7 +993,7 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
   getCurrentTargetPVP() {
     const targetPredicate = unit => common.validTarget(unit) && me.distanceTo(unit) <= 40 && me.isFacing(unit) && !pvpHelpers.hasImmunity(unit);
     const target = me.target;
-    if (target !== null && targetPredicate(target)) {
+    if (target !== undefined && targetPredicate(target)) {
       return target;
     }
     return combat.targets.find(targetPredicate) || null;
@@ -1111,7 +1009,7 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
     if (!me.pet) return 0;
     
     return me.pet.getUnitsAround(range).filter(unit => 
-      unit instanceof wow.CGUnit && me.canAttack(unit) && unit.pctHealth > 0 && unit.inCombatWithMe
+      unit instanceof wow.CGUnit && me.canAttack(unit) && unit.health > 0 && !unit.isImmune()
     ).length;
   }
 
@@ -1206,20 +1104,21 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
   }
 
   isHowlSummonReady() {
-    // This would check for specific howl summon abilities
-    // Implementation depends on specific talents
-    return false;
+    // Simply check if we have the Howl ready aura
+    return me.hasVisibleAura && me.hasVisibleAura(471878);
   }
 
-     getFocusTimeToMax() {
-     const currentFocus = me.powerByType(PowerType.Focus) || 0;
-     const maxFocus = me.maxPowerByType(PowerType.Focus) || 100;
-     const regenRate = this.getFocusRegen();
-     
-     if (currentFocus >= maxFocus) return 0;
-     
-     return (maxFocus - currentFocus) / regenRate;
-   }
+
+
+  getFocusTimeToMax() {
+    const currentFocus = me.powerByType(PowerType.Focus) || 0;
+    const maxFocus = me.maxPowerByType(PowerType.Focus) || 100;
+    const regenRate = this.getFocusRegen();
+    
+    if (currentFocus >= maxFocus) return 0;
+    
+    return (maxFocus - currentFocus) / regenRate;
+  }
 
   getFocusRegen() {
     // Base focus regen is about 10 per second
@@ -1316,19 +1215,19 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
     return target ? target : null;
   }
 
-     findFreezingTrapTarget() {
-     // Look for high priority targets for CC
-     for (const enemy of combat.targets) {
-       if (enemy.isPlayer() && 
-           me.distanceTo(enemy) <= 30 &&
-           enemy.isHealer() &&
-           drTracker.getDRStacks(enemy.guid, "incapacitate") < 2 &&
-           !pvpHelpers.hasImmunity(enemy)) {
-         return enemy;
-       }
-     }
-     return null;
-   }
+  findFreezingTrapTarget() {
+    // Look for high priority targets for CC
+    for (const enemy of me.getEnemies()) {
+      if (enemy.isPlayer() && 
+          me.distanceTo(enemy) <= 40 &&
+          enemy.isHealer() &&
+          drTracker.getDRStacks(enemy.guid, "incapacitate") < 2 &&
+          !pvpHelpers.hasImmunity(enemy)) {
+        return enemy;
+      }
+    }
+    return null;
+  }
 
   shouldUseTrap() {
     // Logic for when to use area traps
@@ -1483,41 +1382,67 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
   }
 
   findEnemyHealerNotCC() {
-    // Find enemy healer that's not in crowd control
-    for (const enemy of me.getEnemies()) {
-      if (!enemy.isPlayer() || !enemy.isHealer()) continue;
-      if (pvpHelpers.hasImmunity(enemy)) continue;
-      
-      // Check if they're NOT in CC (not stunned, feared, etc.)
-      if (!enemy.isStunned() && !enemy.isFeared() && !enemy.isSilenced() && 
-          !enemy.hasAura("Freezing Trap") && !enemy.hasAura("Binding Shot")) {
+    const enemies = me.getEnemies();
+    for (const enemy of enemies) {
+      if (enemy.isPlayer() && 
+          enemy.isHealer() &&
+          me.distanceTo(enemy) <= 40 &&
+          !enemy.isCCd() &&
+          !pvpHelpers.hasImmunity(enemy)) {
         return enemy;
       }
     }
-    return null;
+    return undefined;
   }
 
-  findFreezingTrapTargetPVP() {
-    // Enemy healer when stunned with <1.5s stun remaining
-    for (const enemy of me.getEnemies()) {
-      if (!enemy.isPlayer() || !enemy.isHealer()) continue;
-      if (pvpHelpers.hasImmunity(enemy)) continue;
+  // findFreezingTrapTargetPVP() {
+  //   // Enemy healer when stunned with <1.5s stun remaining
+  //   for (const enemy of me.getEnemies()) {
+  //     console.log(`[Freezing Trap Debug] Checking enemy: ${enemy.unsafeName}, isPlayer: ${enemy.isPlayer()}, isHealer: ${enemy.isHealer()}`);
       
-      // Check if they're stunned
-      if (enemy.isStunned()) {
-        // Find stun auras using DRTracker categories
-        const stunAuras = enemy.auras.filter(aura => 
-          aura.isDebuff && drHelpers.getCategoryBySpellID(aura.spellId) === "stun"
-        );
+  //     if (!enemy.isPlayer() || !enemy.isHealer()) return null;
+  //     if (pvpHelpers.hasImmunity(enemy)) return null;
+      
+  //     console.log(`[Freezing Trap Debug] Found valid healer target: ${enemy.unsafeName}, isStunned: ${enemy.isStunned()}`);
+      
+  //     // Check if they're stunned
+  //     if (enemy.isStunned()) {
+  //       // Find stun auras using DRTracker categories
+  //       const stunAuras = enemy.auras.filter(aura => 
+  //         aura.isDebuff && (drHelpers.getCategoryBySpellID(aura.spellId) === "stun" || drHelpers.getCategoryBySpellID(aura.spellId) === "root")
+  //       );
         
-        for (const stunAura of stunAuras) {
-          if (stunAura.remaining <= 1500 && stunAura.remaining > 0) { // 0.5-1.5s remaining
-            return enemy.position; // Return position for trap
+  //       for (const stunAura of stunAuras) {
+  //         if (stunAura.remaining <= 3000 && stunAura.remaining > 0) { // 0.5-1.5s remaining
+  //           console.log(`[Freezing Trap Debug] TARGETING HEALER FOR FREEZING TRAP: ${enemy.unsafeName} (${stunAura.remaining}ms stun remaining)`);
+  //           return enemy; // Return position for trap
+  //         }
+  //       }
+  //     }
+  //   }
+  //   return null;
+  // }
+
+  findFreezingTrapTargetPVP() {
+    const nearbyEnemies = me.getPlayerEnemies(40);
+
+    for (const unit of nearbyEnemies) {
+      if (unit.isHealer() && (unit.isStunned() || unit.isRooted()) && unit.canCC() && unit.getDR("incapacitate") === 0) {
+        if (unit.isStunned() || unit.isRooted()) {
+          const stunAuras = unit.auras.filter(aura => 
+            aura.isDebuff && (drHelpers.getCategoryBySpellID(aura.spellId) === "stun" || drHelpers.getCategoryBySpellID(aura.spellId) === "root")
+          );
+
+          for (const stunAura of stunAuras) {
+            if (stunAura.remaining <= 3000 && stunAura.remaining > 0) {
+              return unit;
+            }
           }
         }
       }
     }
-    return null;
+
+    return undefined;
   }
 
   castManualFreezingTrap() {
@@ -1525,7 +1450,6 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
       // Check if Freezing Trap is ready first (using same pattern as line 1270)
       const freezingTrapSpell = spell.getSpell(187650);
       if (!freezingTrapSpell || !freezingTrapSpell.isUsable || !freezingTrapSpell.cooldown.ready) {
-        toastWarning("Freezing Trap not ready!", 1.0, 2000);
         return;
       }
 
@@ -1533,21 +1457,21 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
       let targetFunction = null;
       let targetType = "";
 
-      // Check mouseover first - get unit at cast time
+      // Check mouseover first - only target enemy healers
       const mouseoverGuid = wow.GameUI.mouseOverGuid;
       if (mouseoverGuid && !mouseoverGuid.isNull) {
         targetFunction = () => {
           const mouseoverUnit = mouseoverGuid.toUnit();
-          if (mouseoverUnit && me.canAttack(mouseoverUnit) && !pvpHelpers.hasImmunity(mouseoverUnit)) {
+          if (mouseoverUnit && me.canAttack(mouseoverUnit) && mouseoverUnit.isHealer() && !pvpHelpers.hasImmunity(mouseoverUnit)) {
             return mouseoverUnit;
           }
           return null;
         };
         
-        // Test if we have a valid mouseover target right now
+        // Test if we have a valid mouseover healer target right now
         const testTarget = targetFunction();
         if (testTarget) {
-          targetType = `mouseover ${testTarget.unsafeName || 'enemy'}`;
+          targetType = `mouseover healer ${testTarget.unsafeName || 'enemy'}`;
         } else {
           targetFunction = null;
         }
@@ -1576,21 +1500,14 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
           if (freezingTrapSpell) {
             console.log(`Casting Freezing Trap (ID: 187650) on ${actualTarget.unsafeName}`);
             spell.castPrimitive(freezingTrapSpell, actualTarget);
-            toastSuccess(`Freezing Trap - ${targetType}!`, 1.2, 3000);
             console.log(`Successfully cast Freezing Trap on ${targetType}`);
           } else {
             console.log("Freezing Trap spell object not found");
-            toastError("Freezing Trap spell not found!", 1.0, 2000);
           }
-        } else {
-          toastWarning("Target became invalid", 1.0, 2000);
         }
-      } else {
-        toastInfo("No valid Freezing Trap target", 1.0, 2000);
       }
     } catch (error) {
       console.error("Error casting manual Freezing Trap:", error);
-      toastError("Freezing Trap error!", 1.0, 2000);
     }
   }
 
@@ -1603,9 +1520,9 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
     );
     
     if (enemiesNearUs.length > 0) {
-      return enemiesNearUs[0].position;
+      return enemiesNearUs[0];
     }
-    return null;
+    return undefined;
   }
 
   findExplosiveTrapLocationPVP() {
@@ -1617,10 +1534,10 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
       
       // Check if they have major cooldowns up
       if (this.hasMajorCooldowns(enemy)) {
-        return enemy.position;
+        return enemy;
       }
     }
-    return null;
+    return undefined;
   }
 
   findIntimidationTargetPVP() {
@@ -1636,16 +1553,16 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
 
     // Second priority: enemy healer if no stun DR
     for (const enemy of me.getEnemies()) {
-      if (!enemy.isPlayer() || !enemy.isHealer()) continue;
+      if (!enemy.isPlayer() && !enemy.isHealer()) continue;
       if (pvpHelpers.hasImmunity(enemy)) continue;
-      if (me.distanceTo(enemy) > 30) continue;
+      if (me.distanceTo(enemy) > 40) continue;
       
-      if (drTracker.getDRStacks(enemy.guid, "stun") < 2) {
+      if (drTracker.getDRStacks(enemy.guid, "stun") <= 1) {
         return enemy;
       }
     }
 
-    return null;
+    return undefined;
   }
 
   findBurstingShotTargetPVP() {
@@ -1653,11 +1570,12 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
     for (const enemy of me.getEnemies()) {
       if (!enemy.isPlayer() || enemy.isHealer()) continue;
       if (pvpHelpers.hasImmunity(enemy)) continue;
+      if (!me.isFacing(enemy)) continue;
       if (me.distanceTo(enemy) <= 8) {
         return enemy;
       }
     }
-    return null;
+    return undefined;
   }
 
   findConcussiveShotTargetPVP() {
@@ -1681,223 +1599,7 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
   }
 
   hasMajorCooldowns(unit) {
-    // Check for major damage cooldowns with sufficient duration (same as JmrSimcArms.js)
     const majorDamageCooldown = pvpHelpers.hasMajorDamageCooldown(unit, 3);
-    return majorDamageCooldown !== null;
-  }
-
-  // Enhanced pet-to-player linking using all available SDK features
-  analyzePetOwnership(unit) {
-    const result = {
-      isPlayerPet: false,
-      isMine: false,
-      ownerGuid: null,
-      ownerName: null,
-      petType: null,
-      linkMethod: null
-    };
-
-    // Skip non-units
-    if (!(unit instanceof wow.CGUnit)) {
-      console.log(`[analyzePetOwnership] Skipping non-CGUnit: ${unit}`);
-      return result;
-    }
-
-    // Debug log for each unit we analyze
-    console.log(`[analyzePetOwnership] Analyzing: ${unit.unsafeName} - isPlayer: ${unit.isPlayer()}`);
-    
-    // Skip players
-    if (unit.isPlayer()) {
-      return result;
-    }
-
-    // Method 1: Check summonedBy (most reliable for summoned pets)
-    if (unit.summonedBy && !unit.summonedBy.isNull) {
-      result.isPlayerPet = true;
-      result.ownerGuid = unit.summonedBy;
-      result.linkMethod = "summonedBy";
-      result.isMine = unit.summonedBy.equals(me.guid);
-      
-      // Try to get owner name
-      const owner = unit.summonedBy.toUnit();
-      if (owner && owner.isPlayer()) {
-        result.ownerName = owner.unsafeName;
-        result.petType = this.identifyPetType(unit, owner);
-      }
-      return result;
-    }
-
-    // Method 2: Check createdBy (for created objects/pets)
-    if (unit.createdBy && !unit.createdBy.isNull) {
-      result.isPlayerPet = true;
-      result.ownerGuid = unit.createdBy;
-      result.linkMethod = "createdBy";
-      result.isMine = unit.createdBy.equals(me.guid);
-      
-      // Try to get owner name
-      const owner = unit.createdBy.toUnit();
-      if (owner && owner.isPlayer()) {
-        result.ownerName = owner.unsafeName;
-        result.petType = this.identifyPetType(unit, owner);
-      }
-      return result;
-    }
-
-    // Method 3: Check charmedBy (for charmed units)
-    if (unit.charmedBy && !unit.charmedBy.isNull) {
-      result.isPlayerPet = true;
-      result.ownerGuid = unit.charmedBy;
-      result.linkMethod = "charmedBy";
-      result.isMine = unit.charmedBy.equals(me.guid);
-      
-      const owner = unit.charmedBy.toUnit();
-      if (owner && owner.isPlayer()) {
-        result.ownerName = owner.unsafeName;
-        result.petType = "Charmed";
-      }
-      return result;
-    }
-
-    // Method 4: Check demonCreator (for warlock demons)
-    if (unit.demonCreator && !unit.demonCreator.isNull) {
-      result.isPlayerPet = true;
-      result.ownerGuid = unit.demonCreator;
-      result.linkMethod = "demonCreator";
-      result.isMine = unit.demonCreator.equals(me.guid);
-      
-      const owner = unit.demonCreator.toUnit();
-      if (owner && owner.isPlayer()) {
-        result.ownerName = owner.unsafeName;
-        result.petType = "Demon";
-      }
-      return result;
-    }
-
-    // Method 5: Check PetInfo.pets array (for active pets)
-    if (wow.PetInfo && wow.PetInfo.pets) {
-      for (const petGuid of wow.PetInfo.pets) {
-        if (petGuid.equals(unit.guid)) {
-          result.isPlayerPet = true;
-          result.isMine = true;
-          result.ownerGuid = me.guid;
-          result.ownerName = me.unsafeName;
-          result.linkMethod = "PetInfo.pets";
-          result.petType = "Active Pet";
-          return result;
-        }
-      }
-    }
-
-    // Method 6: Check if unit is in a player's group and has pet-like characteristics
-    if (this.looksLikePet(unit)) {
-      // Find nearby players who might own this pet
-      const nearbyPlayers = me.getUnitsAround(40).filter(u => 
-        u.isPlayer() && u !== me && me.distanceTo(u) <= 40
-      );
-      
-      for (const player of nearbyPlayers) {
-        // Check if pet is very close to this player (likely following)
-        if (player.distanceTo(unit) <= 8) {
-          result.isPlayerPet = true;
-          result.ownerGuid = player.guid;
-          result.ownerName = player.unsafeName;
-          result.linkMethod = "proximity";
-          result.petType = this.identifyPetType(unit, player);
-          result.isMine = false;
-          return result;
-        }
-      }
-    }
-
-    return result;
-  }
-
-  // Helper method to identify pet type based on unit properties and owner class
-  identifyPetType(unit, owner) {
-    if (!unit || !owner) return null;
-
-    // Check creature type from wow.d.ts
-    if (unit.creatureType !== undefined) {
-      const creatureTypes = {
-        1: "Beast",
-        2: "Dragonkin", 
-        3: "Demon",
-        4: "Elemental",
-        5: "Giant",
-        6: "Undead",
-        7: "Humanoid",
-        8: "Critter",
-        9: "Mechanical",
-        10: "Not specified",
-        11: "Totem",
-        12: "Non-combat Pet",
-        13: "Gas Cloud"
-      };
-      
-      if (creatureTypes[unit.creatureType]) {
-        return creatureTypes[unit.creatureType];
-      }
-    }
-
-    // Check creature family (Hunter pets)
-    if (unit.creatureFamily !== undefined && unit.creatureFamily > 0) {
-      return "Hunter Pet";
-    }
-
-    // Check pet number (indicates it's a numbered pet)
-    if (unit.petNumber > 0) {
-      return `Pet #${unit.petNumber}`;
-    }
-
-    // Fallback to checking owner's specialization auras for class identification
-    if (owner.hasAura && typeof owner.hasAura === 'function') {
-      // Hunter specs
-      if (owner.hasAura("Beast Mastery Hunter") || owner.hasAura("Marksmanship Hunter") || owner.hasAura("Survival Hunter")) {
-        return "Hunter Pet";
-      }
-      // Warlock specs  
-      if (owner.hasAura("Affliction Warlock") || owner.hasAura("Demonology Warlock") || owner.hasAura("Destruction Warlock")) {
-        return "Demon";
-      }
-      // Death Knight specs
-      if (owner.hasAura("Blood Death Knight") || owner.hasAura("Frost Death Knight") || owner.hasAura("Unholy Death Knight")) {
-        return "Undead Minion";
-      }
-      // Mage specs (for elementals)
-      if (owner.hasAura("Arcane Mage") || owner.hasAura("Fire Mage") || owner.hasAura("Frost Mage")) {
-        return "Elemental";
-      }
-    }
-
-    return "Pet";
-  }
-
-  // Helper method to determine if a unit looks like a pet based on characteristics
-  looksLikePet(unit) {
-    if (!unit || !(unit instanceof wow.CGUnit)) return false;
-
-    // Not a player
-    if (unit.isPlayer()) return false;
-
-    // Has a pet number
-    if (unit.petNumber > 0) return true;
-
-    // Is a known creature type that could be a pet
-    const petLikeCreatureTypes = [1, 3, 4, 6, 9, 11]; // Beast, Demon, Elemental, Undead, Mechanical, Totem
-    if (unit.creatureType !== undefined && petLikeCreatureTypes.includes(unit.creatureType)) {
-      return true;
-    }
-
-    // Has a creature family (Hunter pets)
-    if (unit.creatureFamily !== undefined && unit.creatureFamily > 0) {
-      return true;
-    }
-
-    // Is attackable and in combat (likely a combat pet)
-    if (unit.isAttackable && unit.inCombat()) {
-      return true;
-    }
-
-    return false;
+    return majorDamageCooldown !== undefined;
   }
 } 

@@ -1,7 +1,7 @@
 import Settings from '@/Core/Settings';
 import objMgr, { me } from '@/Core/ObjectManager';
 import colors from '@/Enums/Colors';
-import { CooldownCategories, offensiveCooldowns } from '@/Data/OffensiveCooldowns';
+import { damageBuffs, pvpImmunityBuffs } from '@/Data/PVPData';
 
 class ESP {
   static tabName = "ESP";
@@ -17,6 +17,8 @@ class ESP {
     { type: "checkbox", uid: "ESPShowNPCs", text: "Show NPCs", default: false },
     { type: "checkbox", uid: "ESPShowPets", text: "Show Pets/Minions", default: false },
     { type: "checkbox", uid: "ESPShowGameObjects", text: "Show Game Objects", default: false },
+    { type: "checkbox", uid: "ESPShowDynamicObjects", text: "Show Dynamic Objects", default: false },
+    { type: "checkbox", uid: "ESPShowAreaTriggers", text: "Show Area Triggers", default: false },
     
     // Line settings
     { type: "checkbox", uid: "ESPDrawLines", text: "Draw Lines to Targets", default: true },
@@ -40,6 +42,8 @@ class ESP {
     { type: "combobox", uid: "ESPNPCColor", text: "NPC Color", options: ["gray", "lightgrey", "silver", "tan"], default: "gray" },
     { type: "combobox", uid: "ESPPetColor", text: "Pet/Minion Color", options: ["purple", "plum", "lavender", "pink"], default: "purple" },
     { type: "combobox", uid: "ESPGameObjectColor", text: "Game Object Color", options: ["turquoise", "teal", "aqua", "skyblue"], default: "turquoise" },
+    { type: "combobox", uid: "ESPDynamicObjectColor", text: "Dynamic Object Color", options: ["cyan", "lightcyan", "paleturquoise", "mediumturquoise"], default: "cyan" },
+    { type: "combobox", uid: "ESPAreaTriggerColor", text: "Area Trigger Color", options: ["magenta", "violet", "fuchsia", "mediumorchid"], default: "magenta" },
     { type: "combobox", uid: "ESPLOSColor", text: "Line of Sight Border Color", options: ["white", "silver", "lightgrey"], default: "white" },
     
     // LOS Settings
@@ -74,15 +78,15 @@ class ESP {
   static renderOptions(renderFunction) {
     renderFunction([
       { header: "Main Settings", options: this.options.slice(0, 3) },
-      { header: "Target Type Filters", options: this.options.slice(3, 7) },
-      { header: "Line Settings", options: this.options.slice(7, 10) },
-      { header: "Circle Settings", options: this.options.slice(10, 18) },
-      { header: "Colors", options: this.options.slice(18, 25) },
-      { header: "LOS Settings", options: this.options.slice(25, 30) },
-      { header: "Target Highlighting", options: this.options.slice(30, 33) },
-      { header: "Information Display", options: this.options.slice(33, 36) },
-      { header: "Filters & Range", options: this.options.slice(36, 39) },
-      { header: "Performance", options: this.options.slice(39) },
+      { header: "Target Type Filters", options: this.options.slice(3, 9) },
+      { header: "Line Settings", options: this.options.slice(9, 12) },
+      { header: "Circle Settings", options: this.options.slice(12, 20) },
+      { header: "Colors", options: this.options.slice(20, 29) },
+      { header: "LOS Settings", options: this.options.slice(29, 34) },
+      { header: "Target Highlighting", options: this.options.slice(34, 37) },
+      { header: "Information Display", options: this.options.slice(37, 40) },
+      { header: "Filters & Range", options: this.options.slice(40, 43) },
+      { header: "Performance", options: this.options.slice(43) },
     ]);
   }
 
@@ -130,8 +134,8 @@ class ESP {
 
       const targetInfo = this.analyzeTarget(obj, objectType);
       if (targetInfo.shouldShow) {
-        // Assign priority: Players = 1 (highest), Others = 2 (lower)
-        const priority = (obj instanceof wow.CGUnit && obj.isPlayer && obj.isPlayer()) ? 1 : 2;
+        // Assign priority based on strategic importance for PVP
+        const priority = this.calculateTargetPriority(obj, targetInfo);
         allTargets.push({
           ...targetInfo,
           distance: distance,
@@ -198,6 +202,10 @@ class ESP {
       }
     } else if (obj instanceof wow.CGGameObject) {
       return 'gameobject';
+    } else if (obj instanceof wow.CGDynamicObject) {
+      return 'dynamicobject';
+    } else if (obj instanceof wow.CGAreaTrigger) {
+      return 'areatrigger';
     } else {
       return 'other';
     }
@@ -213,6 +221,10 @@ class ESP {
         return Settings.ESPShowPets;
       case 'gameobject':
         return Settings.ESPShowGameObjects;
+      case 'dynamicobject':
+        return Settings.ESPShowDynamicObjects;
+      case 'areatrigger':
+        return Settings.ESPShowAreaTriggers;
       default:
         return false;
     }
@@ -247,11 +259,11 @@ class ESP {
     if (!viewport) return;
 
     // Get player's feet position on screen
-    const playerFeetWorldPos = new Vector3(
-      me.position.x,
-      me.position.y, 
-      me.position.z
-    );
+    const playerFeetWorldPos = {
+      x: me.position.x,
+      y: me.position.y, 
+      z: me.position.z
+    };
     const playerFeetScreenPos = wow.WorldFrame.getScreenCoordinates(playerFeetWorldPos);
 
     for (const target of this.cachedTargets) {
@@ -263,16 +275,40 @@ class ESP {
 
       // Draw line from player's feet to target
       if (Settings.ESPDrawLines && playerFeetScreenPos && playerFeetScreenPos.x !== -1) {
+        let lineEndPos = target.screenPos;
+        
+        // If circles are being drawn, calculate line end at circle edge
+        if (Settings.ESPDrawCircles) {
+          const worldRadius = this.getEntityRadius(target);
+          const screenRadius = this.worldDistanceToScreenDistance(target, worldRadius);
+          
+          // Calculate direction vector from player to target
+          const deltaX = target.screenPos.x - playerFeetScreenPos.x;
+          const deltaY = target.screenPos.y - playerFeetScreenPos.y;
+          const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+          
+          if (distance > screenRadius) {
+            // Normalize direction and move back by circle radius
+            const normalizedX = deltaX / distance;
+            const normalizedY = deltaY / distance;
+            
+            lineEndPos = {
+              x: target.screenPos.x - (normalizedX * screenRadius),
+              y: target.screenPos.y - (normalizedY * screenRadius)
+            };
+          }
+        }
+        
         canvas.addLine(
           playerFeetScreenPos,
-          target.screenPos,
+          lineEndPos,
           lineColor,
           Settings.ESPLineThickness
         );
         
         // Draw LOS border on line if enabled and target has LOS
         if (target.hasLOS && Settings.ESPDrawLOSBorders) {
-          this.drawLOSLineBorder(canvas, playerFeetScreenPos, target.screenPos);
+          this.drawLOSLineBorder(canvas, playerFeetScreenPos, lineEndPos);
         }
       }
 
@@ -283,6 +319,15 @@ class ESP {
         // Draw LOS border on circle if enabled and target has LOS
         if (target.hasLOS && Settings.ESPDrawLOSBorders) {
           this.drawLOSCircleBorder(canvas, target);
+        }
+      }
+
+      // Draw separate pulsating cooldown circle if unit has major cooldowns
+      // Only check for cooldowns on players to reduce performance impact
+      if (target.unit && target.unit.isPlayer && target.unit.isPlayer()) {
+        const activeCooldowns = this.getActiveMajorCooldowns(target.unit);
+        if (activeCooldowns.length > 0) {
+          this.drawCooldownPulseCircle(canvas, target, activeCooldowns);
         }
       }
 
@@ -322,6 +367,10 @@ class ESP {
         return colors[Settings.ESPPetColor] || colors.purple;
       case 'gameobject':
         return colors[Settings.ESPGameObjectColor] || colors.turquoise;
+      case 'dynamicobject':
+        return colors[Settings.ESPDynamicObjectColor] || colors.cyan;
+      case 'areatrigger':
+        return colors[Settings.ESPAreaTriggerColor] || colors.magenta;
       default:
         return colors.white; // Fallback
     }
@@ -522,6 +571,60 @@ class ESP {
     }
   }
 
+  static drawCooldownPulseCircle(canvas, target, activeCooldowns) {
+    const currentTime = wow.frameTime / 1000; // Convert milliseconds to seconds
+    const pulseSpeed = 2.0; // 2 pulses per second
+    const minRadius = 2.0; // Minimum radius
+    const maxRadius = 4.0; // Maximum radius
+    
+    // Calculate pulsating radius using a more extreme approach
+    const sineWave = Math.sin(currentTime * pulseSpeed * 2 * Math.PI);
+    const pulseRadius = minRadius + ((sineWave + 1) / 2) * (maxRadius - minRadius);
+    
+    // // Debug logging to see if this is working
+    // if (Math.floor(currentTime * 4) % 8 === 0) { // Log every 0.25 seconds
+    //   console.log(`Pulse Debug: radius=${pulseRadius.toFixed(2)}, sine=${sineWave.toFixed(2)}, time=${currentTime.toFixed(2)}`);
+    // }
+    
+    // Helper function to convert RGB to color format
+    const convertRGBToColor = (r, g, b, a = 255) => {
+      return (
+        ((a & 0xFF) << 24) |  // Alpha
+        ((b & 0xFF) << 16) |  // Blue
+        ((g & 0xFF) << 8) |   // Green
+        (r & 0xFF)            // Red
+      ) >>> 0;
+    };
+    
+    // Determine color based on friend/enemy status
+    let pulseColor;
+    if (target.isFriend) {
+      // Greenish colors for friends
+      if (activeCooldowns[0].includes("Immunity")) {
+        pulseColor = convertRGBToColor(0, 255, 127); // Bright green for friendly immunity
+      } else {
+        pulseColor = convertRGBToColor(50, 205, 50); // Lime green for friendly cooldowns
+      }
+    } else if (target.isEnemy) {
+      // Reddish colors for enemies
+      if (activeCooldowns[0].includes("Immunity")) {
+        pulseColor = convertRGBToColor(255, 69, 0); // Orange-red for enemy immunity
+      } else {
+        pulseColor = convertRGBToColor(220, 20, 60); // Crimson for enemy cooldowns
+      }
+    } else {
+      // Neutral units - use yellow
+      pulseColor = convertRGBToColor(255, 215, 0); // Gold for neutral
+    }
+    
+    // Draw the pulsating circle with high visibility
+    const segments = 60; // Higher quality for smoother pulsing
+    const thickness = 4; // Thicker for better visibility
+    
+    // Always draw with glow effect for maximum visibility
+    this.drawGlowCircle(canvas, target, pulseRadius, pulseColor, segments, thickness);
+  }
+
   static applyOpacity(color, opacity) {
     // Extract RGBA components
     const r = (color) & 0xFF;
@@ -543,12 +646,24 @@ class ESP {
         
         if (unitName && typeof unitName === 'string' && unitName.trim() !== '') {
           const trimmedName = unitName.trim();
-          const textColor = colors.white || 0xFFFFFFFF; // Fallback to white if colors.white is null
+          const { color: textColor, hasShadow } = this.getNameColor(target.unit);
           
           // Calculate text width to center it
           const textSize = imgui.calcTextSize(trimmedName);
           const centeredX = target.screenPos.x - (textSize.x / 2);
           
+          // Draw shadow effect for class names
+          if (hasShadow) {
+            canvas.addText(
+              trimmedName,
+              { x: centeredX + 1, y: target.screenPos.y + yOffset + 1 },
+              colors.black || 0xFF000000, // Black shadow using colors.black
+              null,
+              12
+            );
+          }
+          
+          // Draw main text
           canvas.addText(
             trimmedName,
             { x: centeredX, y: target.screenPos.y + yOffset },
@@ -617,42 +732,156 @@ class ESP {
   }
 
   static getActiveMajorCooldowns(unit) {
-    if (!unit || !unit.getAura) return [];
+    if (!unit || !unit.auras) return [];
     
     const activeCooldowns = [];
-    const majorCategories = [
-      CooldownCategories.MAJOR_OFFENSIVE,
-      CooldownCategories.MAGIC_BURST,
-      CooldownCategories.PHYSICAL_BURST,
-      CooldownCategories.MAJOR_DEFENSIVE,
-      CooldownCategories.IMMUNITY
-    ];
     
-    // Check for major cooldown auras
-    for (const [spellId, cooldownData] of Object.entries(offensiveCooldowns)) {
-      if (majorCategories.includes(cooldownData.category)) {
-        const aura = unit.getAura(parseInt(spellId));
-        if (aura) {
-          // Get remaining duration in seconds
+    // Use existing PVPData lists but skip minimum duration checks
+    for (const aura of unit.auras) {
+      if (aura && aura.spellId) {
+        // Check damage buffs from PVPData
+        if (damageBuffs[aura.spellId]) {
           const remainingSeconds = Math.ceil(aura.remaining / 1000);
-          
-          // Build display name with duration
-          let displayName = cooldownData.name;
+          let displayName = damageBuffs[aura.spellId].name;
           if (remainingSeconds > 0) {
             displayName += ` (${remainingSeconds}s)`;
           }
-          
-          // Add stack count if > 1
-          if (aura.stacks && aura.stacks > 1) {
-            displayName += ` [${aura.stacks}]`;
+          activeCooldowns.push(displayName);
+        }
+        // Check immunity buffs from PVPData
+        else if (pvpImmunityBuffs[aura.spellId]) {
+          const remainingSeconds = Math.ceil(aura.remaining / 1000);
+          let displayName = pvpImmunityBuffs[aura.spellId];
+          if (remainingSeconds > 0) {
+            displayName += ` (${remainingSeconds}s)`;
           }
-          
           activeCooldowns.push(displayName);
         }
       }
     }
     
     return activeCooldowns.slice(0, 3); // Limit to 3 cooldowns to avoid screen clutter
+  }
+
+  static calculateTargetPriority(obj, targetInfo) {
+    // Priority hierarchy (lower number = higher priority):
+    // 1. Enemy players (highest priority)
+    // 2. Current target (regardless of type)
+    // 3. Enemies targeting me
+    // 4. All other players (friends/neutral)
+    // 5. My pets
+    // 6. Everything else (lowest priority)
+
+    const isPlayer = obj instanceof wow.CGUnit && obj.isPlayer && obj.isPlayer();
+    const isCurrentTarget = targetInfo.isCurrentTarget;
+    const isTargetingMe = obj instanceof wow.CGUnit && obj.target && obj.target.equals && obj.target.equals(me.guid);
+    const isMyPet = this.isMyPet(obj);
+
+    // 1. Enemy players get highest priority
+    if (isPlayer && targetInfo.isEnemy) {
+      return 1;
+    }
+
+    // 2. Current target gets second priority (regardless of what it is)
+    if (isCurrentTarget) {
+      return 2;
+    }
+
+    // 3. Enemies targeting me get third priority
+    if (isTargetingMe && targetInfo.isEnemy) {
+      return 3;
+    }
+
+    // 4. All other players (friends/neutral) get fourth priority
+    if (isPlayer) {
+      return 4;
+    }
+
+    // 5. My pets get fifth priority
+    if (isMyPet) {
+      return 5;
+    }
+
+    // 6. Everything else gets lowest priority
+    return 6;
+  }
+
+  static isMyPet(obj) {
+    if (!(obj instanceof wow.CGUnit)) return false;
+    
+    // Check if unit is summoned/created by me
+    return (obj.summonedBy && obj.summonedBy.equals && obj.summonedBy.equals(me.guid)) ||
+           (obj.createdBy && obj.createdBy.equals && obj.createdBy.equals(me.guid)) ||
+           (obj.charmedBy && obj.charmedBy.equals && obj.charmedBy.equals(me.guid));
+  }
+
+  static worldDistanceToScreenDistance(target, worldDistance) {
+    // Calculate screen distance by projecting two points in world space
+    const targetWorldPos = target.unit.position;
+    
+    // Create a reference point at the target's position plus the world distance in X direction
+    const refWorldPos = {
+      x: targetWorldPos.x + worldDistance,
+      y: targetWorldPos.y,
+      z: targetWorldPos.z
+    };
+    
+    // Convert both points to screen coordinates
+    const targetScreenPos = wow.WorldFrame.getScreenCoordinates(targetWorldPos);
+    const refScreenPos = wow.WorldFrame.getScreenCoordinates(refWorldPos);
+    
+    // Calculate screen distance between the two projected points
+    if (targetScreenPos && refScreenPos && targetScreenPos.x !== -1 && refScreenPos.x !== -1) {
+      const deltaX = refScreenPos.x - targetScreenPos.x;
+      const deltaY = refScreenPos.y - targetScreenPos.y;
+      return Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    }
+    
+    // Fallback to rough estimation if projection fails
+    return worldDistance * 20;
+  }
+
+  static getNameColor(unit) {
+    if (!unit || !unit.hasAura) {
+      return { color: colors.white || 0xFFFFFFFF, hasShadow: false };
+    }
+
+    // Helper function to convert RGB hex to the same format as Colors.js (ABGR)
+    const convertRGBToColor = (r, g, b, a = 255) => {
+      return (
+        ((a & 0xFF) << 24) |  // Alpha
+        ((b & 0xFF) << 16) |  // Blue
+        ((g & 0xFF) << 8) |   // Green
+        (r & 0xFF)            // Red
+      ) >>> 0;
+    };
+
+    // Class color mappings using RGB values from hex colors
+    const classColors = {
+      "Rogue": convertRGBToColor(0xE0, 0xD7, 0x5C),        // #E0D75C
+      "Hunter": convertRGBToColor(0xA7, 0xCF, 0x71),       // #A7CF71
+      "Shaman": convertRGBToColor(0x02, 0x73, 0xE3),       // #0273E3
+      "Paladin": convertRGBToColor(0xF2, 0x8B, 0xBA),      // #F28BBA
+      "Warlock": convertRGBToColor(0x86, 0x87, 0xEB),      // #8687EB
+      "Druid": convertRGBToColor(0xED, 0x74, 0x09),        // #ED7409
+      "Evoker": convertRGBToColor(0x46, 0xCC, 0xB1),       // #46CCB1
+      "Warrior": convertRGBToColor(0xE0, 0xB1, 0x7D),      // #E0B17D
+      "Mage": convertRGBToColor(0x3E, 0xC6, 0xE8),         // #3EC6E8
+      "Demon Hunter": convertRGBToColor(0xB8, 0x36, 0xE3), // #B836E3
+      "Death Knight": convertRGBToColor(0xE8, 0x23, 0x44), // #E82344
+      "Monk": convertRGBToColor(0x00, 0xD1, 0x7E),         // #00D17E
+      "Priest": convertRGBToColor(0xD4, 0xD4, 0xD4)        // #D4D4D4
+    };
+
+    // Check for class auras
+    for (const [className, color] of Object.entries(classColors)) {
+      if (unit.hasAura(className)) {
+        return { color: color, hasShadow: true };
+      }
+    }
+
+    // Default to white with no shadow for non-class units
+    return { color: colors.white || 0xFFFFFFFF, hasShadow: false };
   }
 
 
