@@ -348,8 +348,11 @@ const treasures = {
   444866: "treasure", // Overflowing Kobyss ritual cache
   446140: "treasure", // Missing scouts pack
 
-  // TWW 1.1
-  469858: "treasure" // Shiny Trash Can
+  // TWW 11.1
+  469858: "treasure", // Shiny Trash Can
+
+  // TWW 11.2
+  516444: "treasure" //Ethereal Pocket Storage
 };
 
 export default { herb: herbs, ore: ores, treasure: treasures };

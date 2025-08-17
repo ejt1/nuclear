@@ -11,3 +11,5 @@ Extra/AutoFisher.js
 .idea/nuclear.iml
 .idea/vcs.xml
 .idea/codeStyles/codeStyleConfig.xml
+../sdk
+/.idea/workspace.xml
