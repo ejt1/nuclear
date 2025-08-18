@@ -154,9 +154,9 @@ export class DruidBalance extends Behavior {
   // Single Target Damage (Elune's Chosen Priority)
   singleTargetDamage() {
     return new bt.Selector(
-      // Use Warrior of Elune on cooldown (Lunar Calling talent)
+      // Use Warrior of Elune on cooldown (Lunar Calling talent) - only with burst toggle
       spell.cast('Warrior of Elune', () =>
-        this.hasTalent('Lunar Calling') || this.getEclipseRemaining() <= 7000),
+        Combat.burstToggle && (this.hasTalent('Lunar Calling') || this.getEclipseRemaining() <= 7000)),
 
       // Apply and maintain DOTs
       this.maintainDots(),
@@ -165,15 +165,17 @@ export class DruidBalance extends Behavior {
       spell.cast('Starfall', on => me.target, () =>
         this.getAstralPower() >= 30),
 
-      // Cast Celestial Alignment if just cast Fury of Elune
+      // Cast Celestial Alignment if just cast Fury of Elune - only with burst toggle
       spell.cast('Celestial Alignment', () =>
+        Combat.burstToggle &&
         Settings.BalanceDruidUseOffensiveCooldown &&
         !me.hasAura(auras.celestialAlignment) &&
         !me.hasAura(auras.incarnationChosenOfElune) &&
         spell.getCooldown('Fury of Elune').timeleft > 0),
 
-      // Cast Convoke the Spirits during Celestial Alignment with low Astral Power
+      // Cast Convoke the Spirits during Celestial Alignment with low Astral Power - only with burst toggle
       spell.cast('Convoke the Spirits', on => me.target, () =>
+        Combat.burstToggle &&
         (me.hasAura(auras.celestialAlignment) || me.hasAura(auras.incarnationChosenOfElune)) &&
         this.getAstralPower() < 40),
 
@@ -181,9 +183,9 @@ export class DruidBalance extends Behavior {
       spell.cast('Wrath', on => me.target, () =>
         !this.inEclipse() && !this.hasCooldownsReady()),
 
-      // Cast Fury of Elune if not entering Celestial Alignment
+      // Cast Fury of Elune if not entering Celestial Alignment - only with burst toggle
       spell.cast('Fury of Elune', on => me.target, () =>
-        !spell.getCooldown('Celestial Alignment').ready),
+        Combat.burstToggle && !spell.getCooldown('Celestial Alignment').ready),
 
       // Cast Starfall if we have Starweaver's Warp proc or sufficient Astral Power
       spell.cast('Starfall', on => me.target, () =>
@@ -217,17 +219,18 @@ export class DruidBalance extends Behavior {
   // Multi-Target Damage (Elune's Chosen Multi-Target Priority)
   multiTargetDamage() {
     return new bt.Selector(
-      // Use Warrior of Elune on cooldown
-      spell.cast('Warrior of Elune', () => true),
+      // Use Warrior of Elune on cooldown - only with burst toggle
+      spell.cast('Warrior of Elune', () => Combat.burstToggle),
 
       // Apply and maintain DOTs on multiple targets
       this.maintainMultiTargetDots(),
 
-      // Cast Fury of Elune
-      spell.cast('Fury of Elune', on => me.target),
+      // Cast Fury of Elune - only with burst toggle
+      spell.cast('Fury of Elune', on => me.target, () => Combat.burstToggle),
 
-      // Cast Celestial Alignment
+      // Cast Celestial Alignment - only with burst toggle
       spell.cast('Celestial Alignment', () =>
+        Combat.burstToggle &&
         Settings.BalanceDruidUseOffensiveCooldown &&
         !me.hasAura(auras.celestialAlignment) &&
         !me.hasAura(auras.incarnationChosenOfElune)),
