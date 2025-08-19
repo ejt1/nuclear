@@ -178,14 +178,6 @@ export class MonkMistweaverBehavior extends Behavior {
           !unit.hasAuraByMe(auras.envelopingMist)
         )
       ),
-      // Cast Soothing Mist on a target that needs Enveloping Mist
-      spell.cast("Soothing Mist",
-        on => heal.priorityList.find(unit =>
-          unit.effectiveHealthPercent < Settings.MWMonkEnvelopingMistPercent &&
-          !unit.hasAuraByMe(auras.envelopingMist) &&
-          !unit.hasAuraByMe(auras.soothingmist)
-        )
-      ),
       // Original Enveloping Mist logic for Chi-Ji stacks
       spell.cast("Enveloping Mist",
         on => heal.priorityList.find(unit =>
