@@ -558,10 +558,6 @@ Object.defineProperties(wow.CGUnit.prototype, {
         return true
       }
 
-      if (me.isWithinMeleeRange(target)) {
-        return true;
-      }
-
       target = target instanceof wow.CGUnit ? target : target.toUnit();
       if (!target || !target.position || !this.position) {
         return false;
