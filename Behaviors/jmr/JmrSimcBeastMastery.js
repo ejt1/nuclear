@@ -607,12 +607,11 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
       ),
       
       // multishot,if=pet.main.buff.beast_cleave.remains<0.25+gcd&(!talent.bloody_frenzy|cooldown.call_of_the_wild.remains)
-      spell.cast("Multi-Shot", on => this.getCurrentTarget(), req => 
+      spell.cast("Multi-Shot", on => this.getCurrentTarget(), req =>
         this.getPetBeastCleaveRemaining() < (0.25 + 1.5) &&
         (!this.hasTalent("Bloody Frenzy") || spell.getCooldown("Call of the Wild").timeleft > 0)
       ),
 
-      spell.cast("Multi-Shot", on => this.getCurrentTarget(), req => !me.hasVisibleAura("Beast Cleave")),
       
       // black_arrow,if=buff.beast_cleave.remains
       spell.cast("Black Arrow", on => this.getCurrentTarget(), req => me.hasVisibleAura("Beast Cleave")
@@ -772,6 +771,18 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
     return new bt.Selector(
       // Always perform actions
       this.buildPVPAlwaysPerform(),
+
+      // Single target vs cleave/aoe
+      // new bt.Decorator(
+      //   () => (this.getEnemiesInRangeOfPet(10) < 3),
+      //   this.buildSingleTarget(),
+      //   new bt.Action(() => bt.Status.Success)
+      // ),
+      // new bt.Decorator(
+      //   () => (this.getEnemiesInRangeOfPet(10) > 2),
+      //   this.buildCleave(),
+      //   new bt.Action(() => bt.Status.Success)
+      // ),
       
       // Burst mode
       this.buildBeastMasteryBurst(),
@@ -820,6 +831,12 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
       spell.cast("Freezing Trap", on => this.findFreezingTrapTargetPVP(), req => 
         Settings.UseFreezingTrap &&
         this.findFreezingTrapTargetPVP() !== undefined
+      ),
+
+      spell.cast("Chimaeral Sting", on => this.findEnemyHealerNotCC(), req => 
+        this.overlayToggles.chimaeralSting.value &&
+        me.hasVisibleAura("Bestial Wrath") &&
+        this.findEnemyHealerNotCC() !== undefined
       ),
       
       // Tar Trap any enemy within 10y of us
