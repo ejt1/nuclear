@@ -209,6 +209,7 @@ export const drSpellList = {
   15487: "silence", // Silence
   1330: "silence", // Garrote
   196364: "silence", // Unstable Affliction Silence Effect
+  252188: "silence", // Solar Beam
 
   // *** Disarm Weapon Effects ***
   209749: "disarm", // Faerie Swarm (Balance Honor Talent)

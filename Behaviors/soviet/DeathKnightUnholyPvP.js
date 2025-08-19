@@ -79,8 +79,13 @@ export class DeathKnightUnholy extends Behavior {
       // Use Apocalypse - spend 4 wounds and transform pet
       spell.cast("Apocalypse", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) >= 4),
 
+      // Priority: Use Rune Strike to build wounds when Apocalypse is off cooldown but we don't have enough wounds
+      spell.cast("Rune Strike", on => me.target, ret => me.target &&
+        me.targetUnit.getAuraStacks(auras.festeringWound) <= 4 &&
+        !spell.isOnCooldown("Apocalypse")),
+
       // Use Scourge Strike to spend wounds
-      spell.cast("Scourge Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) > 0),
+      spell.cast("Scourge Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) > 2),
 
       // Use Death Coil if high Runic Power or Sudden Doom proc with 3+ wounds
       spell.cast("Death Coil", on => me.target, ret => me.target &&
@@ -89,8 +94,8 @@ export class DeathKnightUnholy extends Behavior {
       // Maintain Virulent Plague
       spell.cast("Outbreak", on => me.target, ret => me.target && !me.targetUnit.hasAuraByMe(auras.virulentPlague)),
 
-      // Use Rune Strike to reapply wounds when 1-2 remaining
-      spell.cast("Rune Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) <= 2),
+      // Use Rune Strike to reapply wounds when 1-4 remaining (fallback)
+      spell.cast("Rune Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) <= 4),
 
       // Death and Decay for area control
       spell.cast("Death and Decay", on => me, ret => this.shouldDeathAndDecay()),
@@ -107,10 +112,10 @@ export class DeathKnightUnholy extends Behavior {
       spell.cast("Outbreak", on => me.target, ret => me.target && !me.targetUnit.hasAuraByMe(auras.virulentPlague)),
 
       // Use Rune Strike to generate and refresh Festering Wounds
-      spell.cast("Rune Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) <= 2),
+      spell.cast("Rune Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) <= 3),
 
       // Use Scourge Strike to spend wounds and maintain plaguebringer
-      spell.cast("Scourge Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) > 0),
+      spell.cast("Scourge Strike", on => me.target, ret => me.target && me.targetUnit.getAuraStacks(auras.festeringWound) > 1),
 
       // Use Death Coil if high Runic Power or Sudden Doom proc
       spell.cast("Death Coil", on => me.target, ret => me.target && (me.power > 80 || me.hasAura(auras.suddenDoom))),
