@@ -195,6 +195,6 @@ export class MonkBrewmasterBehavior extends Behavior {
   }
 
   findMeleeTarget() {
-    return combat.targets.filter(unit => me.isWithinMeleeRange(unit)).sort((a, b) => a.health - b.health)[0];
+    return combat.bestTarget;
   }
 }
