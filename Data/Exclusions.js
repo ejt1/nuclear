@@ -21,6 +21,7 @@ export const castWhileMoveAuras = {
   358267: true, // Hover
   79206: true, // Spiritwalkers Grace
   108839: true, // Ice Floes
+  1219162: true, // Aspect of the Fox
 }
 
 // Exclusions for Line of Sight checks (LoS exclusions)
