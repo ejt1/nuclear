@@ -70,7 +70,6 @@ export class DruidBalancePvP extends Behavior {
       common.waitForNotMounted(),
       common.waitForCastOrChannel(),
 
-      // Ensure Moonkin Form only when in combat
       new bt.Decorator(
         req => !me.hasAura(auras.moonkinForm) && !me.hasAura(auras.bearForm),
         spell.cast("Moonkin Form")

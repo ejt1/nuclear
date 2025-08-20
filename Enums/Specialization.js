@@ -1,6 +1,7 @@
 const Specialization = {
   Invalid: -1,
   None: 0,
+  All: 9999,
 
   DeathKnight: {
     Blood: 250,

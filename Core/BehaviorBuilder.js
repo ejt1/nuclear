@@ -22,7 +22,7 @@ export default class BehaviorBuilder {
   build(spec, context) {
     const root = new bt.RunAll("Root");
     const selectedBehaviorName = Settings[`profile${spec}`];
-    
+
     let behaviors;
     let behaviorSettings = [];
 
@@ -38,10 +38,21 @@ export default class BehaviorBuilder {
 
     if (!behaviors || behaviors.length === 0) {
       behaviors = this.getComposites(spec, context);
+
+      // If no specific behaviors found for the specialization, fall back to Default behavior
+      if (behaviors.length === 0) {
+        const defaultBehaviors = this.behaviors.filter(v => v.specialization === Specialization.All && ((v.context & context) === context));
+        if (defaultBehaviors.length > 0) {
+          behaviors = defaultBehaviors;
+          console.info(`No specific behavior found for specialization ${spec}. Using Default behavior.`);
+        }
+      }
     }
 
-    const selectedBehavior = behaviors[0]; // Assuming we're using the first matching behavior
-    behaviorSettings = this.collectBehaviorSettings(selectedBehavior);
+    if (behaviors.length > 0) {
+      const selectedBehavior = behaviors[0]; // Assuming we're using the first matching behavior
+      behaviorSettings = this.collectBehaviorSettings(selectedBehavior);
+    }
 
     console.debug(`Built ${behaviors.length} composites`);
     behaviors.forEach(v => {
