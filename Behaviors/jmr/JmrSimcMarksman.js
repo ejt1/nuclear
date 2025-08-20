@@ -221,10 +221,11 @@ export class JmrSimcMarksmanBehavior extends Behavior {
         this.findBindingShotTargetPVP() !== undefined
       ),
       
-      // Freezing Trap enemy healer when stunned
+      // Freezing Trap enemy healer when stunned (but not if they're our target)
       spell.cast("Freezing Trap", on => this.findFreezingTrapTargetPVP(), req => 
         Settings.UseFreezingTrap &&
-        this.findFreezingTrapTargetPVP() !== undefined
+        this.findFreezingTrapTargetPVP() !== undefined &&
+        this.findFreezingTrapTargetPVP() !== me.target
       ),
 
       // Chimaeral Sting on healer
@@ -315,25 +316,29 @@ export class JmrSimcMarksmanBehavior extends Behavior {
       // Black Arrow (if Dark Ranger)
       spell.cast("Black Arrow", on => this.getCurrentTargetPVP(), req => 
         this.hasTalent("Black Arrow") &&
-        this.getCurrentTargetPVP() !== undefined
-      ),
+        this.getCurrentTargetPVP() !== undefined, {
+        skipLineOfSightCheck: this.shouldSkipLOSCheck()
+      }),
 
       // Rapid Fire
       spell.cast("Rapid Fire", on => this.getCurrentTargetPVP(), req => 
-        this.getCurrentTargetPVP() !== undefined
-      ),
+        this.getCurrentTargetPVP() !== undefined, {
+        skipLineOfSightCheck: this.shouldSkipLOSCheck()
+      }),
 
       // Arcane Shot with Precise Shots
       spell.cast("Arcane Shot", on => this.getCurrentTargetPVP(), req => 
         this.getCurrentTargetPVP() !== undefined &&
-        me.hasVisibleAura("Precise Shots")
-      ),
+        me.hasVisibleAura("Precise Shots"), {
+        skipLineOfSightCheck: this.shouldSkipLOSCheck()
+      }),
 
       // Aimed Shot without Precise Shots
       spell.cast("Aimed Shot", on => this.getCurrentTargetPVP(), req => 
         this.getCurrentTargetPVP() !== undefined &&
-        !me.hasVisibleAura("Precise Shots")
-      ),
+        !me.hasVisibleAura("Precise Shots"), {
+        skipLineOfSightCheck: this.shouldSkipLOSCheck()
+      }),
 
       // Chimaeral Sting on healer
       spell.cast("Chimaeral Sting", on => this.findEnemyHealerNotCC(), req => 
@@ -344,8 +349,9 @@ export class JmrSimcMarksmanBehavior extends Behavior {
 
       // Volley (if Salvo)
       spell.cast("Volley", on => this.getCurrentTargetPVP(), req => 
-        this.getCurrentTargetPVP() !== undefined
-      )
+        this.getCurrentTargetPVP() !== undefined, {
+        skipLineOfSightCheck: this.shouldSkipLOSCheck()
+      })
     );
   }
 
@@ -354,41 +360,48 @@ export class JmrSimcMarksmanBehavior extends Behavior {
       // Black Arrow/Kill Shot
       spell.cast("Black Arrow", on => this.getCurrentTargetPVP(), req => 
         this.hasTalent("Black Arrow") &&
-        this.getCurrentTargetPVP() !== undefined
-      ),
+        this.getCurrentTargetPVP() !== undefined, {
+        skipLineOfSightCheck: this.shouldSkipLOSCheck()
+      }),
 
       spell.cast("Kill Shot", on => this.getCurrentTargetPVP(), req => 
         this.getCurrentTargetPVP() !== undefined &&
-        this.getCurrentTargetPVP().pctHealth <= 20
-      ),
+        this.getCurrentTargetPVP().pctHealth <= 20, {
+        skipLineOfSightCheck: this.shouldSkipLOSCheck()
+      }),
 
       // Rapid Fire
       spell.cast("Rapid Fire", on => this.getCurrentTargetPVP(), req => 
-        this.getCurrentTargetPVP() !== undefined
-      ),
+        this.getCurrentTargetPVP() !== undefined, {
+        skipLineOfSightCheck: this.shouldSkipLOSCheck()
+      }),
 
       // Aimed Shot without Precise Shots
       spell.cast("Aimed Shot", on => this.getCurrentTargetPVP(), req => 
         this.getCurrentTargetPVP() !== undefined &&
         !me.hasVisibleAura("Precise Shots") &&
-        me.hasVisibleAura("Streamline")
-      ),
+        me.hasVisibleAura("Streamline"), {
+        skipLineOfSightCheck: this.shouldSkipLOSCheck()
+      }),
 
       // Arcane Shot with Precise Shots
       spell.cast("Arcane Shot", on => this.getCurrentTargetPVP(), req => 
         this.getCurrentTargetPVP() !== undefined &&
-        me.hasVisibleAura("Precise Shots")
-      ),
+        me.hasVisibleAura("Precise Shots"), {
+        skipLineOfSightCheck: this.shouldSkipLOSCheck()
+      }),
 
       // Explosive Shot
       spell.cast("Explosive Shot", on => this.getCurrentTargetPVP(), req => 
-        this.getCurrentTargetPVP() !== undefined
-      ),
+        this.getCurrentTargetPVP() !== undefined, {
+        skipLineOfSightCheck: this.shouldSkipLOSCheck()
+      }),
 
       // Steady Shot fallback
       spell.cast("Steady Shot", on => this.getCurrentTargetPVP(), req => 
-        this.getCurrentTargetPVP() !== undefined
-      ),
+        this.getCurrentTargetPVP() !== undefined, {
+        skipLineOfSightCheck: this.shouldSkipLOSCheck()
+      }),
 
       // Hunter's Mark refresh when disarmed
       spell.cast("Hunter's Mark", on => this.getCurrentTargetPVP(), req => 
@@ -554,48 +567,7 @@ export class JmrSimcMarksmanBehavior extends Behavior {
     );
   }
 
-  buildPVPSustained() {
-    return new bt.Selector(
-      // Black Arrow/Kill Shot when available
-      spell.cast("Black Arrow", on => this.getCurrentTargetPVP(), req => 
-        this.hasTalent("Black Arrow") &&
-        this.getCurrentTargetPVP() !== undefined
-      ),
 
-      spell.cast("Kill Shot", on => this.getCurrentTargetPVP(), req => 
-        this.getCurrentTargetPVP() !== undefined &&
-        this.getCurrentTargetPVP().pctHealth <= 20
-      ),
-
-      // Rapid Fire
-      spell.cast("Rapid Fire", on => this.getCurrentTargetPVP(), req => 
-        this.getCurrentTargetPVP() !== undefined
-      ),
-
-      // Aimed Shot with Streamline but no Precise Shots
-      spell.cast("Aimed Shot", on => this.getCurrentTargetPVP(), req => 
-        this.getCurrentTargetPVP() !== undefined &&
-        me.hasVisibleAura("Streamline") &&
-        !me.hasVisibleAura("Precise Shots")
-      ),
-
-      // Arcane Shot with Precise Shots
-      spell.cast("Arcane Shot", on => this.getCurrentTargetPVP(), req => 
-        this.getCurrentTargetPVP() !== undefined &&
-        me.hasVisibleAura("Precise Shots")
-      ),
-
-      // Explosive Shot
-      spell.cast("Explosive Shot", on => this.getCurrentTargetPVP(), req => 
-        this.getCurrentTargetPVP() !== undefined
-      ),
-
-      // Steady Shot
-      spell.cast("Steady Shot", on => this.getCurrentTargetPVP(), req => 
-        this.getCurrentTargetPVP() !== undefined
-      )
-    );
-  }
 
   buildDrst() {
     return new bt.Selector(
@@ -982,6 +954,11 @@ export class JmrSimcMarksmanBehavior extends Behavior {
   hasMajorCooldowns(unit) {
     const majorDamageCooldown = pvpHelpers.hasMajorDamageCooldown(unit, 3);
     return majorDamageCooldown !== undefined;
+  }
+
+  shouldSkipLOSCheck() {
+    // Skip LOS check if our target has aura 393480 (Hunter's Mark or similar tracking effect)
+    return me.target && me.target.hasAuraByMe && me.target.hasAuraByMe(393480);
   }
 
   findHealerToInterruptForTrap() {
