@@ -55,6 +55,10 @@ export class WarriorProtNewBehavior extends Behavior {
 
   useCooldowns() {
     return new bt.Selector(
+      new bt.Decorator(
+        ret => me.hasAura("Inner Resilience"),
+        common.useEquippedItemByName("Tome of Light's Devotion", on => me),
+      ),
       spell.cast("Avatar", () => Boolean(!me.hasAura("Thunder Blast") || me.getAuraStacks("Thunder Blast") <= 2)),
       spell.cast("Shield Wall", () => Boolean(me.hasAura("Immovable Object") && !me.hasAura("Avatar")) || me.pctHealth < 50),
       spell.cast("Blood Fury"),
