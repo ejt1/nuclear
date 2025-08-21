@@ -496,19 +496,25 @@ export class JmrSimcFuryBehavior extends Behavior {
     return new bt.Selector(
       // Battle Shout
       spell.cast("Battle Shout", () => !me.hasAura("Battle Shout")),
-      
+
       // Defensive abilities with user options
       spell.cast("Rallying Cry", () => Settings.UseRallyingCry && me.pctHealth < Settings.RallyingCryHealthPct),
       spell.cast("Victory Rush", () => Settings.UseVictoryRush && me.pctHealth < Settings.VictoryRushHealthPct),
       spell.cast("Enraged Regeneration", () => Settings.UseEnragedRegeneration && me.pctHealth < Settings.EnragedRegenerationHealthPct),
       spell.cast("Bloodthirst", () => Settings.UseBloodthirstHealing && me.pctHealth < Settings.BloodthirstHealingHealthPct && me.hasVisibleAura("Enraged Regeneration")),
-      
+
       // Interrupts only for PVE (not PVP) - respect both settings and overlay toggles
       new bt.Decorator(
         () => !Settings.EnablePVPRotation,
         new bt.Selector(
-          spell.interrupt("Pummel", () => Settings.UsePummel && this.overlayToggles.interrupts.value && this.overlayToggles.pummel.value),
-          spell.interrupt("Storm Bolt", () => Settings.UseStormBoltInterrupt && this.overlayToggles.interrupts.value && this.overlayToggles.stormBolt.value)
+          new bt.Decorator(
+            req => Settings.UsePummel && this.overlayToggles.interrupts.value && this.overlayToggles.pummel.value,
+            spell.interrupt("Pummel"),
+          ),
+          new bt.Decorator(
+            req => Settings.UseStormBoltInterrupt && this.overlayToggles.interrupts.value && this.overlayToggles.stormBolt.value,
+            spell.interrupt("Storm Bolt"),
+          ),
         ),
         new bt.Action(() => bt.Status.Success)
       )
