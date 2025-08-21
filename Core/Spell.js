@@ -294,21 +294,33 @@ class Spell extends wow.EventListener {
 
     // If spell wasn't found or isn't known, check if it's an override ID in the spellbook
     const playerSpells = wow.SpellBook.playerSpells;
+    const isStringSearch = typeof spellNameOrId === 'string';
+    const lowerCaseSearchName = isStringSearch ? spellNameOrId.toLowerCase() : null;
+
     for (const playerSpell of playerSpells) {
       // Check if the provided ID matches either the base ID or override ID
-      if (typeof spellNameOrId === 'number') {
+      if (!isStringSearch) {
         if (playerSpell.id === spellNameOrId || playerSpell.overrideId === spellNameOrId) {
           // Always return the base spell (using playerSpell.id) for proper recognition
           return new wow.Spell(playerSpell.id);
         }
-      } else if (typeof spellNameOrId === 'string') {
+      } else {
         // For string names, check both base and override spell names
-        const baseSpell = new wow.Spell(playerSpell.id);
-        const overrideSpell = playerSpell.id !== playerSpell.overrideId ? new wow.Spell(playerSpell.overrideId) : null;
-        
-        if (baseSpell.name.toLowerCase() === spellNameOrId.toLowerCase() ||
-            (overrideSpell && overrideSpell.name.toLowerCase() === spellNameOrId.toLowerCase())) {
-          return baseSpell; // Always return the base spell
+        // Only create override spell if IDs are different
+        if (playerSpell.id !== playerSpell.overrideId) {
+          const baseSpell = new wow.Spell(playerSpell.id);
+          const overrideSpell = new wow.Spell(playerSpell.overrideId);
+
+          if (baseSpell.name.toLowerCase() === lowerCaseSearchName ||
+              overrideSpell.name.toLowerCase() === lowerCaseSearchName) {
+            return baseSpell; // Always return the base spell
+          }
+        } else {
+          // If base and override are the same, only check base spell
+          const baseSpell = new wow.Spell(playerSpell.id);
+          if (baseSpell.name.toLowerCase() === lowerCaseSearchName) {
+            return baseSpell;
+          }
         }
       }
     }
