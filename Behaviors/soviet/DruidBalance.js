@@ -64,10 +64,9 @@ export class DruidBalance extends Behavior {
       common.waitForTarget(),
       common.waitForFacing(),
 
-      // Ensure Moonkin Form
       new bt.Decorator(
-        req => !me.hasAura(auras.moonkinForm),
-        spell.cast("Moonkin Form"),
+        req => !me.hasAura(auras.moonkinForm) && !me.hasAura(auras.bearForm),
+        spell.cast("Moonkin Form")
       ),
 
       new bt.Decorator(

@@ -136,10 +136,23 @@ class Nuclear extends wow.EventListener {
     if (me) {
       console.info('Rebuilding behaviors');
 
-      const { root, settings } = this.builder.build(wow.SpecializationInfo.activeSpecializationId, BehaviorContext.Normal);
+      const specializationId = wow.SpecializationInfo.activeSpecializationId;
+      const profileKey = `profile${specializationId}`;
+
+      // If no profile is set for this specialization, automatically set Nuclear Default
+      if (!settings[profileKey] || settings[profileKey] === "None selected") {
+        // Check if Nuclear Default behavior is available
+        const defaultBehavior = this.builder.behaviors.find(b => b.name === "Nuclear Default");
+        if (defaultBehavior) {
+          settings[profileKey] = "Nuclear Default";
+          console.info(`Auto-selected Nuclear Default for specialization ${specializationId}`);
+        }
+      }
+
+      const { root, settings: behaviorSettings } = this.builder.build(specializationId, BehaviorContext.Normal);
       this.behaviorRoot = root;
       this.behaviorContext = {};
-      this.behaviorSettings = settings;
+      this.behaviorSettings = behaviorSettings;
       availableBehaviors = this.builder.behaviors;
       defaultHealTargeting?.reset();
     }
