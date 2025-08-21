@@ -784,6 +784,24 @@ getFullRechargeTime(spellNameOrId) {
 
     return currentCharges + fractionalPart;
   }
+
+  /**
+   * Casts the single button assistant spell (one-button rotation) with an optional target.
+   * If no target is provided, it will use the best combat target or the player's current target.
+   *
+   * @param {wow.CGUnit} [target] - Optional target for the spell. If not provided, uses best combat target or me.target
+   * @returns {bt.Action} - A behavior tree action that handles the one-button rotation casting
+   */
+  castOneButtonRotation(target) {
+    return new bt.Action(() => {
+        const spellId = wow.SpellBook.singleButtonAssistantSpellId;
+        if (spellId > 0) {
+          const finalTarget = target || (combat.bestTarget ? combat.bestTarget : me.target);
+          return this.cast(spellId, on => finalTarget).execute({});
+        }
+        return bt.Status.Failure;
+      });
+  }
 }
 
 export default new Spell();
