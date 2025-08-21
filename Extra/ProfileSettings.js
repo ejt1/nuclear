@@ -11,7 +11,7 @@ const ProfileSettings = {
           uid: "profileSelector",
           text: "Select Profile",
           type: "combobox",
-          default: "None selected"
+          default: "Nuclear Default"
         }
       ]
     }
@@ -20,11 +20,9 @@ const ProfileSettings = {
     const specializationId = wow.SpecializationInfo.activeSpecializationId;
     const profileKey = `profile${specializationId}`;
 
-    const currentProfile = Settings[profileKey] ? Settings[profileKey] : "None selected";
+    const currentProfile = Settings[profileKey] ? Settings[profileKey] : "Nuclear Default";
 
-    const availableProfiles = this.findAvailableProfilesForSpecialization(specializationId);
-
-    this.options[0].options[0].options = availableProfiles;
+    this.options[0].options[0].options = this.findAvailableProfilesForSpecialization(specializationId);
     this.options[0].options[0].default = currentProfile;
 
     const behaviorSettings = nuclear.behaviorSettings || [];
@@ -40,7 +38,9 @@ const ProfileSettings = {
     renderOptionsGroup(allOptions);
   },
   findAvailableProfilesForSpecialization: function (specializationId) {
-    const matchingBehaviors = availableBehaviors.filter(behavior => behavior.specialization === specializationId);
+    const matchingBehaviors = availableBehaviors.filter(behavior =>
+      behavior.specialization === specializationId || behavior.specialization === 9999 // Specialization.All
+    );
     return matchingBehaviors.map(behavior => behavior.name || behavior.constructor.name);
   }
 };
