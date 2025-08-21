@@ -46,6 +46,33 @@ export class JmrSimcMarksmanBehavior extends Behavior {
   currentTarget = null;
   activeEnemies = 1;
 
+  // Aimed Shot tracking
+  aimedShotCastTime = 0;
+
+  constructor() {
+    super();
+    // Register for combat log events to track Aimed Shot casts
+    this.eventListener = new wow.EventListener();
+    this.eventListener.onEvent = this.onEvent.bind(this);
+  }
+
+  onEvent(event) {
+    if (event.name === "COMBAT_LOG_EVENT_UNFILTERED") {
+      const [eventData] = event.args;
+      
+      // Track successful Aimed Shot casts
+      if (eventData.eventType === 6 && // SPELL_CAST_SUCCESS
+          eventData.source.guid.equals(me.guid)) {
+        const spellId = eventData.args[0];
+        const aimedShotId = spell.getSpell("Aimed Shot")?.id;
+        
+        if (spellId === aimedShotId) {
+          this.aimedShotCastTime = wow.frameTime;
+        }
+      }
+    }
+  }
+
   static settings = [
     {
       header: "PVP Settings",
@@ -92,53 +119,38 @@ export class JmrSimcMarksmanBehavior extends Behavior {
       }),
       
       common.waitForNotMounted(),
-      common.waitForTarget(),
+      common.waitForNotSitting(),
       common.waitForCastOrChannel(),
+      common.waitForTarget(),
       
       // PVP rotation takes priority if enabled
       new bt.Decorator(
         () => Settings.EnablePVPRotation,
-        this.buildPVPRotation()
+        this.buildPVPRotation(),
+        new bt.Action(() => bt.Status.Success)
       ),
       
       // Standard PVE rotation if PVP is disabled
       new bt.Decorator(
         () => !Settings.EnablePVPRotation,
         new bt.Selector(
-          // Calculate variables
+          spell.interrupt("Counter Shot"),
+          spell.dispel("Tranquilizing Shot", false, DispelPriority.Medium, false, WoWDispelType.Magic),
+          spell.cast("Trueshot"),
+          spell.cast("Blood Fury"),
+          common.waitForFacing(),
           new bt.Action(() => {
-            this.currentTarget = this.getCurrentTarget();
-            this.activeEnemies = this.getActiveEnemies();
+            const spellId = wow.SpellBook.singleButtonAssistantSpellId;
+            const spellName = spell.getSpell(spellId)?.name;
+            if (spellId > 0) {
+              //console.info(spellName);
+              const target = me.target
+              return spell.cast(spellName, on => target).execute({});
+            }
             return bt.Status.Failure;
-          }),
-          
-          // Cooldowns
-          this.buildCds(),
-          
-          // Trickshots (3+ enemies with Trick Shots)
-          new bt.Decorator(
-            () => this.activeEnemies > 2 && this.hasTalent("Trick Shots"),
-            this.buildTrickshots()
-          ),
-          
-          // Cleave (2+ enemies)
-          new bt.Decorator(
-            () => this.activeEnemies > 1,
-            this.buildCleave()
-          ),
-          
-          // Single target with Black Arrow (Dark Ranger)
-          new bt.Decorator(
-            () => this.activeEnemies === 1 && this.hasTalent("Black Arrow"),
-            this.buildDrst()
-          ),
-          
-          // Single target without Black Arrow (Sentinel)
-          new bt.Decorator(
-            () => this.activeEnemies === 1 && !this.hasTalent("Black Arrow"),
-            this.buildSentst()
-          )
-        )
+          })
+        ),
+        new bt.Action(() => bt.Status.Success)
       )
     );
   }
@@ -415,21 +427,17 @@ export class JmrSimcMarksmanBehavior extends Behavior {
 
   isTrueshotReady() {
     // variable,name=trueshot_ready,value=!talent.bullseye|fight_remains>cooldown.trueshot.duration+buff.trueshot.duration|buff.bullseye.stack=buff.bullseye.max_stack|fight_remains<25
-    if (!this.hasTalent("Bullseye")) return true;
-    
-    const bullseyeStacks = me.getAuraStacks ? me.getAuraStacks("Bullseye") || 0 : 0;
-    const maxBullseyeStacks = 10; // Assuming max stacks
-    
-    return bullseyeStacks >= maxBullseyeStacks;
+    return true;
   }
 
   // Build action lists for different scenarios
   buildTrickshots() {
     return new bt.Selector(
+
       // explosive_shot,if=talent.precision_detonation&action.aimed_shot.in_flight&buff.trueshot.down&(!talent.shrapnel_shot|buff.lock_and_load.down)
       spell.cast("Explosive Shot", on => this.getCurrentTarget(), req => 
         this.hasTalent("Precision Detonation") &&
-        this.isAimedShotInFlight() &&
+        // this.isAimedShotInFlight() &&
         !me.hasVisibleAura("Trueshot") &&
         (!this.hasTalent("Shrapnel Shot") || !me.hasVisibleAura("Lock and Load"))
       ),
@@ -478,16 +486,18 @@ export class JmrSimcMarksmanBehavior extends Behavior {
 
       // steady_shot,if=focus+cast_regen<focus.max
       spell.cast("Steady Shot", on => this.getCurrentTarget(), req => 
-        this.getFocusAfterCast("Steady Shot") < me.maxPowerByType(PowerType.Focus)
+        me.powerByType(PowerType.Focus) < 75
       ),
 
       // multishot
-      spell.cast("Multi-Shot", on => this.getCurrentTarget())
+      spell.cast("Multi-Shot", on => this.getCurrentTarget()),
+      spell.cast("Steady Shot", on => this.getCurrentTarget())
     );
   }
 
   buildCleave() {
     return new bt.Selector(
+      spell.cast("Steady Shot", on => this.getCurrentTarget()),
       // explosive_shot,if=talent.precision_detonation&action.aimed_shot.in_flight&(buff.trueshot.down|!talent.windrunner_quiver)
       spell.cast("Explosive Shot", on => this.getCurrentTarget(), req => 
         this.hasTalent("Precision Detonation") &&
@@ -571,6 +581,7 @@ export class JmrSimcMarksmanBehavior extends Behavior {
 
   buildDrst() {
     return new bt.Selector(
+      spell.cast("Steady Shot", on => this.getCurrentTarget()),
       // explosive_shot,if=talent.precision_detonation&action.aimed_shot.in_flight&buff.trueshot.down&buff.lock_and_load.down
       spell.cast("Explosive Shot", on => this.getCurrentTarget(), req => 
         this.hasTalent("Precision Detonation") &&
@@ -634,6 +645,7 @@ export class JmrSimcMarksmanBehavior extends Behavior {
 
   buildSentst() {
     return new bt.Selector(
+      spell.cast("Steady Shot", on => this.getCurrentTarget()),
       // explosive_shot,if=talent.precision_detonation&action.aimed_shot.in_flight&buff.trueshot.down
       spell.cast("Explosive Shot", on => this.getCurrentTarget(), req => 
         this.hasTalent("Precision Detonation") &&
@@ -699,27 +711,47 @@ export class JmrSimcMarksmanBehavior extends Behavior {
 
   // Helper methods
   getCurrentTarget() {
-    return combat.bestTarget;
+    return me.target;
   }
 
   getCurrentTargetPVP() {
     return me.target;
   }
 
-  getActiveEnemies() {
-    return me.getEnemies().filter(enemy => 
-      me.distanceTo(enemy) <= 40 && !enemy.deadOrGhost
-    ).length;
+  getEnemiesInRange(range) {
+    return me.getUnitsAroundCount(range);
   }
 
   hasTalent(talentName) {
-    // Simplified talent check - would need proper implementation
-    return true; // Placeholder
+    // Check for talent-related auras that indicate the talent is active
+    return me.hasAura(talentName);
   }
 
   isAimedShotInFlight() {
-    // Check if Aimed Shot is currently being cast or in flight
-    return me.isCasting && me.currentCast === spell.getSpell("Aimed Shot")?.id;
+    const currentTime = wow.frameTime;
+    const timeSinceAimedShot = currentTime - this.aimedShotCastTime;
+    
+    // Check if Aimed Shot was successfully cast within the last 1 second (travel time)
+    const withinTimeWindow = timeSinceAimedShot > 0 && timeSinceAimedShot <= 1000;
+    
+    // Check if Aimed Shot was our last successful cast (ignoring Auto Shot)
+    const lastCastWasAimedShot = this.getLastNonAutoShotCast() === "Aimed Shot";
+    
+    // Consider Aimed Shot "in flight" if either condition is met
+    return withinTimeWindow || (lastCastWasAimedShot && timeSinceAimedShot <= 2000);
+  }
+
+  getLastNonAutoShotCast() {
+    // Get recent successful spells and filter out Auto Shot (spell ID 75)
+    const recentSpells = spell.getLastSuccessfulSpells(5, false);
+    
+    for (const spellData of recentSpells.reverse()) { // Most recent first
+      if (spellData.spellName !== "Auto Shot") {
+        return spellData.spellName;
+      }
+    }
+    
+    return null;
   }
 
   getTrickShotsRemaining() {

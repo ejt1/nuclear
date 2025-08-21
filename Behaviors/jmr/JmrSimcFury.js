@@ -10,6 +10,7 @@ import Settings from "@/Core/Settings";
 import drTracker from "@/Core/DRTracker";
 import pvpData, { pvpHelpers, pvpReflect, pvpInterrupts } from "@/Data/PVPData";
 import { drHelpers } from "@/Data/PVPDRList";
+import KeyBinding from "@/Core/KeyBinding";
 
 export class JmrSimcFuryBehavior extends Behavior {
   name = "Jmr SimC Warrior Fury";
@@ -29,6 +30,15 @@ export class JmrSimcFuryBehavior extends Behavior {
 
   // Burst mode toggle state
   burstModeActive = false;
+  
+  // Burst toggle system
+  burstToggleTime = 0;
+  
+  constructor() {
+    super();
+    // Initialize the burst toggle keybinding with default
+    KeyBinding.setDefault("BurstToggleKeybind", imgui.Key.F1);
+  }
   
   // Manual spell casting
   spellIdInput = new imgui.MutableVariable("1161");
@@ -85,6 +95,16 @@ export class JmrSimcFuryBehavior extends Behavior {
       ]
     },
     {
+      header: "Burst Toggle System",
+      options: [
+        { type: "checkbox", uid: "UseBurstToggle", text: "Use Burst Toggle", default: true },
+        { type: "hotkey", uid: "BurstToggleKeybind", text: "Burst Toggle Key", default: imgui.Key.X },
+        { type: "checkbox", uid: "BurstModeWindow", text: "Use Window Mode (unchecked = Toggle Mode)", default: false },
+        { type: "slider", uid: "BurstWindowDuration", text: "Burst Window Duration (seconds)", min: 5, max: 60, default: 15 },
+        { type: "checkbox", uid: "BurstIncludeBloodFury", text: "Include Blood Fury in Burst", default: true }
+      ]
+    },
+    {
       header: "Time to Death Settings",
       options: [
         { type: "checkbox", uid: "IgnoreTimeToDeath", text: "Ignore Time to Death (Use abilities regardless)", default: false },
@@ -95,15 +115,10 @@ export class JmrSimcFuryBehavior extends Behavior {
 
   build() {    
     return new bt.Selector(
-      // Overlay rendering - runs every frame FIRST
       new bt.Action(() => {
         this.renderOverlay();
         
-        // Debug logging for target health and Bloodcraze stacks
         const target = this.getCurrentTarget();
-        if (target && Math.random() < 0.02) { // Log 2% of the time to avoid spam
-          console.log("Debug - Target Health:", target.pctHealth, "Bloodcraze Stacks:", me.getAuraStacks(393951), "Enemies in Range:", this.getEnemiesInRange(8));
-        }
 
         if (imgui.isKeyPressed(imgui.Key.RightArrow)) {
           const target = me.targetUnit || me;
@@ -130,8 +145,11 @@ export class JmrSimcFuryBehavior extends Behavior {
           }
         }
 
-        // Burst mode toggle with X key
-        if (imgui.isKeyPressed(imgui.Key.X)) {
+        // Handle burst toggle system
+        this.handleBurstToggle();
+        
+        // Legacy: Burst mode toggle with X key (if not using burst toggle system)
+        if (!Settings.UseBurstToggle && imgui.isKeyPressed(imgui.Key.X)) {
           this.burstModeActive = !this.burstModeActive;
           console.log(`Burst mode ${this.burstModeActive ? 'ACTIVATED' : 'DEACTIVATED'}`);
         }
@@ -231,11 +249,6 @@ export class JmrSimcFuryBehavior extends Behavior {
     
     if (!this.overlayToggles.showOverlay.value) {
       return;
-    }
-
-    // Debug log (remove this later)
-    if (Math.random() < 0.01) { // Only log 1% of the time to avoid spam
-      console.log("Rendering Fury Warrior overlay");
     }
 
     const viewport = imgui.getMainViewport();
@@ -390,17 +403,45 @@ export class JmrSimcFuryBehavior extends Behavior {
         }
         
         // Show burst mode status
-        if (this.burstModeActive) {
-          imgui.textColored({ r: 1.0, g: 0.2, b: 0.2, a: 1.0 }, "SLAYER BURST ACTIVE");
-          if (imgui.button("Disable Burst", { x: 120, y: 0 })) {
-            this.burstModeActive = false;
-            console.log("Burst mode DEACTIVATED via UI");
+        if (Settings.UseBurstToggle) {       
+          // New burst toggle system
+          if (combat.burstToggle) {
+            const statusText = Settings.BurstModeWindow ? 
+              `BURST WINDOW ACTIVE (${Math.max(0, Settings.BurstWindowDuration - Math.floor((wow.frameTime - this.burstToggleTime) / 1000))}s)` :
+              "BURST TOGGLE ACTIVE";
+            imgui.textColored({ r: 1.0, g: 0.2, b: 0.2, a: 1.0 }, statusText);
+            if (imgui.button("Disable Burst", { x: 120, y: 0 })) {
+              combat.burstToggle = false;
+              this.burstModeActive = false;
+              this.burstToggleTime = 0;
+              console.log("Burst mode DEACTIVATED via UI");
+            }
+          } else {
+            const keyName = KeyBinding.formatKeyBinding(KeyBinding.keybindings["BurstToggleKeybind"]) || "F1";
+            imgui.text(`Press ${keyName} to ${Settings.BurstModeWindow ? "start burst window" : "toggle burst"}`);
+            if (imgui.button("Enable Burst", { x: 120, y: 0 })) {
+              combat.burstToggle = true;
+              this.burstModeActive = true;
+              if (Settings.BurstModeWindow) {
+                this.burstToggleTime = wow.frameTime;
+              }
+              console.log("Burst mode ACTIVATED via UI");
+            }
           }
         } else {
-          imgui.text("Press X to toggle Slayer Burst");
-          if (imgui.button("Enable Burst", { x: 120, y: 0 })) {
-            this.burstModeActive = true;
-            console.log("Burst mode ACTIVATED via UI");
+          // Legacy X key system
+          if (this.burstModeActive) {
+            imgui.textColored({ r: 1.0, g: 0.2, b: 0.2, a: 1.0 }, "SLAYER BURST ACTIVE");
+            if (imgui.button("Disable Burst", { x: 120, y: 0 })) {
+              this.burstModeActive = false;
+              console.log("Burst mode DEACTIVATED via UI");
+            }
+          } else {
+            imgui.text("Press X to toggle Slayer Burst");
+            if (imgui.button("Enable Burst", { x: 120, y: 0 })) {
+              this.burstModeActive = true;
+              console.log("Burst mode ACTIVATED via UI");
+            }
           }
         }
       } else {
@@ -477,10 +518,10 @@ export class JmrSimcFuryBehavior extends Behavior {
   slayerRotation() {
     return new bt.Selector(
       // actions.slayer=recklessness
-      spell.cast("Recklessness", req => Settings.UseRecklessness && this.overlayToggles.recklessness.value && this.shouldUseRecklessness()),
+      spell.cast("Recklessness", req => Settings.UseRecklessness && this.overlayToggles.recklessness.value && this.shouldUseRecklessness() && this.shouldUseBurstAbility()),
       
       // actions.slayer+=/avatar,if=cooldown.recklessness.remains
-      spell.cast("Avatar", req => Settings.UseAvatar && this.overlayToggles.avatar.value && this.shouldUseAvatar() && spell.getCooldown("Recklessness").timeleft > 0),
+      spell.cast("Avatar", req => Settings.UseAvatar && this.overlayToggles.avatar.value && this.shouldUseAvatar() && this.shouldUseBurstAbility() && spell.getCooldown("Recklessness").timeleft > 0),
       
       // actions.slayer+=/execute,if=buff.ashen_juggernaut.up&buff.ashen_juggernaut.remains<=gcd
       spell.cast("Execute", on => this.getCurrentTarget(), req => me.hasAura("Ashen Juggernaut") && this.getAuraRemainingTime("Ashen Juggernaut") <= 1.5),
@@ -589,10 +630,10 @@ export class JmrSimcFuryBehavior extends Behavior {
   thaneRotation() {
     return new bt.Selector(
       // actions.thane=recklessness
-      spell.cast("Recklessness", req => Settings.UseRecklessness && this.overlayToggles.recklessness.value && this.shouldUseRecklessness()),
+      spell.cast("Recklessness", req => Settings.UseRecklessness && this.overlayToggles.recklessness.value && this.shouldUseRecklessness() && this.shouldUseBurstAbility()),
       
       // actions.thane+=/avatar
-      spell.cast("Avatar", req => Settings.UseAvatar && this.overlayToggles.avatar.value && this.shouldUseAvatar()),
+      spell.cast("Avatar", req => Settings.UseAvatar && this.overlayToggles.avatar.value && this.shouldUseAvatar() && this.shouldUseBurstAbility()),
       
       // actions.thane+=/ravager
       spell.cast("Ravager", on => this.getCurrentTarget()),
@@ -679,7 +720,7 @@ export class JmrSimcFuryBehavior extends Behavior {
       spell.cast("Lights Judgment", on => this.getCurrentTarget(), req => this.shouldUseOnGCDRacials()),
       spell.cast("Bag of Tricks", on => this.getCurrentTarget(), req => this.shouldUseOnGCDRacials()),
       spell.cast("Berserking", on => this.getCurrentTarget(), req => me.hasAura("Recklessness")),
-      spell.cast("Blood Fury", on => this.getCurrentTarget()),
+      spell.cast("Blood Fury", on => this.getCurrentTarget(), req => !Settings.BurstIncludeBloodFury || this.shouldUseBurstAbility()),
       spell.cast("Fireblood", on => this.getCurrentTarget()),
       spell.cast("Ancestral Call", on => this.getCurrentTarget())
     );
@@ -701,6 +742,47 @@ export class JmrSimcFuryBehavior extends Behavior {
     
     const target = this.getCurrentTarget();
     return target && target.timeToDeath() > Settings.MinTimeToDeath && !me.hasAura("Smothering Shadows");
+  }
+
+  handleBurstToggle() {
+    if (!Settings.UseBurstToggle) return;
+    
+    // Check for keybind press using the KeyBinding system
+    if (KeyBinding.isPressed("BurstToggleKeybind")) {
+      
+      if (!Settings.BurstModeWindow) {
+        // Toggle mode: flip the state
+        combat.burstToggle = !combat.burstToggle;
+        this.burstModeActive = combat.burstToggle;
+        console.log(`Burst toggle ${combat.burstToggle ? 'ACTIVATED' : 'DEACTIVATED'} (Toggle mode)`);
+      } else {
+        // Window mode: start the burst window
+        combat.burstToggle = true;
+        this.burstModeActive = true;
+        this.burstToggleTime = wow.frameTime;
+        console.log(`Burst window ACTIVATED for ${Settings.BurstWindowDuration} seconds`);
+      }
+    }
+    
+    // Handle burst window timeout - always check if we're in window mode and burst is active
+    if (Settings.BurstModeWindow && combat.burstToggle && this.burstToggleTime > 0) {
+      const elapsed = (wow.frameTime - this.burstToggleTime) / 1000;
+      
+      if (elapsed >= Settings.BurstWindowDuration) {
+        combat.burstToggle = false;
+        this.burstModeActive = false;
+        this.burstToggleTime = 0; // Reset the timer
+        console.log(`Burst window EXPIRED after ${elapsed.toFixed(1)}s`);
+      }
+    }
+  }
+
+  shouldUseBurstAbility() {
+    if (Settings.UseBurstToggle) {
+      return combat.burstToggle;
+    }
+    // Legacy burst mode for X key
+    return this.burstModeActive;
   }
 
   shouldUseChampionsSpear() {
