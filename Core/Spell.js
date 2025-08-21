@@ -268,7 +268,8 @@ class Spell extends wow.EventListener {
    * Helper function to retrieve a spell by ID or name.
    * This function first tries to retrieve the spell directly by ID or name. If not found,
    * it then iterates through the player's spellbook and constructs spells using their
-   * override ID to check for matches.
+   * override ID to check for matches. If an override ID is provided, it automatically
+   * returns the base spell to ensure proper spell recognition.
    *
    * @param {number | string} spellNameOrId - The spell ID or name.
    * @returns {wow.Spell | null} - The spell object, or null if not found.
@@ -286,26 +287,29 @@ class Spell extends wow.EventListener {
       throw new Error("Invalid argument type for getSpell method");
     }
 
-    // If the spell was found, return it immediately
-    if (spell) {
+    // If the spell was found and is known, return it immediately
+    if (spell && spell.isKnown) {
       return spell;
     }
 
-
-    // If the spell wasn't found, search through the player's spellbook
+    // If spell wasn't found or isn't known, check if it's an override ID in the spellbook
     const playerSpells = wow.SpellBook.playerSpells;
     for (const playerSpell of playerSpells) {
-      if (playerSpell.id === playerSpell.overrideId) {
-        continue;
-      }
-
-      const constructedSpell = new wow.Spell(playerSpell.overrideId);  // Use the spell's override
-      // Check if the constructed spell matches the original name or ID provided
-      if (
-        (typeof spellNameOrId === 'number' && (constructedSpell.id === spellNameOrId || constructedSpell.overrideId === spellNameOrId)) ||
-        (typeof spellNameOrId === 'string' && constructedSpell.name.toLowerCase() === spellNameOrId.toLowerCase())
-      ) {
-        return playerSpell;
+      // Check if the provided ID matches either the base ID or override ID
+      if (typeof spellNameOrId === 'number') {
+        if (playerSpell.id === spellNameOrId || playerSpell.overrideId === spellNameOrId) {
+          // Always return the base spell (using playerSpell.id) for proper recognition
+          return new wow.Spell(playerSpell.id);
+        }
+      } else if (typeof spellNameOrId === 'string') {
+        // For string names, check both base and override spell names
+        const baseSpell = new wow.Spell(playerSpell.id);
+        const overrideSpell = playerSpell.id !== playerSpell.overrideId ? new wow.Spell(playerSpell.overrideId) : null;
+        
+        if (baseSpell.name.toLowerCase() === spellNameOrId.toLowerCase() ||
+            (overrideSpell && overrideSpell.name.toLowerCase() === spellNameOrId.toLowerCase())) {
+          return baseSpell; // Always return the base spell
+        }
       }
     }
 

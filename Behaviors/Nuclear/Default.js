@@ -22,7 +22,6 @@ export class DefaultBehavior extends Behavior {
       new bt.Action(() => {
         const spellId = wow.SpellBook.singleButtonAssistantSpellId;
         if (spellId > 0) {
-          console.info(spellId);
           const target = defaultCombatTargeting.bestTarget ? defaultCombatTargeting.bestTarget : me.target
           return spell.cast(spellId, on => target).execute({});
         }
