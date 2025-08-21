@@ -71,13 +71,19 @@ export class DruidBalancePvP extends Behavior {
       common.waitForCastOrChannel(),
 
       new bt.Decorator(
-        req => !me.hasAura(auras.moonkinForm) && !me.hasAura(auras.bearForm),
+        req => !me.hasAura(auras.moonkinForm) && !me.hasAura(auras.bearForm) && !me.hasAura(auras.prowl),
         spell.cast("Moonkin Form")
       ),
 
       new bt.Decorator(
         ret => !spell.isGlobalCooldown(),
         new bt.Selector(
+
+          // Skip all combat actions if prowl is active
+          new bt.Decorator(
+            ret => me.hasAura(auras.prowl),
+            new bt.Action(() => bt.Status.Success)
+          ),
 
           // Defensive cooldowns
           this.defensiveCooldowns(),
