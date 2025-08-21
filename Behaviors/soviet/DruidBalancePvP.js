@@ -36,6 +36,7 @@ const auras = {
   regrowth: 8936,
   forceOfNature: 205636,
   frenziedRegeneration: 22842,
+  faerieSwarm: 209749,
 };
 
 export class DruidBalancePvP extends Behavior {
@@ -93,14 +94,21 @@ export class DruidBalancePvP extends Behavior {
             this.findRegrowthTarget() !== undefined
           ),
 
-          // Stop casting and allow running away when in bear form and low health
+          // Stop casting and allow running away when in bear form and low health or low time to death
           new bt.Decorator(
-            ret => me.hasAura(auras.bearForm) && me.effectiveHealthPercent < 70,
+            ret => me.hasAura(auras.bearForm) &&
+                   (me.effectiveHealthPercent < 70 ||
+                    (me.timeToDeath() !== undefined && me.timeToDeath() < 3)),
             new bt.Action(() => bt.Status.Success)
           ),
 
           // Spells that require target and/or facing
           common.waitForTarget(),
+
+          // Faerie Swarm disarm on melee targets
+          spell.cast("Faerie Swarm", on => this.findFaerieSwarmTarget(), ret =>
+            this.findFaerieSwarmTarget() !== undefined
+          ),
 
           // Cyclone enemy healers
           spell.cast("Cyclone", on => this.cycloneTarget(), ret =>
@@ -134,7 +142,8 @@ export class DruidBalancePvP extends Behavior {
       // Bear Form for emergency defense
       spell.cast("Bear Form", () =>
         Settings.UseDefensiveCooldowns &&
-        me.effectiveHealthPercent <= Settings.BearFormHealth &&
+        (me.effectiveHealthPercent <= Settings.BearFormHealth ||
+         (me.timeToDeath() !== undefined && me.timeToDeath() < 3)) &&
         !me.hasAura(auras.bearForm)
       ),
 
@@ -156,14 +165,12 @@ export class DruidBalancePvP extends Behavior {
   burstDamage() {
     return new bt.Selector(
       // Mass Entanglement + Solar Beam on enemy healer before burst
-      spell.cast("Mass Entanglement", on => this.findEnemyHealer(), ret =>
-        this.findEnemyHealer() !== undefined &&
-        !spell.isOnCooldown("Solar Beam") &&
-        drTracker.getDRStacks(this.findEnemyHealer().guid, "silence") === 0
+      spell.cast("Mass Entanglement", on => this.findMassEntanglementComboTarget(), ret =>
+        this.findMassEntanglementComboTarget() !== undefined
       ),
 
-      spell.cast("Solar Beam", on => this.findEnemyHealer(), ret =>
-        this.findEnemyHealer() !== undefined && this.findEnemyHealer().hasAura(auras.massEntanglement)
+      spell.cast("Solar Beam", on => this.findSolarBeamTarget(), ret =>
+        this.findSolarBeamTarget() !== undefined
       ),
 
       // Major cooldowns
@@ -171,10 +178,8 @@ export class DruidBalancePvP extends Behavior {
         !me.hasAura(auras.incarnationChosenOfElune)
       ),
 
-      // Force of Nature during incarnation for damage boost
-      spell.cast("Force of Nature", () =>
-        me.hasAura(auras.incarnationChosenOfElune)
-      ),
+      // Force of Nature for damage boost (use freely)
+      spell.cast("Force of Nature", on => me.target, () => me.target),
 
       // Fury of Elune during incarnation
       spell.cast("Fury of Elune", () =>
@@ -209,7 +214,7 @@ export class DruidBalancePvP extends Behavior {
       spell.cast("Fury of Elune", () => true),
 
       // Use Force of Nature for damage and astral power
-      spell.cast("Force of Nature", () => true),
+      spell.cast("Force of Nature", on => me.target, () => me.target),
 
       // Use Starsurge when we have enough Astral Power
       spell.cast("Starsurge", on => me.target, () =>
@@ -325,6 +330,41 @@ export class DruidBalancePvP extends Behavior {
     return undefined;
   }
 
+  findMassEntanglementComboTarget() {
+    if (spell.isOnCooldown("Mass Entanglement") || spell.isOnCooldown("Solar Beam")) return undefined;
+
+    const enemies = me.getEnemies();
+    for (const enemy of enemies) {
+      if (enemy.isPlayer() &&
+          enemy.isHealer() &&
+          me.distanceTo(enemy) <= 30 &&
+          me.withinLineOfSight(enemy) &&
+          !enemy.isCCd() &&
+          enemy.canCC() &&
+          drTracker.getDRStacks(enemy.guid, "root") === 0 &&
+          drTracker.getDRStacks(enemy.guid, "silence") === 0 &&
+          !pvpHelpers.hasImmunity(enemy)) {
+        return enemy;
+      }
+    }
+    return undefined;
+  }
+
+  findSolarBeamTarget() {
+    const enemies = me.getEnemies();
+    for (const enemy of enemies) {
+      if (enemy.isPlayer() &&
+          enemy.isHealer() &&
+          me.distanceTo(enemy) <= 40 &&
+          me.withinLineOfSight(enemy) &&
+          enemy.hasAura(auras.massEntanglement) &&
+          drTracker.getDRStacks(enemy.guid, "silence") <= 1) {
+        return enemy;
+      }
+    }
+    return undefined;
+  }
+
   findEnemyHealer() {
     const enemies = me.getEnemies();
     for (const enemy of enemies) {
@@ -378,6 +418,51 @@ export class DruidBalancePvP extends Behavior {
       }
     }
     return undefined;
+  }
+
+  findFaerieSwarmTarget() {
+    // Check if Faerie Swarm is known and not on cooldown
+    if (!spell.isSpellKnown("Faerie Swarm") || spell.isOnCooldown("Faerie Swarm")) {
+      return undefined;
+    }
+
+    // Check if someone in my group is below 70% health
+    const groupNeedsHelp = this.hasGroupMemberBelowHealth(87);
+    if (!groupNeedsHelp) {
+      return undefined;
+    }
+
+    // Get all enemy players within 30 yards
+    const enemies = me.getEnemies();
+    for (const enemy of enemies) {
+      if (enemy.isPlayer() &&
+          enemy.isDisarmableMelee() &&
+          me.distanceTo(enemy) <= 30 &&
+          me.withinLineOfSight(enemy) &&
+          enemy.getDR("disarm") === 0 &&
+          !pvpHelpers.hasImmunity(enemy)) {
+        return enemy;
+      }
+    }
+    return undefined;
+  }
+
+  hasGroupMemberBelowHealth(threshold) {
+    // Check if the player themselves is below threshold
+    if (me.effectiveHealthPercent < threshold) {
+      return true;
+    }
+
+    // Check group members
+    const friends = me.getFriends();
+    for (const friend of friends) {
+      if (friend.isPlayer() &&
+          friend.inMyGroup() &&
+          friend.effectiveHealthPercent < threshold) {
+        return true;
+      }
+    }
+    return false;
   }
 }
 

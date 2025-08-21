@@ -4,6 +4,7 @@ import { MovementFlags, TraceLineHitFlags, UnitFlags, UnitStandStateType } from 
 import { HealImmune, PVPImmuneToCC } from "@/Enums/Auras";
 import Settings from "@/Core/Settings";
 import { rootExclusions } from "@/Data/Exclusions";
+import Specialization from "@/Enums/Specialization";
 
 const originalTargetGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'target').get;
 const originalAurasGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'auras').get;
@@ -793,10 +794,27 @@ Object.defineProperties(wow.CGUnit.prototype, {
 
   isHealer: {
     /**
-     * Check if the unit is a healer based on their specialization auras.
-     * @returns {boolean} - Returns true if the unit has any healing specialization aura.
+     * Check if the unit is a healer based on their specialization.
+     * For enemy players, uses specializationId. For others, falls back to aura checking.
+     * @returns {boolean} - Returns true if the unit has any healing specialization.
      */
     value: function() {
+      // If this is an enemy player, use specializationId instead of checking auras
+      if (this instanceof wow.CGPlayer && this.specializationId) {
+        const healerSpecIds = [
+          Specialization.Evoker.Preservation,
+          Specialization.Druid.Restoration,
+          Specialization.Priest.Discipline,
+          Specialization.Priest.Holy,
+          Specialization.Monk.Mistweaver,
+          Specialization.Paladin.Holy,
+          Specialization.Shaman.Restoration
+        ];
+
+        return healerSpecIds.includes(this.specializationId);
+      }
+
+      // Fallback to aura checking for non-players or when specializationId is not available
       const healerSpecs = [
         'Preservation Evoker',
         'Restoration Druid',
@@ -809,6 +827,82 @@ Object.defineProperties(wow.CGUnit.prototype, {
 
       return this.auras.some(aura =>
         aura && aura.name && healerSpecs.includes(aura.name)
+      );
+    }
+  },
+
+  isDisarmableMelee: {
+    /**
+     * Check if the unit is a melee class/spec that can be disarmed.
+     * Excludes Feral Druids since they fight in cat form without weapons.
+     * For enemy players, uses specializationId. For others, falls back to aura checking.
+     * @returns {boolean} - Returns true if the unit has a disarmable melee specialization.
+     */
+    value: function() {
+      // If this is an enemy player, use specializationId instead of checking auras
+      if (this instanceof wow.CGPlayer && this.specializationId) {
+        const disarmableMeleeSpecIds = [
+          // Death Knight - all specs use weapons
+          Specialization.DeathKnight.Blood,
+          Specialization.DeathKnight.Frost,
+          Specialization.DeathKnight.Unholy,
+          // Demon Hunter - both specs use weapons
+          Specialization.DemonHunter.Havoc,
+          Specialization.DemonHunter.Vengeance,
+          // Monk - Windwalker can use weapons
+          Specialization.Monk.Windwalker,
+          // Paladin - Protection and Retribution use weapons
+          Specialization.Paladin.Protection,
+          Specialization.Paladin.Retribution,
+          // Rogue - all specs use weapons
+          Specialization.Rogue.Assassination,
+          Specialization.Rogue.Combat, // Outlaw
+          Specialization.Rogue.Sublety,
+          // Shaman - Enhancement uses weapons
+          Specialization.Shaman.Enhancement,
+          // Warrior - all specs use weapons
+          Specialization.Warrior.Arms,
+          Specialization.Warrior.Fury,
+          Specialization.Warrior.Protection,
+          // Hunter - Survival uses melee weapons
+          Specialization.Hunter.Survival
+          // Note: Feral Druid is intentionally excluded as they fight in cat form
+        ];
+
+        return disarmableMeleeSpecIds.includes(this.specializationId);
+      }
+
+      // Fallback to aura checking for non-players or when specializationId is not available
+      const disarmableMeleeSpecs = [
+        // Death Knight - all specs use weapons
+        'Blood Death Knight',
+        'Frost Death Knight',
+        'Unholy Death Knight',
+        // Demon Hunter - both specs use weapons
+        'Havoc Demon Hunter',
+        'Vengeance Demon Hunter',
+        // Monk - Windwalker can use weapons
+        'Windwalker Monk',
+        // Paladin - Protection and Retribution use weapons
+        'Protection Paladin',
+        'Retribution Paladin',
+        // Rogue - all specs use weapons
+        'Assassination Rogue',
+        'Outlaw Rogue',
+        'Subtlety Rogue',
+        // Shaman - Enhancement uses weapons
+        'Enhancement Shaman',
+        // Warrior - all specs use weapons
+        'Arms Warrior',
+        'Fury Warrior',
+        'Protection Warrior',
+        // Hunter - Survival uses melee weapons
+        'Survival Hunter'
+        // Note: Feral Druid is intentionally excluded as they fight in cat form
+      ];
+
+      return this.auras.some(aura =>
+        aura && aura.name && disarmableMeleeSpecs.includes(aura.name)
       );
     }
   },
