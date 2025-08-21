@@ -49,10 +49,10 @@ class CombatTargeting extends Targeting {
       if (unit.distanceTo(me) >= 40) { return false; }
       if (unit.isImmune()) { return false; }
       if (unit === me.target && Settings.AttackOOC) { return true; }
-      if (!unit.inCombatWithMe && !wow.Party.currentParty?.isUnitInCombatWithParty(unit)) {
+      if (!me.inCombatWith(unit) && !wow.Party.currentParty?.isUnitInCombatWithParty(unit)) {
         // Check if the unit is in combat with the player's pet
         const pet = Pet.current;
-        if (pet && unit.inCombatWith(pet)) {
+        if (pet && pet.inCombatWith(unit)) {
           return true;
         }
         return false;
