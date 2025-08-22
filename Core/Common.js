@@ -173,6 +173,7 @@ class Common {
         //console.debug(`Equipped item "${name}" not found.`);
         return bt.Status.Failure;
       }
+
       if (!item.useSpell) {
         // console.debug(`Equipped item "${name}" is not usable.`);
         return bt.Status.Failure;
