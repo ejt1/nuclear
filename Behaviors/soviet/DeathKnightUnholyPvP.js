@@ -1,12 +1,13 @@
-import {Behavior, BehaviorContext} from "@/Core/Behavior";
+import { Behavior, BehaviorContext } from "@/Core/Behavior";
 import * as bt from '@/Core/BehaviorTree';
 import spell from "@/Core/Spell";
-import {me} from "@/Core/ObjectManager";
-import {defaultCombatTargeting as Combat} from "@/Targeting/CombatTargeting";
+import { me } from "@/Core/ObjectManager";
+import { defaultCombatTargeting as Combat } from "@/Targeting/CombatTargeting";
 import Specialization from "@/Enums/Specialization";
 import common from "@/Core/Common";
 import Pet from "@/Core/Pet";
 import Spell from "@/Core/Spell";
+import { RaceType } from "@/Enums/UnitEnums";
 
 const auras = {
   darkSuccor: 101568,
@@ -23,7 +24,8 @@ const auras = {
   festeringScythe: 458123,
   legionOfSouls: 383269,
   rottenTouch: 390275,
-  darkTransform: 63560
+  darkTransform: 63560,
+  unholyAssault: 207289,
 }
 
 export class DeathKnightUnholy extends Behavior {
@@ -218,11 +220,11 @@ export class DeathKnightUnholy extends Behavior {
 
     for (const unit of nearbyEnemies) {
       if (unit !== me.target &&
-          me.isFacing(unit) &&
-          unit.isHealer() &&
-          !unit.isCCd() &&
-          unit.canCC() &&
-          unit.getDR("disorient") === 0) {
+        me.isFacing(unit) &&
+        unit.isHealer() &&
+        !unit.isCCd() &&
+        unit.canCC() &&
+        unit.getDR("disorient") === 0) {
         return unit;
       }
     }
@@ -233,7 +235,7 @@ export class DeathKnightUnholy extends Behavior {
   // Racial abilities
   useRacials() {
     return new bt.Selector(
-      spell.cast("Blood Fury", ret => me.hasAura("Unholy Assault")),
+      spell.cast("Blood Fury", on => me, ret => me.race === RaceType.Orc && me.hasAura(auras.unholyAssault)),
     );
   }
 }

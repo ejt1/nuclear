@@ -13,6 +13,7 @@ import drTracker from "@/Core/DRTracker";
 import Settings from "@/Core/Settings";
 import { PowerType } from "@/Enums/PowerType";
 import { toastSuccess } from "@/Extra/ToastNotification";
+import { KlassType } from "@/Enums/UnitEnums";
 
 const auras = {
   painSuppression: 33206,
@@ -478,7 +479,7 @@ export class PriestDisciplinePvP extends Behavior {
       const guidKey = enemy.guid.toString();
       const enemyTracking = this.enemyCCTracker.get(guidKey);
 
-      if (enemy.hasAura("Priest")) {
+      if (enemy.klass === KlassType.Priest) {
         const lastPsychicScream = enemyTracking ? enemyTracking[8122] : null;
         const timeSinceLastUse = lastPsychicScream ? currentTime - lastPsychicScream : 999999;
 
@@ -497,7 +498,7 @@ export class PriestDisciplinePvP extends Behavior {
       const guidKey = enemy.guid.toString();
       const enemyTracking = this.enemyCCTracker.get(guidKey);
 
-      if (enemy.hasAura("Rogue")) {
+      if (enemy.klass === KlassType.Rogue) {
         const lastCheapShot = enemyTracking ? enemyTracking[1833] : null;
         const lastKidneyShot = enemyTracking ? enemyTracking[408] : null;
 
@@ -520,7 +521,7 @@ export class PriestDisciplinePvP extends Behavior {
       const guidKey = enemy.guid.toString();
       const enemyTracking = this.enemyCCTracker.get(guidKey);
 
-      if (enemy.hasAura("Hunter")) {
+      if (enemy.klass === KlassType.Hunter) {
         const lastTrap = enemyTracking ? enemyTracking[187650] : null;
         const lastTrap2 = enemyTracking ? enemyTracking[3355] : null;
         const lastTrap3 = enemyTracking ? enemyTracking[203337] : null;
@@ -544,7 +545,7 @@ export class PriestDisciplinePvP extends Behavior {
       const guidKey = enemy.guid.toString();
       const enemyTracking = this.enemyCCTracker.get(guidKey);
 
-      if (enemy.hasAura("Hunter")) {
+      if (enemy.klass === KlassType.Hunter) {
         for (const unit of me.getUnitsAround(8)) {
           if (unit.summonedBy?.equals(enemy.guid) || unit.createdBy?.equals(enemy.guid)) {
             const lastIntimidation = enemyTracking ? enemyTracking[24394] : null;

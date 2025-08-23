@@ -10,6 +10,7 @@ import { PowerType } from '@/Enums/PowerType';
 import { DispelPriority } from '@/Data/Dispels';
 import { WoWDispelType } from '@/Enums/Auras';
 import { pvpHelpers } from '@/Data/PVPData';
+import { RaceType } from '@/Enums/UnitEnums';
 
 const auras = {
   metamorphosis: 162264,
@@ -357,7 +358,7 @@ export class DemonhunterHavocPvP extends Behavior {
   // Racial abilities
   useRacials() {
     return new bt.Selector(
-      spell.cast("Arcane Torrent", ret => Combat.burstToggle),
+      spell.cast("Arcane Torrent", ret => me.race === RaceType.BloodElf && Combat.burstToggle),
     );
   }
 }

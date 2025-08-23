@@ -9,6 +9,7 @@ import Settings from "@/Core/Settings";
 import { PowerType } from "@/Enums/PowerType";
 import { pvpHelpers } from "@/Data/PVPData";
 import drTracker from "@/Core/DRTracker";
+import { RaceType } from "@/Enums/UnitEnums";
 
 const auras = {
   moonkinForm: 24858,
@@ -80,7 +81,6 @@ export class DruidBalancePvP extends Behavior {
       new bt.Decorator(
         ret => !spell.isGlobalCooldown(),
         new bt.Selector(
-
           // Skip all combat actions if prowl is active
           new bt.Decorator(
             ret => me.hasAura(auras.prowl),
@@ -253,18 +253,6 @@ export class DruidBalancePvP extends Behavior {
     return me.powerByType(PowerType.LunarPower);
   }
 
-  inEclipse() {
-    return me.hasAura(auras.solarEclipse) || me.hasAura(auras.lunarEclipse);
-  }
-
-  inSolarEclipse() {
-    return me.hasAura(auras.solarEclipse);
-  }
-
-  inLunarEclipse() {
-    return me.hasAura(auras.lunarEclipse);
-  }
-
   getDebuffRemainingTime(target, auraId) {
     if (!target) return 0;
     const debuff = target.getAuraByMe(auraId);
@@ -423,7 +411,8 @@ export class DruidBalancePvP extends Behavior {
   }
 
   shouldUseWarStomp() {
-    if (!spell.isSpellKnown("War Stomp") || spell.isOnCooldown("War Stomp")) {
+    // War Stomp is a Tauren racial ability
+    if (me.race !== RaceType.Tauren || spell.isOnCooldown("War Stomp")) {
       return false;
     }
 
@@ -444,7 +433,7 @@ export class DruidBalancePvP extends Behavior {
     }
 
     // Use War Stomp if we have at least 2 valid enemies
-    return validEnemies >= 2;
+    return validEnemies >= 1;
   }
 }
 

@@ -7,6 +7,7 @@ import Settings from '@/Core/Settings';
 import { me } from '@/Core/ObjectManager';
 import { defaultCombatTargeting as Combat } from '@/Targeting/CombatTargeting';
 import { PowerType } from '@/Enums/PowerType';
+import { RaceType } from '@/Enums/UnitEnums';
 
 const auras = {
   metamorphosis: 162264,
@@ -272,7 +273,7 @@ export class DemonhunterHavoc extends Behavior {
   // Racial abilities
   useRacials() {
     return new bt.Selector(
-      spell.cast("Arcane Torrent", ret => Combat.burstToggle),
+      spell.cast("Arcane Torrent", ret => me.race === RaceType.BloodElf && Combat.burstToggle),
     );
   }
 }
