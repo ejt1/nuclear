@@ -79,6 +79,14 @@ export class DeathKnightUnholy extends Behavior {
       // Use Tempered Potion (or any other damage potion) - placeholder for future implementation
       // Use Cursed Stone Idol (or any other stat trinket) - placeholder for future implementation
       this.useTrinkets(),
+      this.useRacials(),
+    );
+  }
+
+  // Racial abilities
+  useRacials() {
+    return new bt.Selector(
+      spell.cast("Blood Fury", ret => me.hasAura("Unholy Assault")),
     );
   }
 

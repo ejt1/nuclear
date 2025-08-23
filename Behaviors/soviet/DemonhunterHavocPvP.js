@@ -142,6 +142,9 @@ export class DemonhunterHavocPvP extends Behavior {
 
   burstSequence() {
     return new bt.Selector(
+      // Use racials during burst
+      this.useRacials(),
+
       // Burst sequence - tree will traverse down when spells are on cooldown
       // Throw glaive
       spell.cast("Throw Glaive", on => me.target, ret => me.hasAura(auras.reaversGlaive)),
@@ -349,5 +352,12 @@ export class DemonhunterHavocPvP extends Behavior {
       // You could add more specific checks here for different types of cooldowns
     }
     return count;
+  }
+
+  // Racial abilities
+  useRacials() {
+    return new bt.Selector(
+      spell.cast("Arcane Torrent", ret => Combat.burstToggle),
+    );
   }
 }

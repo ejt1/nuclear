@@ -74,6 +74,7 @@ export class DeathKnightUnholy extends Behavior {
       spell.cast("Army of the Dead", ret => true),
       spell.cast("Summon Gargoyle", ret => true),
       spell.cast("Unholy Assault", ret => true),
+      this.useRacials(),
 
       // Core burst rotation
       // Use Apocalypse - spend 4 wounds and transform pet
@@ -227,5 +228,12 @@ export class DeathKnightUnholy extends Behavior {
     }
 
     return undefined;
+  }
+
+  // Racial abilities
+  useRacials() {
+    return new bt.Selector(
+      spell.cast("Blood Fury", ret => me.hasAura("Unholy Assault")),
+    );
   }
 }

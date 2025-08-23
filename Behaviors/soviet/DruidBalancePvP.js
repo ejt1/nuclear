@@ -115,6 +115,10 @@ export class DruidBalancePvP extends Behavior {
             this.cycloneTarget() !== undefined
           ),
 
+          // War Stomp for emergency CC when surrounded and low health
+          // TODO: Add check for Tauren race - need to implement race detection
+          spell.cast("War Stomp", ret => this.shouldUseWarStomp()),
+
           common.waitForFacing(),
 
           // Burst damage when conditions are met
@@ -270,7 +274,6 @@ export class DruidBalancePvP extends Behavior {
 
   // Targeting methods
   cycloneTarget() {
-    // Get all enemy players within 30 yards and find the first valid healer target
     const nearbyEnemies = me.getPlayerEnemies(30);
 
     // Determine max DR based on current target's health
@@ -289,55 +292,12 @@ export class DruidBalancePvP extends Behavior {
     return undefined;
   }
 
-  findCycloneTarget() {
-    if (spell.isOnCooldown("Cyclone")) return undefined;
-
-    // Determine max DR based on current target's health
-    const maxDR = (me.target && me.target.effectiveHealthPercent < 35) ? Settings.CycloneMaxDR + 1 : Settings.CycloneMaxDR;
-
-    const enemies = me.getEnemies();
-    for (const enemy of enemies) {
-      if (enemy.isPlayer() &&
-          enemy.isHealer() &&
-          me.distanceTo(enemy) <= 30 &&
-          me.withinLineOfSight(enemy) &&
-          !enemy.isCCd() &&
-          enemy.canCC() &&
-          drTracker.getDRStacks(enemy.guid, "disorient") <= maxDR &&
-          !pvpHelpers.hasImmunity(enemy) &&
-          enemy !== me.target) { // Exclude current target
-        return enemy;
-      }
-    }
-    return undefined;
-  }
-
-  findMassEntanglementTarget() {
-    if (spell.isOnCooldown("Mass Entanglement")) return undefined;
-
-    const enemies = me.getEnemies();
-    for (const enemy of enemies) {
-      if (enemy.isPlayer() &&
-          enemy.isHealer() &&
-          me.distanceTo(enemy) <= 30 &&
-          me.withinLineOfSight(enemy) &&
-          !enemy.isCCd() &&
-          enemy.canCC() &&
-          !pvpHelpers.hasImmunity(enemy)) {
-        return enemy;
-      }
-    }
-    return undefined;
-  }
-
   findMassEntanglementComboTarget() {
     if (spell.isOnCooldown("Mass Entanglement") || spell.isOnCooldown("Solar Beam")) return undefined;
 
-    const enemies = me.getEnemies();
+    const enemies = me.getPlayerEnemies(35);
     for (const enemy of enemies) {
-      if (enemy.isPlayer() &&
-          enemy.isHealer() &&
-          me.distanceTo(enemy) <= 30 &&
+      if (enemy.isHealer() &&
           me.withinLineOfSight(enemy) &&
           !enemy.isCCd() &&
           enemy.canCC() &&
@@ -351,11 +311,9 @@ export class DruidBalancePvP extends Behavior {
   }
 
   findSolarBeamTarget() {
-    const enemies = me.getEnemies();
+    const enemies = me.getPlayerEnemies(45);
     for (const enemy of enemies) {
-      if (enemy.isPlayer() &&
-          enemy.isHealer() &&
-          me.distanceTo(enemy) <= 40 &&
+      if (enemy.isHealer() &&
           me.withinLineOfSight(enemy) &&
           enemy.hasAura(auras.massEntanglement) &&
           drTracker.getDRStacks(enemy.guid, "silence") <= 1) {
@@ -366,11 +324,9 @@ export class DruidBalancePvP extends Behavior {
   }
 
   findEnemyHealer() {
-    const enemies = me.getEnemies();
+    const enemies = me.getPlayerEnemies(40);
     for (const enemy of enemies) {
-      if (enemy.isPlayer() &&
-          enemy.isHealer() &&
-          me.distanceTo(enemy) <= 40 &&
+      if (enemy.isHealer() &&
           me.withinLineOfSight(enemy)) {
         return enemy;
       }
@@ -395,8 +351,6 @@ export class DruidBalancePvP extends Behavior {
   }
 
   findMoonfireTarget() {
-    const enemies = me.getEnemies();
-
     // Prioritize current target if it doesn't have Moonfire
     if (me.target &&
         me.target.isPlayer() &&
@@ -407,10 +361,9 @@ export class DruidBalancePvP extends Behavior {
     }
 
     // Find any enemy without Moonfire
+    const enemies = me.getPlayerEnemies(40);
     for (const enemy of enemies) {
-      if (enemy.isPlayer() &&
-          me.distanceTo(enemy) <= 40 &&
-          me.withinLineOfSight(enemy) &&
+      if (me.withinLineOfSight(enemy) &&
           (!enemy.hasAuraByMe(auras.moonfire) ||
            this.getDebuffRemainingTime(enemy, auras.moonfire) < 6000) &&
           !pvpHelpers.hasImmunity(enemy)) {
@@ -433,11 +386,9 @@ export class DruidBalancePvP extends Behavior {
     }
 
     // Get all enemy players within 30 yards
-    const enemies = me.getEnemies();
+    const enemies = me.getPlayerEnemies(30);
     for (const enemy of enemies) {
-      if (enemy.isPlayer() &&
-          enemy.isDisarmableMelee() &&
-          me.distanceTo(enemy) <= 30 &&
+      if (enemy.isDisarmableMelee() &&
           me.withinLineOfSight(enemy) &&
           enemy.getDR("disarm") === 0 &&
           !pvpHelpers.hasImmunity(enemy)) {
@@ -463,6 +414,32 @@ export class DruidBalancePvP extends Behavior {
       }
     }
     return false;
+  }
+
+  shouldUseWarStomp() {
+    // Check if War Stomp is available
+    if (spell.isOnCooldown("War Stomp")) {
+      return false;
+    }
+
+    // Check if my health is below 60%
+    if (me.effectiveHealthPercent >= 60) {
+      return false;
+    }
+
+    // Get all enemy players within melee range (8 yards)
+    const nearbyEnemies = me.getPlayerEnemies(8);
+
+    // Count enemies with stun DR <= 1
+    let validEnemies = 0;
+    for (const enemy of nearbyEnemies) {
+      if (enemy.getDR("stun") <= 1 && enemy.canCC() && !pvpHelpers.hasImmunity(enemy)) {
+        validEnemies++;
+      }
+    }
+
+    // Use War Stomp if we have at least 2 valid enemies
+    return validEnemies >= 2;
   }
 }
 
