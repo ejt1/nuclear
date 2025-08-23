@@ -1,6 +1,6 @@
 declare namespace wow {
   interface CGUnit {
-    // Extended properties that don't conflict with base CGUnit
+    target?: CGUnit;
     targetUnit?: CGUnit;
     predictedHealthPercent: number;
     effectiveHealthPercent: number;
