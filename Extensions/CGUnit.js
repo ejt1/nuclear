@@ -5,6 +5,7 @@ import { HealImmune, PVPImmuneToCC } from "@/Enums/Auras";
 import Settings from "@/Core/Settings";
 import { rootExclusions } from "@/Data/Exclusions";
 import Specialization from "@/Enums/Specialization";
+import { GenderType, RaceType, KlassType } from "@/Enums/UnitEnums";
 
 const originalTargetGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'target').get;
 const originalAurasGetter = Object.getOwnPropertyDescriptor(wow.CGUnit.prototype, 'auras').get;
@@ -885,6 +886,36 @@ Object.defineProperties(wow.CGUnit.prototype, {
      */
     get: function () {
       return this.currentChannel !== 0;
+    }
+  },
+
+  gender: {
+    /**
+     * Get the gender enum value of the unit
+     * @returns {number} - The gender enum value from GenderType
+     */
+    get: function () {
+      return (this.sex >> 24) & 0xFF;
+    }
+  },
+
+  race: {
+    /**
+     * Get the race enum value of the unit
+     * @returns {number} - The race enum value from RaceType
+     */
+    get: function () {
+      return this.sex & 0xFF;
+    }
+  },
+
+  klass: {
+    /**
+     * Get the class enum value of the unit
+     * @returns {number} - The class enum value from KlassType
+     */
+    get: function () {
+      return (this.sex >> 8) & 0xFF;
     }
   }
 

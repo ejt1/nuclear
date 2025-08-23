@@ -13,6 +13,7 @@ import drTracker from "@/Core/DRTracker";
 import Settings from "@/Core/Settings";
 import { PowerType } from "@/Enums/PowerType";
 import { toastSuccess } from "@/Extra/ToastNotification";
+import { KlassType } from "@/Enums/UnitEnums";
 
 const auras = {
   painSuppression: 33206,
@@ -467,17 +468,18 @@ export class PriestDisciplinePvP extends Behavior {
     this.trackEnemyCC(); // Update our tracking
     this.cleanupEnemyTracking(); // Clean up old entries
 
-    const enemies = me.getEnemies();
+    // Check nearby enemies for preemptive fade opportunities
     const currentTime = wow.frameTime;
 
-    for (const enemy of enemies) {
-      if (!enemy.isPlayer() || !enemy.canAttack(me)) continue;
+    // Check for Priest Psychic Scream prediction (8 yard range)
+    const nearbyPriests = me.getPlayerEnemies(8);
+    for (const enemy of nearbyPriests) {
+      if (!enemy.canAttack(me)) continue;
 
       const guidKey = enemy.guid.toString();
       const enemyTracking = this.enemyCCTracker.get(guidKey);
 
-      // Priest Psychic Scream prediction
-      if (enemy.hasAura("Priest") && me.distanceTo(enemy) <= 8) {
+      if (enemy.klass === KlassType.Priest) {
         const lastPsychicScream = enemyTracking ? enemyTracking[8122] : null;
         const timeSinceLastUse = lastPsychicScream ? currentTime - lastPsychicScream : 999999;
 
@@ -486,9 +488,17 @@ export class PriestDisciplinePvP extends Behavior {
           return true;
         }
       }
+    }
 
-      // Rogue CC prediction
-      if (enemy.hasAura("Rogue") && me.distanceTo(enemy) <= 4) {
+    // Check for Rogue CC prediction (4 yard range)
+    const nearbyRogues = me.getPlayerEnemies(4);
+    for (const enemy of nearbyRogues) {
+      if (!enemy.canAttack(me)) continue;
+
+      const guidKey = enemy.guid.toString();
+      const enemyTracking = this.enemyCCTracker.get(guidKey);
+
+      if (enemy.klass === KlassType.Rogue) {
         const lastCheapShot = enemyTracking ? enemyTracking[1833] : null;
         const lastKidneyShot = enemyTracking ? enemyTracking[408] : null;
 
@@ -501,9 +511,17 @@ export class PriestDisciplinePvP extends Behavior {
           return true;
         }
       }
+    }
 
-      // Hunter trap prediction
-      if (enemy.hasAura("Hunter") && me.distanceTo(enemy) <= 4) {
+    // Check for Hunter trap prediction (4 yard range)
+    const nearbyHunters = me.getPlayerEnemies(4);
+    for (const enemy of nearbyHunters) {
+      if (!enemy.canAttack(me)) continue;
+
+      const guidKey = enemy.guid.toString();
+      const enemyTracking = this.enemyCCTracker.get(guidKey);
+
+      if (enemy.klass === KlassType.Hunter) {
         const lastTrap = enemyTracking ? enemyTracking[187650] : null;
         const lastTrap2 = enemyTracking ? enemyTracking[3355] : null;
         const lastTrap3 = enemyTracking ? enemyTracking[203337] : null;
@@ -517,9 +535,17 @@ export class PriestDisciplinePvP extends Behavior {
           return true;
         }
       }
+    }
 
-      // // Hunter pet prediction
-      if (enemy.hasAura("Hunter") && me.distanceTo(enemy) <= 40) {
+    // Check for Hunter pet prediction (40 yard range for hunters, 8 yard range for pets)
+    const huntersInRange = me.getPlayerEnemies(40);
+    for (const enemy of huntersInRange) {
+      if (!enemy.canAttack(me)) continue;
+
+      const guidKey = enemy.guid.toString();
+      const enemyTracking = this.enemyCCTracker.get(guidKey);
+
+      if (enemy.klass === KlassType.Hunter) {
         for (const unit of me.getUnitsAround(8)) {
           if (unit.summonedBy?.equals(enemy.guid) || unit.createdBy?.equals(enemy.guid)) {
             const lastIntimidation = enemyTracking ? enemyTracking[24394] : null;
@@ -855,8 +881,6 @@ export class PriestDisciplinePvP extends Behavior {
 
   findShadowWordPainTarget() {
     // Shadow Word: Pain doesn't require facing but needs LOS
-    const enemies = me.getEnemies();
-
     // Prioritize current target if it doesn't have SW:P and isn't immune
     if (me.targetUnit &&
       me.targetUnit.isPlayer() &&
@@ -868,10 +892,9 @@ export class PriestDisciplinePvP extends Behavior {
     }
 
     // Find any enemy without Shadow Word: Pain
+    const enemies = me.getPlayerEnemies(40);
     for (const enemy of enemies) {
-      if (enemy.isPlayer() &&
-        me.distanceTo(enemy) <= 40 &&
-        me.withinLineOfSight(enemy) &&
+      if (me.withinLineOfSight(enemy) &&
         !this.hasShadowWordPain(enemy) &&
         !pvpHelpers.hasImmunity(enemy)) {
         return enemy;
@@ -883,12 +906,10 @@ export class PriestDisciplinePvP extends Behavior {
 
   psychicScreamTarget() {
     // Psychic Scream (Fear) doesn't require facing but needs LOS
-    const enemies = me.getEnemies();
+    const enemies = me.getPlayerEnemies(8);
 
     for (const unit of enemies) {
-      if (unit.isPlayer() &&
-        unit.isHealer() &&
-        me.distanceTo(unit) <= 8 &&
+      if (unit.isHealer() &&
         me.withinLineOfSight(unit) &&
         this.canCCTarget(unit) &&
         unit.canCC() &&
@@ -992,11 +1013,9 @@ export class PriestDisciplinePvP extends Behavior {
     const swdReady = swdCooldown && swdCooldown.ready;
 
     // Check all enemies for incoming spells
-    const enemies = me.getEnemies();
+    const enemies = me.getPlayerEnemies(40);
     for (const enemy of enemies) {
       if (enemy.isCastingOrChanneling &&
-        enemy.isPlayer() &&
-        me.distanceTo(enemy) <= 40 &&
         me.withinLineOfSight(enemy)) {
         const spellInfo = enemy.spellInfo;
         const target = spellInfo ? spellInfo.spellTargetGuid : null;
@@ -1036,10 +1055,8 @@ export class PriestDisciplinePvP extends Behavior {
     }
 
     // Void Tendrils doesn't require facing but needs LOS
-    const enemies = me.getEnemies();
+    const enemies = me.getPlayerEnemies(8);
     const eligibleEnemies = enemies.filter(enemy =>
-      enemy.isPlayer() &&
-      me.distanceTo(enemy) <= 8 &&
       me.withinLineOfSight(enemy) &&
       !pvpHelpers.hasImmunity(enemy)
     );
@@ -1075,11 +1092,9 @@ export class PriestDisciplinePvP extends Behavior {
     }
 
     // Mind Control doesn't require facing but needs LOS
-    const enemies = me.getEnemies();
+    const enemies = me.getPlayerEnemies(30);
     for (const enemy of enemies) {
-      if (enemy.isPlayer() &&
-        enemy.isHealer() &&
-        me.distanceTo(enemy) <= 30 &&
+      if (enemy.isHealer() &&
         me.withinLineOfSight(enemy) &&
         this.canCCTarget(enemy) &&
         enemy.canCC() &&
@@ -1110,11 +1125,9 @@ export class PriestDisciplinePvP extends Behavior {
     }
 
     // Mind Control enemy DPS with major cooldowns - doesn't require facing but needs LOS
-    const enemies = me.getEnemies();
+    const enemies = me.getPlayerEnemies(30);
     for (const enemy of enemies) {
-      if (enemy.isPlayer() &&
-        !enemy.isHealer() && // Target non-healers (DPS/Tanks)
-        me.distanceTo(enemy) <= 30 &&
+      if (!enemy.isHealer() && // Target non-healers (DPS/Tanks)
         me.withinLineOfSight(enemy) &&
         this.canCCTarget(enemy) &&
         enemy.canCC() &&
@@ -1139,13 +1152,10 @@ export class PriestDisciplinePvP extends Behavior {
     }
 
     // Shadow Word: Death doesn't require facing but needs LOS
-    const enemies = me.getEnemies();
-
     // First priority: Anyone casting spellBlacklist spells on us
-    for (const enemy of enemies) {
+    const enemiesForInterrupt = me.getPlayerEnemies(46);
+    for (const enemy of enemiesForInterrupt) {
       if (enemy.isCastingOrChanneling &&
-        enemy.isPlayer() &&
-        me.distanceTo(enemy) <= 46 &&
         me.withinLineOfSight(enemy) &&
         !pvpHelpers.hasImmunity(enemy)) {
         const spellInfo = enemy.spellInfo;
@@ -1162,10 +1172,9 @@ export class PriestDisciplinePvP extends Behavior {
     }
 
     // Second priority: Low health enemies (execute)
-    for (const enemy of enemies) {
-      if (enemy.isPlayer() &&
-        enemy.effectiveHealthPercent < 20 &&
-        me.distanceTo(enemy) <= 40 &&
+    const enemiesForExecute = me.getPlayerEnemies(40);
+    for (const enemy of enemiesForExecute) {
+      if (enemy.effectiveHealthPercent < 20 &&
         me.withinLineOfSight(enemy) &&
         !pvpHelpers.hasImmunity(enemy)) {
         return enemy;
@@ -1195,13 +1204,11 @@ export class PriestDisciplinePvP extends Behavior {
 
   getEnemiesWithMajorCDs() {
     // Major cooldowns detection with LOS check
-    const enemies = me.getEnemies();
+    const enemies = me.getPlayerEnemies(40);
     const enemiesWithCDs = [];
 
     for (const enemy of enemies) {
-      if (enemy.isPlayer() &&
-        me.distanceTo(enemy) <= 40 &&
-        me.withinLineOfSight(enemy)) {
+      if (me.withinLineOfSight(enemy)) {
         const majorCooldown = pvpHelpers.hasMajorDamageCooldown(enemy, 3);
         if (majorCooldown) {
           enemiesWithCDs.push(enemy);
