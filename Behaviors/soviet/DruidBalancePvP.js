@@ -37,6 +37,7 @@ const auras = {
   forceOfNature: 205636,
   frenziedRegeneration: 22842,
   faerieSwarm: 209749,
+  highWinds: 200931,
 };
 
 export class DruidBalancePvP extends Behavior {
@@ -116,7 +117,6 @@ export class DruidBalancePvP extends Behavior {
           ),
 
           // War Stomp for emergency CC when surrounded and low health
-          // TODO: Add check for Tauren race - need to implement race detection
           spell.cast("War Stomp", ret => this.shouldUseWarStomp()),
 
           common.waitForFacing(),
@@ -182,8 +182,8 @@ export class DruidBalancePvP extends Behavior {
         !me.hasAura(auras.incarnationChosenOfElune)
       ),
 
-      // Force of Nature for damage boost (use freely)
-      spell.cast("Force of Nature", on => me.target, () => me.target),
+      // Force of Nature for damage boost (use during incarn or if incarn CD > 1min)
+      spell.cast("Force of Nature", on => me.target, () => this.shouldUseForceOfNature()),
 
       // Fury of Elune during incarnation
       spell.cast("Fury of Elune", () =>
@@ -217,8 +217,8 @@ export class DruidBalancePvP extends Behavior {
       // Use Fury of Elune off cooldown
       spell.cast("Fury of Elune", () => true),
 
-      // Use Force of Nature for damage and astral power
-      spell.cast("Force of Nature", on => me.target, () => me.target),
+      // Use Force of Nature for damage and astral power (use during incarn or if incarn CD > 1min)
+      spell.cast("Force of Nature", on => me.target, () => this.shouldUseForceOfNature()),
 
       // Use Starsurge when we have enough Astral Power
       spell.cast("Starsurge", on => me.target, () =>
@@ -271,10 +271,16 @@ export class DruidBalancePvP extends Behavior {
     return debuff ? debuff.remaining : 0;
   }
 
+  // Helper method to check if Force of Nature should be used
+  shouldUseForceOfNature() {
+    return me.hasAura(auras.incarnationChosenOfElune) || spell.getCooldown("Incarnation: Chosen of Elune")?.timeleft >= 39000;
+  }
 
   // Targeting methods
   cycloneTarget() {
-    const nearbyEnemies = me.getPlayerEnemies(30);
+    // Check for High Winds aura to determine cyclone range
+    const cycloneRange = me.hasAura(auras.highWinds) ? 30 : 25; // 25 + 5 if High Winds, else 25
+    const nearbyEnemies = me.getPlayerEnemies(cycloneRange);
 
     // Determine max DR based on current target's health
     const maxDR = (me.target && me.target.effectiveHealthPercent < 35) ? Settings.CycloneMaxDR + 1 : Settings.CycloneMaxDR;
@@ -417,8 +423,7 @@ export class DruidBalancePvP extends Behavior {
   }
 
   shouldUseWarStomp() {
-    // Check if War Stomp is available
-    if (spell.isOnCooldown("War Stomp")) {
+    if (!spell.isSpellKnown("War Stomp") || spell.isOnCooldown("War Stomp")) {
       return false;
     }
 
