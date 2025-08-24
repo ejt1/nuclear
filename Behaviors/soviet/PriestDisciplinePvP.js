@@ -656,7 +656,7 @@ export class PriestDisciplinePvP extends Behavior {
   }
 
   findFriendWithoutAtonement() {
-    const friends = me.getFriends();
+    const friends = me.getPlayerFriends(40);
     for (const friend of friends) {
       if (this.isNotDeadAndInLineOfSight(friend) && !this.hasAtonement(friend)) {
         return friend;
@@ -823,7 +823,7 @@ export class PriestDisciplinePvP extends Behavior {
     }
 
     // Barrier is area-based, so prefer it when multiple people need help
-    const friendsNearTarget = me.getFriends().filter(friend =>
+    const friendsNearTarget = me.getPlayerFriends(40).filter(friend =>
       friend.distanceTo(target) <= 10 &&
       friend.effectiveHealthPercent < 70
     ).length;
@@ -930,14 +930,12 @@ export class PriestDisciplinePvP extends Behavior {
       return undefined;
     }
 
-    const friends = me.getFriends();
+    const friends = me.getPlayerFriends(40);
     let bestTarget = null;
     let bestPriority = 0;
 
     for (const friend of friends) {
-      if (!friend.isPlayer() ||
-        me.distanceTo(friend) > 40 ||
-        !me.withinLineOfSight(friend) ||
+      if (!me.withinLineOfSight(friend) ||
         friend.hasAura(auras.powerInfusion)) { // Don't double-buff
         continue;
       }
@@ -1186,13 +1184,11 @@ export class PriestDisciplinePvP extends Behavior {
 
   getFriendsWithMajorCDs() {
     // Major cooldowns detection with LOS check
-    const friends = me.getFriends();
+    const friends = me.getPlayerFriends(40);
     const friendsWithCDs = [];
 
     for (const friend of friends) {
-      if (friend.isPlayer() &&
-        me.distanceTo(friend) <= 40 &&
-        me.withinLineOfSight(friend)) {
+      if (me.withinLineOfSight(friend)) {
         const majorCooldown = pvpHelpers.hasMajorDamageCooldown(friend, 3);
         if (majorCooldown) {
           friendsWithCDs.push(friend);
@@ -1220,11 +1216,9 @@ export class PriestDisciplinePvP extends Behavior {
 
   allFriendsAboveHealthThreshold() {
     // Health checking with LOS requirement
-    const friends = me.getFriends();
+    const friends = me.getPlayerFriends(40);
     for (const friend of friends) {
-      if (friend.isPlayer() &&
-        me.distanceTo(friend) <= 40 &&
-        me.withinLineOfSight(friend) &&
+      if (me.withinLineOfSight(friend) &&
         friend.effectiveHealthPercent < Settings.MindControlHealthThreshold) {
         return false;
       }
@@ -1234,11 +1228,9 @@ export class PriestDisciplinePvP extends Behavior {
 
   allFriendsAboveDPSThreshold() {
     // Health checking for DPS Mind Control with LOS requirement
-    const friends = me.getFriends();
+    const friends = me.getPlayerFriends(40);
     for (const friend of friends) {
-      if (friend.isPlayer() &&
-        me.distanceTo(friend) <= 40 &&
-        me.withinLineOfSight(friend) &&
+      if (me.withinLineOfSight(friend) &&
         friend.effectiveHealthPercent < Settings.MindControlDPSHealthThreshold) {
         return false;
       }

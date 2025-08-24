@@ -36,10 +36,10 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
 
   // Burst mode toggle state
   burstModeActive = false;
-  
+
   // Manual spell casting
   spellIdInput = new imgui.MutableVariable("193455");
-  
+
   // Target variables for APL
   currentTarget = null;
   activeEnemies = 1;
@@ -84,7 +84,7 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
       ]
     },
     {
-      header: "Major Cooldowns", 
+      header: "Major Cooldowns",
       options: [
         { type: "checkbox", uid: "UseBestialWrath", text: "Use Bestial Wrath", default: true },
         { type: "checkbox", uid: "UseCallOfTheWild", text: "Use Call of the Wild", default: true },
@@ -108,12 +108,12 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
     }
   ];
 
-  build() {    
+  build() {
     return new bt.Selector(
       // Overlay rendering - runs every frame FIRST
       new bt.Action(() => {
         this.renderOverlay();
-        
+
                  // Manual spell casting with RightArrow
          if (imgui.isKeyPressed(imgui.Key.RightArrow)) {
            const target = me.targetUnit || me;
@@ -129,10 +129,10 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
              console.log(`Spell ID ${spellId} not found. Please enter a valid spell ID.`);
            }
          }
-        
+
         return bt.Status.Failure; // Always continue to the rest of the rotation
       }),
-      
+
       common.waitForNotMounted(),
       new bt.Action(() => {
         if (this.getCurrentTarget() === null) {
@@ -141,54 +141,54 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
         return bt.Status.Failure;
       }),
       common.waitForCastOrChannel(),
-      
+
       // Auto shot
       new bt.Action(() => {
         // Auto shot is handled automatically by the game
         return bt.Status.Failure;
       }),
-      
+
       // Pet management
       this.buildPetManagement(),
-      
+
       // PVP rotation takes priority if enabled
       new bt.Decorator(
         () => Settings.EnablePVPRotation,
         this.buildPVPRotation(),
         new bt.Action(() => bt.Status.Success)
       ),
-      
+
       // Standard rotation if PVP is disabled
       new bt.Decorator(
         () => !Settings.EnablePVPRotation,
         new bt.Selector(
           // Defensive abilities
           this.buildDefensives(),
-          
+
           // Calculate variables
           new bt.Action(() => {
             this.currentTarget = this.getCurrentTarget();
             this.activeEnemies = this.getEnemiesInRange(40);
             return bt.Status.Failure;
           }),
-          
+
           // Cooldowns
           this.buildCooldowns(),
-          
+
           // Trinkets when appropriate
           new bt.Decorator(
             () => this.shouldUseCooldowns() && (me.hasVisibleAura("Call of the Wild") || me.hasVisibleAura("Bestial Wrath")),
             this.useTrinkets(),
             new bt.Action(() => bt.Status.Success)
           ),
-          
-          // Use racials when appropriate  
+
+          // Use racials when appropriate
           new bt.Decorator(
             () => this.shouldUseCooldowns() && (me.hasVisibleAura("Call of the Wild") || me.hasVisibleAura("Bestial Wrath")),
             this.useRacials(),
             new bt.Action(() => bt.Status.Success)
           ),
-          
+
           // Single target vs cleave/aoe
           new bt.Decorator(
             () => (this.getEnemiesInRangeOfPet(10) < 3),
@@ -209,7 +209,7 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
   renderOverlay() {
     // Safety check
     if (!me) return;
-    
+
     if (!this.overlayToggles.showOverlay.value) {
       return;
     }
@@ -229,40 +229,40 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
     if (!viewport) {
       return;
     }
-    
+
     const workPos = viewport.workPos;
     const workSize = viewport.workSize;
-    
+
     // Position overlay in top-right corner
     const overlaySize = { x: 280, y: Settings.EnablePVPRotation ? 450 : 300 };
-    const overlayPos = { 
-      x: workPos.x + workSize.x - overlaySize.x - 20, 
-      y: workPos.y + 20 
+    const overlayPos = {
+      x: workPos.x + workSize.x - overlaySize.x - 20,
+      y: workPos.y + 20
     };
 
     imgui.setNextWindowPos(overlayPos, imgui.Cond.FirstUseEver);
     imgui.setNextWindowSize(overlaySize, imgui.Cond.FirstUseEver);
-    
+
     // Make background more opaque
     imgui.setNextWindowBgAlpha(0.50);
-    
+
     // Window flags for overlay behavior
-    const windowFlags = 
+    const windowFlags =
       imgui.WindowFlags.NoResize |
       imgui.WindowFlags.AlwaysAutoResize;
 
     const windowTitle = Settings.EnablePVPRotation ? "Beast Mastery PVP Controls" : "Beast Mastery Controls";
     if (imgui.begin(windowTitle, this.overlayToggles.showOverlay, windowFlags)) {
-      
+
       // PVP Mode indicator
       if (Settings.EnablePVPRotation) {
         imgui.spacing();
         imgui.pushStyleColor(imgui.Col.Text, { r: 1.0, g: 0.2, b: 0.2, a: 1.0 });
         imgui.text("PVP MODE ACTIVE");
         imgui.popStyleColor();
-        
+
         // Burst Mode Toggle
-        const burstColor = this.burstModeActive ? 
+        const burstColor = this.burstModeActive ?
           { r: 1.0, g: 0.2, b: 0.2, a: 1.0 } : { r: 0.2, g: 1.0, b: 0.2, a: 1.0 };
         imgui.pushStyleColor(imgui.Col.Text, burstColor);
         const burstText = this.burstModeActive ? "BURST ACTIVE (Press X)" : "BURST READY (Press X)";
@@ -294,7 +294,7 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
            const focus = me.powerByType(PowerType.Focus) || 0;
            const maxFocus = me.maxPowerByType(PowerType.Focus) || 100;
            imgui.textColored({ r: 0.2, g: 0.8, b: 1.0, a: 1.0 }, `Focus: ${focus}/${maxFocus}`);
-           
+
            const frenzyStacks = me.getAuraStacks ? me.getAuraStacks("Frenzy") || 0 : 0;
            if (frenzyStacks > 0) {
              imgui.textColored({ r: 1.0, g: 0.2, b: 0.2, a: 1.0 }, `Frenzy: ${frenzyStacks}/3`);
@@ -307,26 +307,26 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
            } else {
              imgui.textColored({ r: 0.5, g: 0.5, b: 0.5, a: 1.0 }, "Howl: Not Ready");
            }
-           
+
            imgui.unindent();
          }
 
         // CC Abilities
         if (imgui.collapsingHeader("CC Abilities", imgui.TreeNodeFlags.DefaultOpen)) {
           imgui.indent();
-          
+
           const bindingColor = this.overlayToggles.binding.value ?
             { r: 0.2, g: 0.8, b: 1.0, a: 1.0 } : { r: 0.6, g: 0.6, b: 0.6, a: 1.0 };
           imgui.pushStyleColor(imgui.Col.Text, bindingColor);
           imgui.checkbox("Binding Shot", this.overlayToggles.binding);
           imgui.popStyleColor();
-          
+
           const intimidationColor = this.overlayToggles.intimidation.value ?
             { r: 0.2, g: 0.8, b: 1.0, a: 1.0 } : { r: 0.6, g: 0.6, b: 0.6, a: 1.0 };
           imgui.pushStyleColor(imgui.Col.Text, intimidationColor);
           imgui.checkbox("Intimidation", this.overlayToggles.intimidation);
           imgui.popStyleColor();
-          
+
           // Manual Freezing Trap keybind
           imgui.spacing();
           const manualTrapColor = this.overlayToggles.manualTrap.value ?
@@ -334,13 +334,13 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
           imgui.pushStyleColor(imgui.Col.Text, manualTrapColor);
           imgui.checkbox("Manual Trap (H)", this.overlayToggles.manualTrap);
           imgui.popStyleColor();
-          
+
           if (this.overlayToggles.manualTrap.value) {
             imgui.indent();
             imgui.textColored({ r: 0.8, g: 0.8, b: 0.8, a: 1.0 }, "H = Trap mouseover or healer");
             imgui.unindent();
           }
-          
+
           // Chimaeral Sting during Bestial Wrath
           imgui.spacing();
           const chimaeralStingColor = this.overlayToggles.chimaeralSting.value ?
@@ -348,67 +348,67 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
           imgui.pushStyleColor(imgui.Col.Text, chimaeralStingColor);
           imgui.checkbox("Chimaeral Sting BW", this.overlayToggles.chimaeralSting);
           imgui.popStyleColor();
-          
+
           if (this.overlayToggles.chimaeralSting.value) {
             imgui.indent();
             imgui.textColored({ r: 0.8, g: 0.8, b: 0.8, a: 1.0 }, "Stings healer during Bestial Wrath");
             imgui.unindent();
           }
-          
+
           imgui.unindent();
         }
 
         // Defensives
         if (imgui.collapsingHeader("Defensives")) {
           imgui.indent();
-          
+
           const defensiveColor = this.overlayToggles.defensives.value ?
             { r: 0.2, g: 1.0, b: 0.2, a: 1.0 } : { r: 1.0, g: 0.2, b: 0.2, a: 1.0 };
           imgui.pushStyleColor(imgui.Col.Text, defensiveColor);
           imgui.checkbox("Defensives", this.overlayToggles.defensives);
           imgui.popStyleColor();
-          
+
           imgui.unindent();
         }
       }
-      
+
       // Major Cooldowns section
       if (imgui.collapsingHeader("Major Cooldowns", imgui.TreeNodeFlags.DefaultOpen)) {
         imgui.indent();
-        
+
         // Bestial Wrath toggle
-        const bwColor = this.overlayToggles.bestialWrath.value ? 
+        const bwColor = this.overlayToggles.bestialWrath.value ?
           { r: 0.2, g: 1.0, b: 0.2, a: 1.0 } : { r: 1.0, g: 0.2, b: 0.2, a: 1.0 };
         imgui.pushStyleColor(imgui.Col.Text, bwColor);
         imgui.checkbox("Bestial Wrath", this.overlayToggles.bestialWrath);
         imgui.popStyleColor();
-        
-        // Call of the Wild toggle  
+
+        // Call of the Wild toggle
         const cotwColor = this.overlayToggles.callOfTheWild.value ?
           { r: 0.2, g: 1.0, b: 0.2, a: 1.0 } : { r: 1.0, g: 0.2, b: 0.2, a: 1.0 };
         imgui.pushStyleColor(imgui.Col.Text, cotwColor);
         imgui.checkbox("Call of the Wild", this.overlayToggles.callOfTheWild);
         imgui.popStyleColor();
 
-        // Bloodshed toggle  
+        // Bloodshed toggle
         const bloodshedColor = this.overlayToggles.bloodshed.value ?
           { r: 0.2, g: 1.0, b: 0.2, a: 1.0 } : { r: 1.0, g: 0.2, b: 0.2, a: 1.0 };
         imgui.pushStyleColor(imgui.Col.Text, bloodshedColor);
         imgui.checkbox("Bloodshed", this.overlayToggles.bloodshed);
         imgui.popStyleColor();
-        
+
         imgui.unindent();
       }
-      
+
       // Manual spell casting section
       if (imgui.collapsingHeader("Manual Spell Casting")) {
         imgui.indent();
-        
+
         imgui.text("Spell ID:");
         imgui.sameLine();
         imgui.setNextItemWidth(80);
         imgui.inputText("##spellId", this.spellIdInput);
-        
+
                  // Show spell name for current ID
          const currentSpellId = parseInt(this.spellIdInput.value || "0", 10);
          if (currentSpellId > 0) {
@@ -420,49 +420,49 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
              imgui.textColored({ r: 1.0, g: 0.2, b: 0.2, a: 1.0 }, "Invalid Spell ID");
            }
          }
-        
+
         imgui.text("Press RightArrow to cast");
-        
+
         imgui.unindent();
       }
-      
+
       // Interrupts section
       if (imgui.collapsingHeader("Interrupts", imgui.TreeNodeFlags.DefaultOpen)) {
         imgui.indent();
-        
+
         // Interrupts master toggle
         const interruptColor = this.overlayToggles.interrupts.value ?
           { r: 0.2, g: 1.0, b: 0.2, a: 1.0 } : { r: 1.0, g: 0.2, b: 0.2, a: 1.0 };
         imgui.pushStyleColor(imgui.Col.Text, interruptColor);
         imgui.checkbox("Interrupts", this.overlayToggles.interrupts);
         imgui.popStyleColor();
-        
+
         // Individual interrupt toggles
         if (this.overlayToggles.interrupts.value) {
           imgui.indent();
-          
+
           const counterShotColor = this.overlayToggles.counterShot.value ?
             { r: 0.2, g: 0.8, b: 1.0, a: 1.0 } : { r: 0.6, g: 0.6, b: 0.6, a: 1.0 };
           imgui.pushStyleColor(imgui.Col.Text, counterShotColor);
           imgui.checkbox("Counter Shot", this.overlayToggles.counterShot);
           imgui.popStyleColor();
-          
+
           const intimidationColor = this.overlayToggles.intimidation.value ?
             { r: 0.2, g: 0.8, b: 1.0, a: 1.0 } : { r: 0.6, g: 0.6, b: 0.6, a: 1.0 };
           imgui.pushStyleColor(imgui.Col.Text, intimidationColor);
           imgui.checkbox("Intimidation", this.overlayToggles.intimidation);
           imgui.popStyleColor();
-          
+
           imgui.unindent();
         }
-        
+
         imgui.unindent();
       }
 
       // Quick controls section
       imgui.spacing();
       imgui.separator();
-      
+
       if (imgui.button("Enable All", { x: 120, y: 0 })) {
         Object.values(this.overlayToggles).forEach(toggle => {
           if (toggle !== this.overlayToggles.showOverlay) {
@@ -470,9 +470,9 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
           }
         });
       }
-      
+
       imgui.sameLine();
-      
+
       if (imgui.button("Disable All", { x: 120, y: 0 })) {
         Object.values(this.overlayToggles).forEach(toggle => {
           if (toggle !== this.overlayToggles.showOverlay) {
@@ -480,7 +480,7 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
           }
         });
       }
-      
+
       imgui.end();
     }
   }
@@ -489,15 +489,15 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
     return new bt.Selector(
       // Call pet if no pet
       spell.cast("Call Pet 1", () => !me.pet && Settings.AutoRevivePet),
-      
+
       // Revive pet if dead
       spell.cast("Revive Pet", () => Settings.AutoRevivePet && me.pet && me.pet.deadOrGhost),
-      
+
       // Mend pet if injured
-      spell.cast("Mend Pet", () => 
-        Settings.AutoMendPet && 
-        me.pet && 
-        !me.pet.deadOrGhost && 
+      spell.cast("Mend Pet", () =>
+        Settings.AutoMendPet &&
+        me.pet &&
+        !me.pet.deadOrGhost &&
         me.pet.pctHealth < Settings.MendPetHealthPct &&
         !me.pet.hasAura("Mend Pet")
       )
@@ -507,35 +507,35 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
   buildDefensives() {
     return new bt.Selector(
       // Hunter's Mark
-      spell.cast("Hunter's Mark", on => this.getCurrentTarget(), req => 
-        this.getCurrentTarget() && 
+      spell.cast("Hunter's Mark", on => this.getCurrentTarget(), req =>
+        this.getCurrentTarget() &&
         !this.getCurrentTarget().hasAuraByMe("Hunter's Mark") &&
         this.getCurrentTarget().isPlayer()
       ),
-      
+
       // Defensive abilities
-      spell.cast("Exhilaration", () => 
-        Settings.UseExhilaration && 
+      spell.cast("Exhilaration", () =>
+        Settings.UseExhilaration &&
         this.overlayToggles.defensives.value &&
         me.pctHealth < Settings.ExhilarationHealthPct
       ),
-      spell.cast("Fortitude of the Bear", () => 
-        Settings.UseFortitudeOfTheBear && 
+      spell.cast("Fortitude of the Bear", () =>
+        Settings.UseFortitudeOfTheBear &&
         this.overlayToggles.defensives.value &&
         me.pctHealth < Settings.FortitudeOfTheBearHealthPct
       ),
-      spell.cast("Survival of the Fittest", () => 
-        Settings.UseSurvivalOfTheFittest && 
+      spell.cast("Survival of the Fittest", () =>
+        Settings.UseSurvivalOfTheFittest &&
         this.overlayToggles.defensives.value &&
         me.pctHealth < Settings.SurvivalOfTheFittestHealthPct
       ),
-      spell.cast("Aspect of the Cheetah", () => 
-        Settings.UseAspectOfTheCheetah && 
+      spell.cast("Aspect of the Cheetah", () =>
+        Settings.UseAspectOfTheCheetah &&
         this.overlayToggles.defensives.value &&
         me.pctHealth < Settings.AspectOfTheCheetahHealthPct &&
         this.isBeingFocused()
       ),
-      
+
       // Interrupts
       new bt.Decorator(
         () => Settings.UseCounterShot && this.overlayToggles.interrupts.value && this.overlayToggles.counterShot.value,
@@ -554,34 +554,34 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
       // Power Infusion equivalent (invoke external buff)
       // Simulate: invoke_external_buff,name=power_infusion,if=buff.call_of_the_wild.up|talent.bloodshed&(prev_gcd.1.bloodshed)|!talent.call_of_the_wild&(buff.bestial_wrath.up|cooldown.bestial_wrath.remains<30)|fight_remains<16
       // This would be handled by external addons typically
-      
+
       // Berserking racial
-      spell.cast("Berserking", () => 
-        me.hasAura("Call of the Wild") || 
+      spell.cast("Berserking", () =>
+        me.hasAura("Call of the Wild") ||
         (this.hasTalent("Bloodshed") && this.wasLastSpellCast("Bloodshed")) ||
         (!this.hasTalent("Call of the Wild") && me.hasAura("Bestial Wrath")) ||
         this.getTargetTimeToDie() < 13
       ),
-      
+
       // Blood Fury racial
-      spell.cast("Blood Fury", () => 
-        me.hasAura("Call of the Wild") || 
+      spell.cast("Blood Fury", () =>
+        me.hasAura("Call of the Wild") ||
         (this.hasTalent("Bloodshed") && this.wasLastSpellCast("Bloodshed")) ||
         (!this.hasTalent("Call of the Wild") && me.hasAura("Bestial Wrath")) ||
         this.getTargetTimeToDie() < 16
       ),
-      
+
       // Ancestral Call racial
-      spell.cast("Ancestral Call", () => 
-        me.hasAura("Call of the Wild") || 
+      spell.cast("Ancestral Call", () =>
+        me.hasAura("Call of the Wild") ||
         (this.hasTalent("Bloodshed") && this.wasLastSpellCast("Bloodshed")) ||
         (!this.hasTalent("Call of the Wild") && me.hasAura("Bestial Wrath")) ||
         this.getTargetTimeToDie() < 16
       ),
-      
+
       // Fireblood racial
-      spell.cast("Fireblood", () => 
-        me.hasAura("Call of the Wild") || 
+      spell.cast("Fireblood", () =>
+        me.hasAura("Call of the Wild") ||
         (this.hasTalent("Bloodshed") && this.wasLastSpellCast("Bloodshed")) ||
         (!this.hasTalent("Call of the Wild") && me.hasAura("Bestial Wrath")) ||
         this.getTargetTimeToDie() < 9
@@ -592,86 +592,86 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
   buildCleave() {
     return new bt.Selector(
       // bestial_wrath,target_if=min:dot.barbed_shot.remains
-      spell.cast("Bestial Wrath", () => 
-        Settings.UseBestialWrath && 
+      spell.cast("Bestial Wrath", () =>
+        Settings.UseBestialWrath &&
         this.overlayToggles.bestialWrath.value &&
         this.shouldUseCooldowns()
       ),
-      
+
       // barbed_shot,target_if=min:dot.barbed_shot.remains,if=full_recharge_time<gcd|charges_fractional>=cooldown.kill_command.charges_fractional|talent.call_of_the_wild&cooldown.call_of_the_wild.ready|howl_summon_ready&full_recharge_time<8
-      spell.cast("Barbed Shot", on => this.getTargetWithMinBarbedShot(), req => 
+      spell.cast("Barbed Shot", on => this.getTargetWithMinBarbedShot(), req =>
         this.getBarbedShotFullRechargeTime() < 1.5 ||
         spell.getCharges("Barbed Shot") >= spell.getCharges("Kill Command") ||
         (this.hasTalent("Call of the Wild") && spell.getCooldown("Call of the Wild").ready) ||
         (this.isHowlSummonReady() && this.getBarbedShotFullRechargeTime() < 8)
       ),
-      
+
       // multishot,if=pet.main.buff.beast_cleave.remains<0.25+gcd&(!talent.bloody_frenzy|cooldown.call_of_the_wild.remains)
       spell.cast("Multi-Shot", on => this.getCurrentTarget(), req =>
         this.getPetBeastCleaveRemaining() < (0.25 + 1.5) &&
         (!this.hasTalent("Bloody Frenzy") || spell.getCooldown("Call of the Wild").timeleft > 0)
       ),
 
-      
+
       // black_arrow,if=buff.beast_cleave.remains
       spell.cast("Black Arrow", on => this.getCurrentTarget(), req => me.hasVisibleAura("Beast Cleave")
       ),
-      
+
       // call_of_the_wild
-      spell.cast("Call of the Wild", () => 
-        Settings.UseCallOfTheWild && 
+      spell.cast("Call of the Wild", () =>
+        Settings.UseCallOfTheWild &&
         this.overlayToggles.callOfTheWild.value &&
         this.shouldUseCooldowns()
       ),
-      
+
       // bloodshed
-      spell.cast("Bloodshed", () => 
-        Settings.UseBloodshed && 
+      spell.cast("Bloodshed", () =>
+        Settings.UseBloodshed &&
         this.overlayToggles.bloodshed.value &&
         this.shouldUseCooldowns()
       ),
-      
+
       // dire_beast,if=talent.shadow_hounds|talent.dire_cleave
-      spell.cast("Dire Beast", () => 
+      spell.cast("Dire Beast", () =>
         this.hasTalent("Shadow Hounds") || this.hasTalent("Dire Cleave")
       ),
-      
+
       // explosive_shot,if=talent.thundering_hooves
-      spell.cast("Explosive Shot", on => this.getCurrentTarget(), req => 
+      spell.cast("Explosive Shot", on => this.getCurrentTarget(), req =>
         this.hasTalent("Thundering Hooves")
       ),
-      
+
       // kill_command,target_if=max:(target.health.pct<35|!talent.killer_instinct)*2+dot.a_murder_of_crows.refreshable
       spell.cast("Kill Command", on => this.getBestKillCommandTarget()),
-      
+
       // explosive_shot,if=talent.thundering_hooves
-      spell.cast("Explosive Shot", on => this.getCurrentTarget(), req => 
+      spell.cast("Explosive Shot", on => this.getCurrentTarget(), req =>
         this.hasTalent("Thundering Hooves")
       ),
-      
+
       // lights_judgment,if=buff.bestial_wrath.down|target.time_to_die<5
-      spell.cast("Light's Judgment", on => this.getCurrentTarget(), req => 
+      spell.cast("Light's Judgment", on => this.getCurrentTarget(), req =>
         !me.hasAura("Bestial Wrath") || this.getTargetTimeToDie() < 5
       ),
-      
+
              // cobra_shot,if=focus.time_to_max<gcd*2|buff.hogstrider.stack>3
-       spell.cast("Cobra Shot", on => this.getCurrentTarget(), req => 
+       spell.cast("Cobra Shot", on => this.getCurrentTarget(), req =>
          this.getFocusTimeToMax() < 3.0 || (me.getAuraStacks ? (me.getAuraStacks("Hogstrider") || 0) : 0) > 3
        ),
-      
+
       // dire_beast
       spell.cast("Dire Beast"),
-      
+
       // explosive_shot
       spell.cast("Explosive Shot", on => this.getCurrentTarget()),
-      
+
       // bag_of_tricks,if=buff.bestial_wrath.down|target.time_to_die<5
-      spell.cast("Bag of Tricks", on => this.getCurrentTarget(), req => 
+      spell.cast("Bag of Tricks", on => this.getCurrentTarget(), req =>
         !me.hasAura("Bestial Wrath") || this.getTargetTimeToDie() < 5
       ),
-      
+
              // arcane_torrent,if=(focus+focus.regen+30)<focus.max
-       spell.cast("Arcane Torrent", () => 
+       spell.cast("Arcane Torrent", () =>
          ((me.powerByType(PowerType.Focus) || 0) + this.getFocusRegen() + 30) < (me.maxPowerByType(PowerType.Focus) || 100)
        )
     );
@@ -681,72 +681,72 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
     return new bt.Selector(
       // dire_beast,if=talent.huntmasters_call
       spell.cast("Dire Beast", () => this.hasTalent("Huntmaster's Call")),
-      
+
       // bestial_wrath
-      spell.cast("Bestial Wrath", () => 
-        Settings.UseBestialWrath && 
+      spell.cast("Bestial Wrath", () =>
+        Settings.UseBestialWrath &&
         this.overlayToggles.bestialWrath.value &&
         this.shouldUseCooldowns()
       ),
-      
+
       // barbed_shot,target_if=min:dot.barbed_shot.remains,if=full_recharge_time<gcd|charges_fractional>=cooldown.kill_command.charges_fractional|talent.call_of_the_wild&cooldown.call_of_the_wild.ready|howl_summon_ready&full_recharge_time<8
-      spell.cast("Barbed Shot", on => this.getTargetWithMinBarbedShot(), req => 
+      spell.cast("Barbed Shot", on => this.getTargetWithMinBarbedShot(), req =>
         this.getBarbedShotFullRechargeTime() < 1.5 ||
         spell.getCharges("Barbed Shot") >= spell.getCharges("Kill Command") ||
         (this.hasTalent("Call of the Wild") && spell.getCooldown("Call of the Wild").ready) ||
         (this.isHowlSummonReady() && this.getBarbedShotFullRechargeTime() < 8)
       ),
-      
+
       // kill_command,if=charges_fractional>=cooldown.barbed_shot.charges_fractional
-      spell.cast("Kill Command", on => this.getCurrentTarget(), req => 
+      spell.cast("Kill Command", on => this.getCurrentTarget(), req =>
         spell.getCharges("Kill Command") >= spell.getCharges("Barbed Shot")
       ),
-      
+
       // call_of_the_wild
-      spell.cast("Call of the Wild", () => 
-        Settings.UseCallOfTheWild && 
+      spell.cast("Call of the Wild", () =>
+        Settings.UseCallOfTheWild &&
         this.overlayToggles.callOfTheWild.value &&
         this.shouldUseCooldowns()
       ),
-      
+
       // bloodshed
-      spell.cast("Bloodshed", () => 
-        Settings.UseBloodshed && 
+      spell.cast("Bloodshed", () =>
+        Settings.UseBloodshed &&
         this.overlayToggles.bloodshed.value &&
         this.shouldUseCooldowns()
       ),
-      
+
       // black_arrow
       spell.cast("Black Arrow", on => this.getCurrentTarget()),
-      
+
       // explosive_shot,if=talent.thundering_hooves
-      spell.cast("Explosive Shot", on => this.getCurrentTarget(), req => 
+      spell.cast("Explosive Shot", on => this.getCurrentTarget(), req =>
         this.hasTalent("Thundering Hooves")
       ),
-      
+
       // lights_judgment,if=buff.bestial_wrath.down|target.time_to_die<5
-      spell.cast("Light's Judgment", on => this.getCurrentTarget(), req => 
+      spell.cast("Light's Judgment", on => this.getCurrentTarget(), req =>
         !me.hasAura("Bestial Wrath") || this.getTargetTimeToDie() < 5
       ),
-      
+
       // cobra_shot
       spell.cast("Cobra Shot", on => this.getCurrentTarget()),
-      
+
       // dire_beast
       spell.cast("Dire Beast"),
-      
+
       // bag_of_tricks,if=buff.bestial_wrath.down|target.time_to_die<5
-      spell.cast("Bag of Tricks", on => this.getCurrentTarget(), req => 
+      spell.cast("Bag of Tricks", on => this.getCurrentTarget(), req =>
         !me.hasAura("Bestial Wrath") || this.getTargetTimeToDie() < 5
       ),
-      
+
       // arcane_pulse,if=buff.bestial_wrath.down|target.time_to_die<5
-      spell.cast("Arcane Pulse", () => 
+      spell.cast("Arcane Pulse", () =>
         !me.hasAura("Bestial Wrath") || this.getTargetTimeToDie() < 5
       ),
-      
+
              // arcane_torrent,if=(focus+focus.regen+15)<focus.max
-       spell.cast("Arcane Torrent", () => 
+       spell.cast("Arcane Torrent", () =>
          ((me.powerByType(PowerType.Focus) || 0) + this.getFocusRegen() + 15) < (me.maxPowerByType(PowerType.Focus) || 100)
        )
     );
@@ -783,7 +783,7 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
       //   this.buildCleave(),
       //   new bt.Action(() => bt.Status.Success)
       // ),
-      
+
       // Burst mode
       this.buildBeastMasteryBurst(),
 
@@ -795,99 +795,99 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
   buildPVPAlwaysPerform() {
     return new bt.Selector(
       // Hunter's Mark maintenance
-      spell.cast("Hunter's Mark", on => this.getCurrentTargetPVP(), req => 
-        this.getCurrentTargetPVP() && 
+      spell.cast("Hunter's Mark", on => this.getCurrentTargetPVP(), req =>
+        this.getCurrentTargetPVP() &&
         !this.getCurrentTargetPVP().hasAuraByMe("Hunter's Mark") &&
         this.getCurrentTargetPVP().isPlayer()
       ),
-      
+
       // Master's Call if we're rooted
-      spell.cast("Master's Call", () => 
+      spell.cast("Master's Call", () =>
         Settings.UseMastersCall &&
         me.isRooted()
       ),
-      
+
       // Feign Death for spells we would spell reflect (like Arms Warrior)
-      spell.cast("Feign Death", () => 
+      spell.cast("Feign Death", () =>
         Settings.UseFeignDeath &&
         this.overlayToggles.defensives.value &&
         this.shouldFeignDeathPVP()
       ),
-      
+
       // Tranquilizing Shot enemies we would Dispel Magic on
-      spell.cast("Tranquilizing Shot", on => this.findTranquilizingShotTarget(), req => 
+      spell.cast("Tranquilizing Shot", on => this.findTranquilizingShotTarget(), req =>
         Settings.UseTranquilizingShot &&
         this.findTranquilizingShotTarget() !== undefined
       ),
-      
+
       // Binding Shot - enemies within 10y of us, or within 10y of our healer
-      spell.cast("Binding Shot", on => this.findBindingShotTargetPVP(), req => 
+      spell.cast("Binding Shot", on => this.findBindingShotTargetPVP(), req =>
         Settings.UseBinding &&
         this.overlayToggles.binding.value &&
         this.findBindingShotTargetPVP() !== undefined
       ),
-      
+
       // Freezing Trap enemy healer when stunned with <1.5s stun remaining
-      spell.cast("Freezing Trap", on => this.findFreezingTrapTargetPVP(), req => 
+      spell.cast("Freezing Trap", on => this.findFreezingTrapTargetPVP(), req =>
         Settings.UseFreezingTrap &&
         this.findFreezingTrapTargetPVP() !== undefined
       ),
 
-      spell.cast("Chimaeral Sting", on => this.findEnemyHealerNotCC(), req => 
+      spell.cast("Chimaeral Sting", on => this.findEnemyHealerNotCC(), req =>
         this.overlayToggles.chimaeralSting.value &&
         me.hasVisibleAura("Bestial Wrath") &&
         this.findEnemyHealerNotCC() !== undefined
       ),
-      
+
       // Tar Trap any enemy within 10y of us
-      spell.cast("Tar Trap", on => this.findTarTrapLocationPVP(), req => 
+      spell.cast("Tar Trap", on => this.findTarTrapLocationPVP(), req =>
         Settings.UseTarTrap &&
         this.findTarTrapLocationPVP() !== undefined
       ),
-      
+
       // High Explosive Trap non-healers within 10y with major cooldowns up
-      spell.cast("High Explosive Trap", on => this.findExplosiveTrapLocationPVP(), req => 
+      spell.cast("High Explosive Trap", on => this.findExplosiveTrapLocationPVP(), req =>
         Settings.UseExplosiveTrap &&
         this.findExplosiveTrapLocationPVP() !== undefined
       ),
-      
+
       // Intimidation enemies with major cooldowns or healer if no stun DR
-      spell.cast("Intimidation", on => this.findIntimidationTargetPVP(), req => 
+      spell.cast("Intimidation", on => this.findIntimidationTargetPVP(), req =>
         Settings.UseIntimidation &&
         this.overlayToggles.intimidation.value &&
         this.findIntimidationTargetPVP() !== undefined
       ),
-      
+
       // Bursting Shot non-healers within 8y of us
-      spell.cast("Bursting Shot", on => this.findBurstingShotTargetPVP(), req => 
+      spell.cast("Bursting Shot", on => this.findBurstingShotTargetPVP(), req =>
         Settings.UseBurstingShot &&
         this.findBurstingShotTargetPVP() !== undefined
       ),
-      
+
       // Concussive Shot nearest enemy player without the aura
-      spell.cast("Concussive Shot", on => this.findConcussiveShotTargetPVP(), req => 
+      spell.cast("Concussive Shot", on => this.findConcussiveShotTargetPVP(), req =>
         Settings.UseConcussiveShot &&
         this.findConcussiveShotTargetPVP() !== undefined
       ),
-      
+
       // Defensives
-      spell.cast("Exhilaration", () => 
-        Settings.UseExhilaration && 
+      spell.cast("Exhilaration", () =>
+        Settings.UseExhilaration &&
         this.overlayToggles.defensives.value &&
         me.pctHealth < Settings.ExhilarationHealthPct
       ),
-      spell.cast("Fortitude of the Bear", () => 
-        Settings.UseFortitudeOfTheBear && 
+      spell.cast("Fortitude of the Bear", () =>
+        Settings.UseFortitudeOfTheBear &&
         this.overlayToggles.defensives.value &&
         me.pctHealth < Settings.FortitudeOfTheBearHealthPct
       ),
-      spell.cast("Survival of the Fittest", () => 
-        Settings.UseSurvivalOfTheFittest && 
+      spell.cast("Survival of the Fittest", () =>
+        Settings.UseSurvivalOfTheFittest &&
         this.overlayToggles.defensives.value &&
         me.pctHealth < Settings.SurvivalOfTheFittestHealthPct &&
         this.isUnderPressure()
       ),
-      
+
       // Interrupts
       new bt.Decorator(
         () => Settings.UseCounterShot && this.overlayToggles.interrupts.value && this.overlayToggles.counterShot.value,
@@ -904,53 +904,53 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
   buildBeastMasteryBurst() {
     return new bt.Selector(
       // Call of the Wild
-      spell.cast("Call of the Wild", () => 
-        Settings.UseCallOfTheWild && 
+      spell.cast("Call of the Wild", () =>
+        Settings.UseCallOfTheWild &&
         this.overlayToggles.callOfTheWild.value &&
         this.burstModeActive
       ),
-      
+
       // Bestial Wrath
-      spell.cast("Bestial Wrath", () => 
-        Settings.UseBestialWrath && 
+      spell.cast("Bestial Wrath", () =>
+        Settings.UseBestialWrath &&
         this.overlayToggles.bestialWrath.value &&
         this.burstModeActive
       ),
 
-      spell.cast("Kill Shot", on => this.getCurrentTargetPVP(), req => 
+      spell.cast("Kill Shot", on => this.getCurrentTargetPVP(), req =>
         this.getCurrentTargetPVP() !== undefined
       ),
-      
+
       // Chimaeral Sting enemy healer during Bestial Wrath (when not CC'd)
-      spell.cast("Chimaeral Sting", on => this.findEnemyHealerNotCC(), req => 
+      spell.cast("Chimaeral Sting", on => this.findEnemyHealerNotCC(), req =>
         this.overlayToggles.chimaeralSting.value &&
         me.hasVisibleAura("Bestial Wrath") &&
         this.findEnemyHealerNotCC() !== undefined
       ),
-      
+
       // Bloodshed
-      spell.cast("Bloodshed", () => 
-        Settings.UseBloodshed && 
+      spell.cast("Bloodshed", () =>
+        Settings.UseBloodshed &&
         this.overlayToggles.bloodshed.value &&
         this.burstModeActive
       ),
-      
+
       // Use racials during burst
       spell.cast("Blood Fury", () => this.burstModeActive),
       spell.cast("Berserking", () => this.burstModeActive),
-      
+
              // Barbed Shot to maintain frenzy
-       spell.cast("Barbed Shot", on => this.getCurrentTargetPVP(), req => 
-         this.burstModeActive && 
+       spell.cast("Barbed Shot", on => this.getCurrentTargetPVP(), req =>
+         this.burstModeActive &&
          ((me.getAuraStacks ? (me.getAuraStacks("Frenzy") || 0) : 0) < 3 || this.getAuraRemainingTime("Frenzy") < 5)
        ),
-      
+
       // Kill Command
       spell.cast("Kill Command", on => this.getCurrentTargetPVP(), req => this.burstModeActive),
-      
+
       // Cobra Shot
       spell.cast("Cobra Shot", on => this.getCurrentTargetPVP(), req => this.burstModeActive),
-      
+
       // Always fall back to regular rotation
       new bt.Action(() => bt.Status.Failure)
     );
@@ -959,39 +959,39 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
   buildPVPRegularPriority() {
     return new bt.Selector(
       // Priority 1: Barbed Shot
-      spell.cast("Barbed Shot", on => this.getCurrentTargetPVP(), req => 
+      spell.cast("Barbed Shot", on => this.getCurrentTargetPVP(), req =>
         this.getCurrentTargetPVP() !== undefined
       ),
-      
+
       // Priority 2: Kill Command if charges == 2
-      spell.cast("Kill Command", on => this.getCurrentTargetPVP(), req => 
+      spell.cast("Kill Command", on => this.getCurrentTargetPVP(), req =>
         this.getCurrentTargetPVP() !== undefined &&
         this.getKillCommandCharges() >= 2
       ),
-      
+
       // Priority 3: Dire Beast if we do not have Bestial Wrath buff active
-      spell.cast("Dire Beast", on => this.getCurrentTargetPVP(), req => 
+      spell.cast("Dire Beast", on => this.getCurrentTargetPVP(), req =>
         this.getCurrentTargetPVP() !== undefined &&
         !me.hasVisibleAura("Bestial Wrath")
       ),
 
       // Priority 6: Kill Shot
-      spell.cast("Kill Shot", on => this.getCurrentTargetPVP(), req => 
+      spell.cast("Kill Shot", on => this.getCurrentTargetPVP(), req =>
         this.getCurrentTargetPVP() !== undefined
       ),
-      
+
       // Priority 4: Kill Command
-      spell.cast("Kill Command", on => this.getCurrentTargetPVP(), req => 
+      spell.cast("Kill Command", on => this.getCurrentTargetPVP(), req =>
         this.getCurrentTargetPVP() !== undefined
       ),
-      
+
       // Priority 5: Dire Beast
-      spell.cast("Dire Beast", on => this.getCurrentTargetPVP(), req => 
+      spell.cast("Dire Beast", on => this.getCurrentTargetPVP(), req =>
         this.getCurrentTargetPVP() !== undefined
       ),
-      
+
       // Priority 7: Cobra Shot
-      spell.cast("Cobra Shot", on => this.getCurrentTargetPVP(), req => 
+      spell.cast("Cobra Shot", on => this.getCurrentTargetPVP(), req =>
         this.getCurrentTargetPVP() !== undefined
       )
     );
@@ -1024,8 +1024,8 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
   getEnemiesInRangeOfPet(range) {
     // Filter for only attackable enemies around the pet
     if (!me.pet) return 0;
-    
-    return me.pet.getUnitsAround(range).filter(unit => 
+
+    return me.pet.getUnitsAround(range).filter(unit =>
       unit instanceof wow.CGUnit && me.canAttack(unit) && unit.health > 0 && !unit.isImmune()
     ).length;
   }
@@ -1034,7 +1034,7 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
     if (Settings.IgnoreTimeToDeath) {
       return true;
     }
-    
+
     const target = this.getCurrentTarget();
     return target && target.timeToDeath() > Settings.MinTimeToDeath;
   }
@@ -1057,9 +1057,9 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
     const charges = spell.getCharges("Barbed Shot");
     const maxCharges = 2; // Barbed Shot has 2 charges
     const cooldown = spell.getCooldown("Barbed Shot");
-    
+
     if (charges >= maxCharges) return 0;
-    
+
     // Calculate time for all charges to be available
     const chargesNeeded = maxCharges - charges;
     return cooldown.timeleft + ((chargesNeeded - 1) * cooldown.duration);
@@ -1069,7 +1069,7 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
     // Find target with shortest remaining Barbed Shot debuff
     let bestTarget = null;
     let minRemaining = 999;
-    
+
     for (const target of combat.targets) {
       if (me.distanceTo(target) <= 40) {
         const barbedShot = target.getAura("Barbed Shot");
@@ -1080,7 +1080,7 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
         }
       }
     }
-    
+
     return bestTarget || this.getCurrentTarget();
   }
 
@@ -1088,29 +1088,29 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
     // target_if=max:(target.health.pct<35|!talent.killer_instinct)*2+dot.a_murder_of_crows.refreshable
     let bestTarget = null;
     let bestScore = -1;
-    
+
     for (const target of combat.targets) {
       if (me.distanceTo(target) <= 40) {
         let score = 0;
-        
+
         // (target.health.pct<35|!talent.killer_instinct)*2
         if (target.pctHealth < 35 || !this.hasTalent("Killer Instinct")) {
           score += 2;
         }
-        
+
         // dot.a_murder_of_crows.refreshable
         const crows = target.getAura("A Murder of Crows");
         if (!crows || crows.remaining < 4.5) {
           score += 1;
         }
-        
+
         if (score > bestScore) {
           bestScore = score;
           bestTarget = target;
         }
       }
     }
-    
+
     return bestTarget || this.getCurrentTarget();
   }
 
@@ -1131,9 +1131,9 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
     const currentFocus = me.powerByType(PowerType.Focus) || 0;
     const maxFocus = me.maxPowerByType(PowerType.Focus) || 100;
     const regenRate = this.getFocusRegen();
-    
+
     if (currentFocus >= maxFocus) return 0;
-    
+
     return (maxFocus - currentFocus) / regenRate;
   }
 
@@ -1151,13 +1151,11 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
 
   isBeingFocused() {
     // Check if multiple enemies are targeting us
-    const enemiesTargetingMe = combat.targets.filter(unit => 
-      unit.isPlayer() && 
-      unit.target && 
-      unit.target.equals(me.guid) &&
-      me.distanceTo(unit) <= 40
+    const enemiesTargetingMe = me.getPlayerEnemies(40).filter(unit =>
+      unit.target &&
+      unit.target.equals(me.guid)
     ).length;
-    
+
     return enemiesTargetingMe >= 2;
   }
 
@@ -1169,27 +1167,25 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
   shouldCastConcussiveShot() {
     const target = this.getCurrentTargetPVP();
     if (!target || !target.isPlayer()) return false;
-    
+
     // Don't cast if target already slowed
     if (target.hasAura("Concussive Shot") || target.hasAura("Hamstring")) return false;
-    
+
     // Don't cast if target has immunity
     if (pvpHelpers.hasImmunity(target) || target.hasVisibleAura(1044)) return false; // Blessing of Freedom
-    
+
     // Check timing based on successful casts
     const lastSuccessfulTime = spell._lastSuccessfulCastTimes.get("concussive shot");
     const now = wow.frameTime;
     const timeSinceSuccess = lastSuccessfulTime ? now - lastSuccessfulTime : 999999;
-    
+
     return !lastSuccessfulTime || timeSinceSuccess >= (Settings.ConcussiveShotCooldown * 1000);
   }
 
   findBindingShotTarget() {
     // Look for enemies trying to escape or approaching dangerous positions
-    for (const enemy of combat.targets) {
-      if (enemy.isPlayer() && 
-          me.distanceTo(enemy) <= 30 &&
-          !pvpHelpers.hasImmunity(enemy) &&
+    for (const enemy of me.getPlayerEnemies(30)) {
+      if (!pvpHelpers.hasImmunity(enemy) &&
           !enemy.isCCd()) {
         return enemy;
       }
@@ -1199,10 +1195,8 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
 
   findIntimidationTarget() {
     // Look for enemies casting important spells
-    for (const enemy of combat.targets) {
-      if (enemy.isPlayer() && 
-          me.distanceTo(enemy) <= 30 &&
-          enemy.isCastingOrChanneling &&
+    for (const enemy of me.getPlayerEnemies(30)) {
+      if (enemy.isCastingOrChanneling &&
           drTracker.getDRStacks(enemy.guid, "stun") < 2 &&
           !pvpHelpers.hasImmunity(enemy)) {
         return enemy;
@@ -1213,10 +1207,8 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
 
   findScaredBeastTarget() {
     // Look for druids in animal forms
-    for (const enemy of combat.targets) {
-      if (enemy.isPlayer() && 
-          me.distanceTo(enemy) <= 30 &&
-          (enemy.hasAura("Cat Form") || enemy.hasAura("Bear Form") || enemy.hasAura("Travel Form")) &&
+    for (const enemy of me.getPlayerEnemies(30)) {
+      if ((enemy.hasAura("Cat Form") || enemy.hasAura("Bear Form") || enemy.hasAura("Travel Form")) &&
           drTracker.getDRStacks(enemy.guid, "disorient") < 2 &&
           !pvpHelpers.hasImmunity(enemy)) {
         return enemy;
@@ -1234,10 +1226,8 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
 
   findFreezingTrapTarget() {
     // Look for high priority targets for CC
-    for (const enemy of me.getEnemies()) {
-      if (enemy.isPlayer() && 
-          me.distanceTo(enemy) <= 40 &&
-          enemy.isHealer() &&
+    for (const enemy of me.getPlayerEnemies(40)) {
+      if (enemy.isHealer() &&
           drTracker.getDRStacks(enemy.guid, "incapacitate") < 2 &&
           !pvpHelpers.hasImmunity(enemy)) {
         return enemy;
@@ -1333,9 +1323,9 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
 
   shouldFeignDeathPVP() {
     // Use same logic as Arms Warrior's shouldSpellReflectPVP
-    const enemies = me.getEnemies();
+    const enemies = me.getPlayerEnemies(40);
     for (const enemy of enemies) {
-      if (enemy.isCastingOrChanneling && enemy.isPlayer()) {
+      if (enemy.isCastingOrChanneling) {
         const spellInfo = enemy.spellInfo;
         const target = spellInfo ? spellInfo.spellTargetGuid : null;
         if (enemy.spellInfo && target && target.equals(me.guid)) {
@@ -1353,9 +1343,9 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
 
   findTranquilizingShotTarget() {
     // Find enemies that we would Dispel Magic on (like PriestDisciplinePvP.js)
-    for (const enemy of me.getEnemies()) {
-      if (!enemy.isPlayer() || pvpHelpers.hasImmunity(enemy)) continue;
-      
+    for (const enemy of me.getPlayerEnemies(40)) {
+      if (pvpHelpers.hasImmunity(enemy)) continue;
+
       // Check for magic buffs that should be dispelled
       const magicBuffs = enemy.auras.filter(aura => aura.isDispellable && aura.dispelType === 0); // Magic = 0
       if (magicBuffs.length > 0) {
@@ -1367,29 +1357,26 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
 
   findBindingShotTargetPVP() {
     // First priority: enemies within 10y of us
-    const enemiesNearUs = me.getEnemies().filter(enemy => 
-      enemy.isPlayer() && 
-      me.distanceTo(enemy) <= 10 &&
+    const enemiesNearUs = me.getPlayerEnemies(10).filter(enemy =>
       !pvpHelpers.hasImmunity(enemy) &&
       !enemy.hasVisibleAura("Binding Shot") // Don't cast if already bound
     );
-    
+
     if (enemiesNearUs.length > 0) {
       return enemiesNearUs[0];
     }
 
     // Second priority: enemies within 10y of our healer
-    const friends = me.getFriends();
+    const friends = me.getPlayerFriends(40);
     const healers = friends.filter(member => member.isHealer());
     if (healers.length > 0) {
       const healer = healers[0];
-      const enemiesNearHealer = me.getEnemies().filter(enemy => 
-        enemy.isPlayer() && 
+      const enemiesNearHealer = me.getPlayerEnemies(40).filter(enemy =>
         healer.distanceTo(enemy) <= 10 &&
         !pvpHelpers.hasImmunity(enemy) &&
         !enemy.hasVisibleAura("Binding Shot")
       );
-      
+
       if (enemiesNearHealer.length > 0) {
         return enemiesNearHealer[0];
       }
@@ -1399,11 +1386,9 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
   }
 
   findEnemyHealerNotCC() {
-    const enemies = me.getEnemies();
+    const enemies = me.getPlayerEnemies(40);
     for (const enemy of enemies) {
-      if (enemy.isPlayer() && 
-          enemy.isHealer() &&
-          me.distanceTo(enemy) <= 40 &&
+      if (enemy.isHealer() &&
           !enemy.isCCd() &&
           !pvpHelpers.hasImmunity(enemy)) {
         return enemy;
@@ -1416,19 +1401,19 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
   //   // Enemy healer when stunned with <1.5s stun remaining
   //   for (const enemy of me.getEnemies()) {
   //     console.log(`[Freezing Trap Debug] Checking enemy: ${enemy.unsafeName}, isPlayer: ${enemy.isPlayer()}, isHealer: ${enemy.isHealer()}`);
-      
+
   //     if (!enemy.isPlayer() || !enemy.isHealer()) return null;
   //     if (pvpHelpers.hasImmunity(enemy)) return null;
-      
+
   //     console.log(`[Freezing Trap Debug] Found valid healer target: ${enemy.unsafeName}, isStunned: ${enemy.isStunned()}`);
-      
+
   //     // Check if they're stunned
   //     if (enemy.isStunned()) {
   //       // Find stun auras using DRTracker categories
-  //       const stunAuras = enemy.auras.filter(aura => 
+  //       const stunAuras = enemy.auras.filter(aura =>
   //         aura.isDebuff && (drHelpers.getCategoryBySpellID(aura.spellId) === "stun" || drHelpers.getCategoryBySpellID(aura.spellId) === "root")
   //       );
-        
+
   //       for (const stunAura of stunAuras) {
   //         if (stunAura.remaining <= 3000 && stunAura.remaining > 0) { // 0.5-1.5s remaining
   //           console.log(`[Freezing Trap Debug] TARGETING HEALER FOR FREEZING TRAP: ${enemy.unsafeName} (${stunAura.remaining}ms stun remaining)`);
@@ -1446,7 +1431,7 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
     for (const unit of nearbyEnemies) {
       if (unit.isHealer() && (unit.isStunned() || unit.isRooted()) && unit.canCC() && unit.getDR("incapacitate") === 0) {
         if (unit.isStunned() || unit.isRooted()) {
-          const stunAuras = unit.auras.filter(aura => 
+          const stunAuras = unit.auras.filter(aura =>
             aura.isDebuff && (drHelpers.getCategoryBySpellID(aura.spellId) === "stun" || drHelpers.getCategoryBySpellID(aura.spellId) === "root")
           );
 
@@ -1484,7 +1469,7 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
           }
           return null;
         };
-        
+
         // Test if we have a valid mouseover healer target right now
         const testTarget = targetFunction();
         if (testTarget) {
@@ -1506,12 +1491,12 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
       // Cast the trap if we have a target function
       if (targetFunction && targetType) {
         console.log(`Manual casting Freezing Trap on ${targetType}`);
-        
+
         // Get the actual target for casting
         const actualTarget = targetFunction();
         if (actualTarget) {
           console.log(`Target found: ${actualTarget.unsafeName}, attempting direct cast...`);
-          
+
           // Use the same direct casting pattern as RightArrow (line 127)
           const freezingTrapSpell = spell.getSpell(187650);
           if (freezingTrapSpell) {
@@ -1530,12 +1515,10 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
 
   findTarTrapLocationPVP() {
     // Any enemy within 10y of us
-    const enemiesNearUs = me.getEnemies().filter(enemy => 
-      enemy.isPlayer() && 
-      me.distanceTo(enemy) <= 10 &&
+    const enemiesNearUs = me.getPlayerEnemies(10).filter(enemy =>
       !pvpHelpers.hasImmunity(enemy)
     );
-    
+
     if (enemiesNearUs.length > 0) {
       return enemiesNearUs[0];
     }
@@ -1544,11 +1527,10 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
 
   findExplosiveTrapLocationPVP() {
     // Non-healers within 10y with major cooldowns up
-    for (const enemy of me.getEnemies()) {
-      if (!enemy.isPlayer() || enemy.isHealer()) continue;
+    for (const enemy of me.getPlayerEnemies(10)) {
+      if (enemy.isHealer()) continue;
       if (pvpHelpers.hasImmunity(enemy)) continue;
-      if (me.distanceTo(enemy) > 10) continue;
-      
+
       // Check if they have major cooldowns up
       if (this.hasMajorCooldowns(enemy)) {
         return enemy;
@@ -1559,21 +1541,19 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
 
   findIntimidationTargetPVP() {
     // First priority: enemies with major cooldowns up
-    for (const enemy of me.getEnemies()) {
-      if (!enemy.isPlayer() || pvpHelpers.hasImmunity(enemy)) continue;
-      if (me.distanceTo(enemy) > 30) continue; // Intimidation range
-      
+    for (const enemy of me.getPlayerEnemies(30)) {
+      if (pvpHelpers.hasImmunity(enemy)) continue;
+
       if (this.hasMajorCooldowns(enemy) && drTracker.getDRStacks(enemy.guid, "stun") < 2) {
         return enemy;
       }
     }
 
     // Second priority: enemy healer if no stun DR
-    for (const enemy of me.getEnemies()) {
-      if (!enemy.isPlayer() && !enemy.isHealer()) continue;
+    for (const enemy of me.getPlayerEnemies(40)) {
+      if (!enemy.isHealer()) continue;
       if (pvpHelpers.hasImmunity(enemy)) continue;
-      if (me.distanceTo(enemy) > 40) continue;
-      
+
       if (drTracker.getDRStacks(enemy.guid, "stun") <= 1) {
         return enemy;
       }
@@ -1584,13 +1564,11 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
 
   findBurstingShotTargetPVP() {
     // Non-healers within 8y of us
-    for (const enemy of me.getEnemies()) {
-      if (!enemy.isPlayer() || enemy.isHealer()) continue;
+    for (const enemy of me.getPlayerEnemies(8)) {
+      if (enemy.isHealer()) continue;
       if (pvpHelpers.hasImmunity(enemy)) continue;
       if (!me.isFacing(enemy)) continue;
-      if (me.distanceTo(enemy) <= 8) {
-        return enemy;
-      }
+      return enemy;
     }
     return undefined;
   }
@@ -1599,19 +1577,18 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
     // Nearest enemy player without Concussive Shot aura
     let nearestEnemy = null;
     let nearestDistance = 40; // Max range for Concussive Shot
-    
-    for (const enemy of me.getEnemies()) {
-      if (!enemy.isPlayer()) continue;
+
+    for (const enemy of me.getPlayerEnemies(40)) {
       if (pvpHelpers.hasImmunity(enemy)) continue;
       if (enemy.hasVisibleAura("Concussive Shot")) continue; // Skip if already slowed
-      
+
       const distance = me.distanceTo(enemy);
       if (distance < nearestDistance) {
         nearestDistance = distance;
         nearestEnemy = enemy;
       }
     }
-    
+
     return nearestEnemy;
   }
 
@@ -1619,4 +1596,4 @@ export class JmrSimcBeastMasteryBehavior extends Behavior {
     const majorDamageCooldown = pvpHelpers.hasMajorDamageCooldown(unit, 3);
     return majorDamageCooldown !== undefined;
   }
-} 
+}
