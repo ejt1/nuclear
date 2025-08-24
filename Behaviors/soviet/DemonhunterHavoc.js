@@ -7,6 +7,7 @@ import Settings from '@/Core/Settings';
 import { me } from '@/Core/ObjectManager';
 import { defaultCombatTargeting as Combat } from '@/Targeting/CombatTargeting';
 import { PowerType } from '@/Enums/PowerType';
+import { RaceType } from '@/Enums/UnitEnums';
 
 const auras = {
   metamorphosis: 162264,
@@ -123,6 +124,9 @@ export class DemonhunterHavoc extends Behavior {
 
   burstSequence() {
     return new bt.Selector(
+      // Use racials during burst
+      this.useRacials(),
+
       // Throw glaive when empowered by Reaver's Glaive
       spell.cast("Throw Glaive", on => me.target, ret => me.hasAura(auras.reaversGlaive)),
 
@@ -264,5 +268,12 @@ export class DemonhunterHavoc extends Behavior {
   getAuraRemainingTime(auraName) {
     const aura = me.getAura(auraName);
     return aura ? aura.remaining : 0;
+  }
+
+  // Racial abilities
+  useRacials() {
+    return new bt.Selector(
+      spell.cast("Arcane Torrent", ret => me.race === RaceType.BloodElf && Combat.burstToggle),
+    );
   }
 }

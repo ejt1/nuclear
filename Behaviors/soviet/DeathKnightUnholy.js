@@ -8,6 +8,7 @@ import common from "@/Core/Common";
 import Pet from "@/Core/Pet";
 import Settings from "@/Core/Settings";
 import { PowerType } from "@/Enums/PowerType";
+import { RaceType } from "@/Enums/UnitEnums";
 
 const auras = {
   darkSuccor: 101568,
@@ -24,6 +25,7 @@ const auras = {
   festeringScythe: 458123,
   legionOfSouls: 383269,
   rottenTouch: 390275,
+  unholyAssault: 207289,
 }
 
 export class DeathKnightUnholy extends Behavior {
@@ -78,7 +80,16 @@ export class DeathKnightUnholy extends Behavior {
       spell.cast("Unholy Assault", ret => true),
       // Use Tempered Potion (or any other damage potion) - placeholder for future implementation
       // Use Cursed Stone Idol (or any other stat trinket) - placeholder for future implementation
+
       this.useTrinkets(),
+      this.useRacials(),
+    );
+  }
+
+  // Racial abilities
+  useRacials() {
+    return new bt.Selector(
+      spell.cast("Blood Fury", on => me, ret => me.race === RaceType.Orc && me.hasAura(auras.unholyAssault)),
     );
   }
 

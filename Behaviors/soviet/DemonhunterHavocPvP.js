@@ -10,6 +10,7 @@ import { PowerType } from '@/Enums/PowerType';
 import { DispelPriority } from '@/Data/Dispels';
 import { WoWDispelType } from '@/Enums/Auras';
 import { pvpHelpers } from '@/Data/PVPData';
+import { RaceType } from '@/Enums/UnitEnums';
 
 const auras = {
   metamorphosis: 162264,
@@ -142,6 +143,9 @@ export class DemonhunterHavocPvP extends Behavior {
 
   burstSequence() {
     return new bt.Selector(
+      // Use racials during burst
+      this.useRacials(),
+
       // Burst sequence - tree will traverse down when spells are on cooldown
       // Throw glaive
       spell.cast("Throw Glaive", on => me.target, ret => me.hasAura(auras.reaversGlaive)),
@@ -288,14 +292,12 @@ export class DemonhunterHavocPvP extends Behavior {
 
   // Helper function to find friends using major cooldowns
   findFriendUsingMajorCDsWithin5Sec() {
-    const friends = me.getFriends();
+    const friends = me.getPlayerFriends(40);
     let bestTarget = null;
     let bestPriority = 0;
 
     for (const friend of friends) {
-      if (!friend.isPlayer() ||
-          me.distanceTo(friend) > 40 ||
-          !me.withinLineOfSight(friend)) {
+      if (!me.withinLineOfSight(friend)) {
         continue;
       }
 
@@ -349,5 +351,12 @@ export class DemonhunterHavocPvP extends Behavior {
       // You could add more specific checks here for different types of cooldowns
     }
     return count;
+  }
+
+  // Racial abilities
+  useRacials() {
+    return new bt.Selector(
+      spell.cast("Arcane Torrent", ret => me.race === RaceType.BloodElf && Combat.burstToggle),
+    );
   }
 }
