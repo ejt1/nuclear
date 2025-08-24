@@ -331,12 +331,10 @@ export class DruidBalancePvP extends Behavior {
 
   findRegrowthTarget() {
     // Emergency healing when healer is in trouble
-    const friends = me.getFriends();
+    const friends = me.getPlayerFriends(40);
     for (const friend of friends) {
-      if (friend.isPlayer() &&
-          friend.isHealer() &&
+      if (friend.isHealer() &&
           friend.effectiveHealthPercent < 40 &&
-          me.distanceTo(friend) <= 40 &&
           me.withinLineOfSight(friend)) {
         return friend;
       }
@@ -399,10 +397,9 @@ export class DruidBalancePvP extends Behavior {
     }
 
     // Check group members
-    const friends = me.getFriends();
+    const friends = me.getPlayerFriends(40);
     for (const friend of friends) {
-      if (friend.isPlayer() &&
-          friend.inMyGroup() &&
+      if (friend.inMyGroup() &&
           friend.effectiveHealthPercent < threshold) {
         return true;
       }
