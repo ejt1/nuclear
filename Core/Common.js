@@ -181,7 +181,7 @@ class Common {
 
       // Check the cooldown of the item's use spell
       const itemSpell = spell.getSpell(item.useSpell);
-      if (!itemSpell.cooldown.ready) {
+      if (!itemSpell || !itemSpell.cooldown.ready) {
         //console.debug(`Equipped item "${name}" is on cooldown.`);
         return bt.Status.Failure;
       }
