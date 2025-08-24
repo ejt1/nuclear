@@ -9,6 +9,7 @@ import Settings from "@/Core/Settings";
 import { PowerType } from "@/Enums/PowerType";
 import { pvpHelpers } from "@/Data/PVPData";
 import drTracker from "@/Core/DRTracker";
+import { RaceType } from "@/Enums/UnitEnums";
 
 const auras = {
   moonkinForm: 24858,
@@ -37,6 +38,7 @@ const auras = {
   forceOfNature: 205636,
   frenziedRegeneration: 22842,
   faerieSwarm: 209749,
+  highWinds: 200931,
 };
 
 export class DruidBalancePvP extends Behavior {
@@ -79,7 +81,6 @@ export class DruidBalancePvP extends Behavior {
       new bt.Decorator(
         ret => !spell.isGlobalCooldown(),
         new bt.Selector(
-
           // Skip all combat actions if prowl is active
           new bt.Decorator(
             ret => me.hasAura(auras.prowl),
@@ -114,6 +115,9 @@ export class DruidBalancePvP extends Behavior {
           spell.cast("Cyclone", on => this.cycloneTarget(), ret =>
             this.cycloneTarget() !== undefined
           ),
+
+          // War Stomp for emergency CC when surrounded and low health
+          spell.cast("War Stomp", ret => this.shouldUseWarStomp()),
 
           common.waitForFacing(),
 
@@ -178,8 +182,8 @@ export class DruidBalancePvP extends Behavior {
         !me.hasAura(auras.incarnationChosenOfElune)
       ),
 
-      // Force of Nature for damage boost (use freely)
-      spell.cast("Force of Nature", on => me.target, () => me.target),
+      // Force of Nature for damage boost (use during incarn or if incarn CD > 1min)
+      spell.cast("Force of Nature", on => me.target, () => this.shouldUseForceOfNature()),
 
       // Fury of Elune during incarnation
       spell.cast("Fury of Elune", () =>
@@ -213,8 +217,8 @@ export class DruidBalancePvP extends Behavior {
       // Use Fury of Elune off cooldown
       spell.cast("Fury of Elune", () => true),
 
-      // Use Force of Nature for damage and astral power
-      spell.cast("Force of Nature", on => me.target, () => me.target),
+      // Use Force of Nature for damage and astral power (use during incarn or if incarn CD > 1min)
+      spell.cast("Force of Nature", on => me.target, () => this.shouldUseForceOfNature()),
 
       // Use Starsurge when we have enough Astral Power
       spell.cast("Starsurge", on => me.target, () =>
@@ -249,29 +253,22 @@ export class DruidBalancePvP extends Behavior {
     return me.powerByType(PowerType.LunarPower);
   }
 
-  inEclipse() {
-    return me.hasAura(auras.solarEclipse) || me.hasAura(auras.lunarEclipse);
-  }
-
-  inSolarEclipse() {
-    return me.hasAura(auras.solarEclipse);
-  }
-
-  inLunarEclipse() {
-    return me.hasAura(auras.lunarEclipse);
-  }
-
   getDebuffRemainingTime(target, auraId) {
     if (!target) return 0;
     const debuff = target.getAuraByMe(auraId);
     return debuff ? debuff.remaining : 0;
   }
 
+  // Helper method to check if Force of Nature should be used
+  shouldUseForceOfNature() {
+    return me.hasAura(auras.incarnationChosenOfElune) || spell.getCooldown("Incarnation: Chosen of Elune")?.timeleft >= 39000;
+  }
 
   // Targeting methods
   cycloneTarget() {
-    // Get all enemy players within 30 yards and find the first valid healer target
-    const nearbyEnemies = me.getPlayerEnemies(30);
+    // Check for High Winds aura to determine cyclone range
+    const cycloneRange = me.hasAura(auras.highWinds) ? 30 : 25; // 25 + 5 if High Winds, else 25
+    const nearbyEnemies = me.getPlayerEnemies(cycloneRange);
 
     // Determine max DR based on current target's health
     const maxDR = (me.target && me.target.effectiveHealthPercent < 35) ? Settings.CycloneMaxDR + 1 : Settings.CycloneMaxDR;
@@ -289,55 +286,12 @@ export class DruidBalancePvP extends Behavior {
     return undefined;
   }
 
-  findCycloneTarget() {
-    if (spell.isOnCooldown("Cyclone")) return undefined;
-
-    // Determine max DR based on current target's health
-    const maxDR = (me.target && me.target.effectiveHealthPercent < 35) ? Settings.CycloneMaxDR + 1 : Settings.CycloneMaxDR;
-
-    const enemies = me.getEnemies();
-    for (const enemy of enemies) {
-      if (enemy.isPlayer() &&
-          enemy.isHealer() &&
-          me.distanceTo(enemy) <= 30 &&
-          me.withinLineOfSight(enemy) &&
-          !enemy.isCCd() &&
-          enemy.canCC() &&
-          drTracker.getDRStacks(enemy.guid, "disorient") <= maxDR &&
-          !pvpHelpers.hasImmunity(enemy) &&
-          enemy !== me.target) { // Exclude current target
-        return enemy;
-      }
-    }
-    return undefined;
-  }
-
-  findMassEntanglementTarget() {
-    if (spell.isOnCooldown("Mass Entanglement")) return undefined;
-
-    const enemies = me.getEnemies();
-    for (const enemy of enemies) {
-      if (enemy.isPlayer() &&
-          enemy.isHealer() &&
-          me.distanceTo(enemy) <= 30 &&
-          me.withinLineOfSight(enemy) &&
-          !enemy.isCCd() &&
-          enemy.canCC() &&
-          !pvpHelpers.hasImmunity(enemy)) {
-        return enemy;
-      }
-    }
-    return undefined;
-  }
-
   findMassEntanglementComboTarget() {
     if (spell.isOnCooldown("Mass Entanglement") || spell.isOnCooldown("Solar Beam")) return undefined;
 
-    const enemies = me.getEnemies();
+    const enemies = me.getPlayerEnemies(35);
     for (const enemy of enemies) {
-      if (enemy.isPlayer() &&
-          enemy.isHealer() &&
-          me.distanceTo(enemy) <= 30 &&
+      if (enemy.isHealer() &&
           me.withinLineOfSight(enemy) &&
           !enemy.isCCd() &&
           enemy.canCC() &&
@@ -351,11 +305,9 @@ export class DruidBalancePvP extends Behavior {
   }
 
   findSolarBeamTarget() {
-    const enemies = me.getEnemies();
+    const enemies = me.getPlayerEnemies(45);
     for (const enemy of enemies) {
-      if (enemy.isPlayer() &&
-          enemy.isHealer() &&
-          me.distanceTo(enemy) <= 40 &&
+      if (enemy.isHealer() &&
           me.withinLineOfSight(enemy) &&
           enemy.hasAura(auras.massEntanglement) &&
           drTracker.getDRStacks(enemy.guid, "silence") <= 1) {
@@ -366,11 +318,9 @@ export class DruidBalancePvP extends Behavior {
   }
 
   findEnemyHealer() {
-    const enemies = me.getEnemies();
+    const enemies = me.getPlayerEnemies(40);
     for (const enemy of enemies) {
-      if (enemy.isPlayer() &&
-          enemy.isHealer() &&
-          me.distanceTo(enemy) <= 40 &&
+      if (enemy.isHealer() &&
           me.withinLineOfSight(enemy)) {
         return enemy;
       }
@@ -381,12 +331,10 @@ export class DruidBalancePvP extends Behavior {
 
   findRegrowthTarget() {
     // Emergency healing when healer is in trouble
-    const friends = me.getFriends();
+    const friends = me.getPlayerFriends(40);
     for (const friend of friends) {
-      if (friend.isPlayer() &&
-          friend.isHealer() &&
+      if (friend.isHealer() &&
           friend.effectiveHealthPercent < 40 &&
-          me.distanceTo(friend) <= 40 &&
           me.withinLineOfSight(friend)) {
         return friend;
       }
@@ -395,8 +343,6 @@ export class DruidBalancePvP extends Behavior {
   }
 
   findMoonfireTarget() {
-    const enemies = me.getEnemies();
-
     // Prioritize current target if it doesn't have Moonfire
     if (me.target &&
         me.target.isPlayer() &&
@@ -407,10 +353,9 @@ export class DruidBalancePvP extends Behavior {
     }
 
     // Find any enemy without Moonfire
+    const enemies = me.getPlayerEnemies(40);
     for (const enemy of enemies) {
-      if (enemy.isPlayer() &&
-          me.distanceTo(enemy) <= 40 &&
-          me.withinLineOfSight(enemy) &&
+      if (me.withinLineOfSight(enemy) &&
           (!enemy.hasAuraByMe(auras.moonfire) ||
            this.getDebuffRemainingTime(enemy, auras.moonfire) < 6000) &&
           !pvpHelpers.hasImmunity(enemy)) {
@@ -433,11 +378,9 @@ export class DruidBalancePvP extends Behavior {
     }
 
     // Get all enemy players within 30 yards
-    const enemies = me.getEnemies();
+    const enemies = me.getPlayerEnemies(30);
     for (const enemy of enemies) {
-      if (enemy.isPlayer() &&
-          enemy.isDisarmableMelee() &&
-          me.distanceTo(enemy) <= 30 &&
+      if (enemy.isDisarmableMelee() &&
           me.withinLineOfSight(enemy) &&
           enemy.getDR("disarm") === 0 &&
           !pvpHelpers.hasImmunity(enemy)) {
@@ -454,15 +397,40 @@ export class DruidBalancePvP extends Behavior {
     }
 
     // Check group members
-    const friends = me.getFriends();
+    const friends = me.getPlayerFriends(40);
     for (const friend of friends) {
-      if (friend.isPlayer() &&
-          friend.inMyGroup() &&
+      if (friend.inMyGroup() &&
           friend.effectiveHealthPercent < threshold) {
         return true;
       }
     }
     return false;
+  }
+
+  shouldUseWarStomp() {
+    // War Stomp is a Tauren racial ability
+    if (me.race !== RaceType.Tauren || spell.isOnCooldown("War Stomp")) {
+      return false;
+    }
+
+    // Check if my health is below 60%
+    if (me.effectiveHealthPercent >= 60) {
+      return false;
+    }
+
+    // Get all enemy players within melee range (8 yards)
+    const nearbyEnemies = me.getPlayerEnemies(8);
+
+    // Count enemies with stun DR <= 1
+    let validEnemies = 0;
+    for (const enemy of nearbyEnemies) {
+      if (enemy.getDR("stun") <= 1 && enemy.canCC() && !pvpHelpers.hasImmunity(enemy)) {
+        validEnemies++;
+      }
+    }
+
+    // Use War Stomp if we have at least 2 valid enemies
+    return validEnemies >= 1;
   }
 }
 

@@ -175,13 +175,12 @@ class Common {
       }
 
       if (!item.useSpell) {
-        //console.debug(`Equipped item "${name}" is not usable.`);
+        // console.debug(`Equipped item "${name}" is not usable.`);
         return bt.Status.Failure;
       }
 
       // Check the cooldown of the item's use spell
-      const itemSpell = spell.getSpell(item.useSpell);
-      if (!itemSpell.cooldown.ready) {
+      if (!item.cooldown.ready) {
         //console.debug(`Equipped item "${name}" is on cooldown.`);
         return bt.Status.Failure;
       }
@@ -199,15 +198,6 @@ class Common {
       }
 
       const target = targetSelector();
-
-      // Range check
-      if (target && target instanceof wow.CGUnit) {
-        const range = itemSpell.range(target);
-        if (!itemSpell.inRange(target)) {
-          // console.debug(`Target for "${name}" out of range. Current: ${me.distanceTo(target)}, Max: ${range.max}`);
-          return bt.Status.Failure;
-        }
-      }
 
       // Attempt to use the item
       const success = item.use(target);

@@ -55,3 +55,45 @@ export const ShapeshiftForm = {
   Moonkin: 31,
   SpiritOfRedemption: 32
 };
+
+export const GenderType = {
+  Male: 0,
+  Female: 1,
+  Unknown: 2,
+};
+
+export const RaceType = {
+  None: 0,
+  Human: 1,
+  Orc: 2,
+  Dwarf: 3,
+  NightElf: 4,
+  Undead: 5,
+  Tauren: 6,
+  Gnome: 7,
+  Troll: 8,
+  Goblin: 9,
+  BloodElf: 10,
+  Draenei: 11,
+  Worgen: 22,
+  Pandaren: 24,
+  PandarenAlliance: 25,
+  PandarenHorde: 26,
+};
+
+export const KlassType = {
+  None: 0,
+  Warrior: 1,
+  Paladin: 2,
+  Hunter: 3,
+  Rogue: 4,
+  Priest: 5,
+  DeathKnight: 6,
+  Shaman: 7,
+  Mage: 8,
+  Warlock: 9,
+  Monk: 10,
+  Druid: 11,
+  DemonHunter: 12,
+  Evoker: 13,
+};

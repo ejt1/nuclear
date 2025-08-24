@@ -137,6 +137,31 @@ Object.defineProperties(wow.CGActivePlayer.prototype, {
     }
   },
 
+  getPlayerFriends: {
+    /**
+     * Get an array of player friends within a specified distance of this unit.
+     * Only player-controlled units that are friendly will be included.
+     *
+     * @param {number} [distance=20] - The maximum distance to check for nearby player friends (default is 20).
+     * @returns {Array<wow.CGUnit>} - An array of CGUnit objects representing friendly players within the specified distance.
+     */
+    value: function (distance = 20) {
+      const nearbyFriends = [];
+
+      // Get all units around the player within the specified distance
+      const unitsAround = this.getUnitsAround(distance);
+
+      for (const unit of unitsAround) {
+        // Ensure the unit is a CGUnit, is friendly, and is a player
+        if (unit instanceof wow.CGUnit && !this.canAttack(unit) && unit.isPlayer()) {
+          // Add valid player friends to the list
+          nearbyFriends.push(unit);
+        }
+      }
+
+      return nearbyFriends;
+    }
+  },
 
   getReadyRunes: {
     /**
