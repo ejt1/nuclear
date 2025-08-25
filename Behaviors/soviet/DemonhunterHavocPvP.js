@@ -292,14 +292,12 @@ export class DemonhunterHavocPvP extends Behavior {
 
   // Helper function to find friends using major cooldowns
   findFriendUsingMajorCDsWithin5Sec() {
-    const friends = me.getFriends();
+    const friends = me.getPlayerFriends(40);
     let bestTarget = null;
     let bestPriority = 0;
 
     for (const friend of friends) {
-      if (!friend.isPlayer() ||
-          me.distanceTo(friend) > 40 ||
-          !me.withinLineOfSight(friend)) {
+      if (!me.withinLineOfSight(friend)) {
         continue;
       }
 
