@@ -39,6 +39,7 @@ const auras = {
   frenziedRegeneration: 22842,
   faerieSwarm: 209749,
   highWinds: 200931,
+  heartOfTheWild: 319454,
 };
 
 export class DruidBalancePvP extends Behavior {
@@ -158,7 +159,7 @@ export class DruidBalancePvP extends Behavior {
       spell.cast("Bear Form", () =>
         Settings.UseDefensiveCooldowns &&
         (me.effectiveHealthPercent <= Settings.BearFormHealth ||
-         (me.timeToDeath() !== undefined && me.timeToDeath() < 3)) &&
+         (me.timeToDeath() !== undefined && me.timeToDeath() < 4)) &&
         !me.hasAura(auras.bearForm)
       ),
 
@@ -172,6 +173,13 @@ export class DruidBalancePvP extends Behavior {
       spell.cast("Frenzied Regeneration", () =>
         me.hasAura(auras.bearForm) &&
         me.effectiveHealthPercent < 80
+      ),
+
+      // Heart of the Wild when in Bear Form and below 50% HP
+      spell.cast("Heart of the Wild", () =>
+        me.hasAura(auras.bearForm) &&
+        me.effectiveHealthPercent < 50 &&
+        !spell.isOnCooldown("Heart of the Wild")
       )
     );
   }
