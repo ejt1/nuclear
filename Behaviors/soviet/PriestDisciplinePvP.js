@@ -639,7 +639,9 @@ export class PriestDisciplinePvP extends Behavior {
       spell.cast("Mind Control", on => this.findMindControlDPSTarget(), ret =>
         Settings.UseMindControlDPS === true && this.findMindControlDPSTarget() !== undefined
       ),
-      spell.cast("Shadowfiend", on => me.targetUnit, ret => me.pctPowerByType(PowerType.Mana) < 90),
+      spell.cast("Shadowfiend", on => me.targetUnit, ret =>
+        me.targetUnit && me.pctPowerByType(PowerType.Mana) < 90
+      ),
       spell.cast("Shadow Word: Pain", on => this.findShadowWordPainTarget(), ret => this.findShadowWordPainTarget() !== undefined)
     );
   }
@@ -880,6 +882,11 @@ export class PriestDisciplinePvP extends Behavior {
   }
 
   findShadowWordPainTarget() {
+    // Only search for targets when in combat
+    if (!me.inCombat()) {
+      return undefined;
+    }
+
     // Shadow Word: Pain doesn't require facing but needs LOS
     // Prioritize current target if it doesn't have SW:P and isn't immune
     if (me.targetUnit &&
