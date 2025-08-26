@@ -321,19 +321,6 @@ export class DruidBalancePvP extends Behavior {
     return undefined;
   }
 
-
-  findEnemyHealer() {
-    const enemies = me.getPlayerEnemies(40);
-    for (const enemy of enemies) {
-      if (enemy.isHealer() &&
-          me.withinLineOfSight(enemy)) {
-        return enemy;
-      }
-    }
-    return undefined;
-  }
-
-
   findRegrowthTarget() {
     // Emergency healing when healer is in trouble
     const friends = me.getPlayerFriends(40);
