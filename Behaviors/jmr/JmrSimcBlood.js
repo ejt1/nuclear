@@ -315,7 +315,7 @@ export class DeathKnightBloodBehavior extends Behavior {
   // Racial abilities
   useRacials() {
     return new bt.Selector(
-      spell.cast("Blood Fury", on => me, req => me.race === RaceType.Orc && me.hasVisibleAura("Dancing Rune Weapon")),
+      spell.cast("Blood Fury", on => me, req => me.race === RaceType.Orc),
     );
   }
 
