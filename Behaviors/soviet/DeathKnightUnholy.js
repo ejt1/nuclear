@@ -68,6 +68,8 @@ export class DeathKnightUnholy extends Behavior {
   // CD Priority - Cooldown usage priority
   cooldownPriority() {
     return new bt.Selector(
+      this.useRacials(),
+      this.useTrinkets(),
       // Cast Legion of Souls
       spell.cast("Army of the Dead", ret => true),
       // Cast Rune Strike if we have fewer than 4 festering wounds after Legion of Souls during burst
@@ -78,18 +80,13 @@ export class DeathKnightUnholy extends Behavior {
       spell.cast("Apocalypse", on => this.findTargetWithLeastWounds(), ret => this.findTargetWithLeastWounds() !== undefined),
       // Cast Unholy Assault
       spell.cast("Unholy Assault", ret => true),
-      // Use Tempered Potion (or any other damage potion) - placeholder for future implementation
-      // Use Cursed Stone Idol (or any other stat trinket) - placeholder for future implementation
-
-      this.useTrinkets(),
-      this.useRacials(),
     );
   }
 
   // Racial abilities
   useRacials() {
     return new bt.Selector(
-      spell.cast("Blood Fury", on => me, ret => me.race === RaceType.Orc && me.hasAura(auras.unholyAssault)),
+      spell.cast("Blood Fury", on => me, ret => me.race === RaceType.Orc),
     );
   }
 
@@ -205,7 +202,7 @@ export class DeathKnightUnholy extends Behavior {
 
   useTrinkets() {
     return new bt.Selector(
-      common.useEquippedItemByName("Mark of Khardros"),
+      common.useEquippedItemByName("Incorporeal Essence-Gorger"),
     );
   }
 
