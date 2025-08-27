@@ -10,6 +10,8 @@ import { PowerType } from "@/Enums/PowerType";
 
 const auras = {
   moonkinForm: 24858,
+  bearForm: 5487,
+  travelForm: 783,
   solarEclipse: 48517,
   lunarEclipse: 48518,
   dreamstate: 194223,
@@ -64,9 +66,24 @@ export class DruidBalance extends Behavior {
       common.waitForTarget(),
       common.waitForFacing(),
 
-      new bt.Decorator(
-        req => !me.hasAura(auras.moonkinForm) && !me.hasAura(auras.bearForm),
-        spell.cast("Moonkin Form")
+      // Form management - can go directly from Bear to Moonkin, but respect Travel Form
+      new bt.Selector(
+        // Skip all combat actions if in travel form
+        new bt.Decorator(
+          ret => me.hasAura(auras.travelForm),
+          new bt.Action(() => bt.Status.Success)
+        ),
+        // If in Bear Form and not in emergency situation, switch to Moonkin
+        new bt.Decorator(
+          ret => me.hasAura(auras.bearForm) &&
+                 me.effectiveHealthPercent > Settings.BalanceDruidBearFormThreshold + 10,
+          spell.cast("Moonkin Form")
+        ),
+        // If not in any form, go to Moonkin
+        new bt.Decorator(
+          req => !me.hasAura(auras.moonkinForm) && !me.hasAura(auras.bearForm) && !me.hasAura(auras.travelForm),
+          spell.cast("Moonkin Form")
+        )
       ),
 
       new bt.Decorator(
