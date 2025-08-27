@@ -142,7 +142,7 @@ Object.defineProperties(wow.CGActivePlayer.prototype, {
      * Get an array of player friends within a specified distance of this unit.
      * Only party members that are players will be included.
      *
-     * @param {number} [distance=20] - The maximum distance to check for nearby player friends (default is 40).
+     * @param {number} [distance=20] - The maximum distance to check for nearby player friends (default is 20).
      * @returns {Array<wow.CGUnit>} - An array of CGUnit objects representing friendly players within the specified distance.
      */
     value: function (distance = 20) {
