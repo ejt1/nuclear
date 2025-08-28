@@ -341,8 +341,8 @@ export class PriestDisciplinePvP extends Behavior {
       const spellId = spellInfo.spellCastId;
       const castTimeRemaining = spellInfo.castEnd - wow.frameTime;
 
-      // Only counter if the cast will finish soon (within 1.5 seconds)
-      if (castTimeRemaining > 1500) {
+      // Only counter if the cast will finish very soon (within 1000ms)
+      if (castTimeRemaining > 1000) {
         continue;
       }
 
@@ -1168,7 +1168,7 @@ export class PriestDisciplinePvP extends Behavior {
         if (enemy.spellInfo && target && target.equals(me.guid)) {
           const onBlacklist = spellBlacklist[enemy.spellInfo.spellCastId];
           const castRemains = enemy.spellInfo.castEnd - wow.frameTime;
-          if (onBlacklist && castRemains < 1000) {
+          if (onBlacklist && castRemains < 800) {
             console.log(`[Priest] Shadow Word: Death interrupt on ${enemy.unsafeName} casting ${enemy.spellInfo.spellCastId}`);
             return enemy;
           }
