@@ -1168,7 +1168,7 @@ export class PriestDisciplinePvP extends Behavior {
         if (enemy.spellInfo && target && target.equals(me.guid)) {
           const onBlacklist = spellBlacklist[enemy.spellInfo.spellCastId];
           const castRemains = enemy.spellInfo.castEnd - wow.frameTime;
-          if (onBlacklist && castRemains < 800) {
+          if (onBlacklist && castRemains < 1000) {
             console.log(`[Priest] Shadow Word: Death interrupt on ${enemy.unsafeName} casting ${enemy.spellInfo.spellCastId}`);
             return enemy;
           }

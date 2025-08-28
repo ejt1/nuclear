@@ -137,143 +137,97 @@ export const interrupts = {
   ///////////////////////////////////////////
   // S3
   ///////////////////////////////////////////
-  471352: "",
-  443430: "",
-  325876: "",
-  267354: "",
-  426283: "",
-  448787: "",
-  427176: "",
-  430109: "",
-  443433: "",
-  268185: "",
-  430238: "",
-  452806: "",
-  448791: "",
-  263215: "",
-  340544: "",
-  465813: "",
-  355782: "",
-  268702: "",
-  324293: "",
-  429545: "",
-  1214780: "",
-  426677: "",
-  435156: "",
-  426295: "",
-  1248699: "",
-  355980: "",
-  431333: "",
-  451288: "",
-  424322: "",
-  322450: "",
-  293827: "",
-  446700: "",
-  425536: "",
-  357260: "",
-  460153: "",
-  465827: "",
-  451102: "",
-  341771: "",
-  427260: "",
-  429109: "",
-  453909: "",
-  1213805: "",
-  1216611: "",
-  441351: "",
-  1215850: "",
-  341902: "",
-  451871: "",
-  330810: "",
-  326794: "",
-  330875: "",
-  341969: "",
-  431349: "",
-  449455: "",
-  330562: "",
-  342675: "",
-  320300: "",
-  256957: "",
-  269302: "",
-  355429: "",
-  451119: "",
-  469799: "",
-  427342: "",
-  446086: "",
-  427621: "",
-  427609: "",
-  424431: "",
-  441242: "",
-  326046: "",
-  465595: "",
-  357029: "",
-  464240: "",
-  451763: "",
-  1237602: "",
-  438618: "",
-  432868: "",
-  455588: "",
-  441627: "",
-  432967: "",
-  431364: "",
-  338353: "",
-  427157: "",
-  432448: "",
-  1241693: "",
-  293729: "",
-  450854: "",
-  355057: "",
-  324776: "",
-  1231497: "",
-  1235326: "",
-  1221532: "",
-  1237220: "",
-  428563: "",
-  328667: "",
-  1231252: "",
-  424420: "",
-  326409: "",
-  1236614: "",
-  474337: "",
-  347721: "",
-  324589: "",
-  423479: "",
-  341977: "",
-  355640: "",
-  355479: "",
-  323057: "",
-  430097: "",
-  272571: "",
-  426145: "",
-  280604: "",
-  330868: "",
-  427357: "",
-  268797: "",
-  355132: "",
-  357238: "",
-  301088: "",
-  263202: "",
-  451097: "",
-  447950: "",
-  334748: "",
-  431309: "",
-  452162: "",
-  450756: "",
-  1215412: "",
-  324914: "",
-  322938: "",
-  76711: "",
-  422541: "",
-  275826: "",
-  471736: "",
-  471733: "",
-  440687: "",
-  442536: "",
-  445207: "",
-  1242994: "",
-  433656: "",
-  451107: "",
-  428086: "",
+  471352: "https://www.wowhead.com/spell=471352", // Unknown spell
+  325876: "https://www.wowhead.com/spell=325876", // Unknown spell
+  267354: "https://www.wowhead.com/spell=267354", // Unknown spell
+  426283: "https://www.wowhead.com/spell=426283", // Unknown spell - Arcing Void (commented out in Stonevault)
+  448787: "https://www.wowhead.com/spell=448787", // Unknown spell
+  427176: "https://www.wowhead.com/spell=427176", // Unknown spell
+  430109: "https://www.wowhead.com/spell=430109", // Unknown spell
+  268185: "https://www.wowhead.com/spell=268185", // Unknown spell
+  430238: "https://www.wowhead.com/spell=430238", // Unknown spell
+  452806: "https://www.wowhead.com/spell=452806", // Unknown spell
+  448791: "https://www.wowhead.com/spell=448791", // Unknown spell
+  263215: "https://www.wowhead.com/spell=263215", // Unknown spell
+  465813: "https://www.wowhead.com/spell=465813", // Unknown spell
+  355782: "https://www.wowhead.com/spell=355782", // Unknown spell
+  1214780: "https://www.wowhead.com/spell=1214780", // Unknown spell
+  426677: "https://www.wowhead.com/spell=426677", // Unknown spell
+  435156: "https://www.wowhead.com/spell=435156", // Unknown spell
+  1248699: "https://www.wowhead.com/spell=1248699", // Unknown spell
+  355980: "https://www.wowhead.com/spell=355980", // Unknown spell
+  451288: "https://www.wowhead.com/spell=451288", // Unknown spell
+  446700: "https://www.wowhead.com/spell=446700", // Unknown spell
+  357260: "https://www.wowhead.com/spell=357260", // Unknown spell
+  460153: "https://www.wowhead.com/spell=460153", // Unknown spell
+  465827: "https://www.wowhead.com/spell=465827", // Unknown spell
+  451102: "https://www.wowhead.com/spell=451102", // Unknown spell
+  341771: "https://www.wowhead.com/spell=341771", // Unknown spell
+  427260: "https://www.wowhead.com/spell=427260", // Unknown spell
+  453909: "https://www.wowhead.com/spell=453909", // Unknown spell
+  1213805: "https://www.wowhead.com/spell=1213805", // Unknown spell
+  1216611: "https://www.wowhead.com/spell=1216611", // Unknown spell
+  1215850: "https://www.wowhead.com/spell=1215850", // Unknown spell
+  341902: "https://www.wowhead.com/spell=341902", // Unknown spell
+  330810: "https://www.wowhead.com/spell=330810", // Unknown spell
+  326794: "https://www.wowhead.com/spell=326794", // Unknown spell
+  330875: "https://www.wowhead.com/spell=330875", // Unknown spell
+  431349: "https://www.wowhead.com/spell=431349", // Unknown spell
+  330562: "https://www.wowhead.com/spell=330562", // Unknown spell
+  320300: "https://www.wowhead.com/spell=320300", // Unknown spell
+  355429: "https://www.wowhead.com/spell=355429", // Unknown spell
+  451119: "https://www.wowhead.com/spell=451119", // Unknown spell
+  469799: "https://www.wowhead.com/spell=469799", // Unknown spell
+  427342: "https://www.wowhead.com/spell=427342", // Unknown spell
+  427621: "https://www.wowhead.com/spell=427621", // Unknown spell
+  427609: "https://www.wowhead.com/spell=427609", // Unknown spell
+  424431: "https://www.wowhead.com/spell=424431", // Unknown spell
+  465595: "https://www.wowhead.com/spell=465595", // Unknown spell
+  357029: "https://www.wowhead.com/spell=357029", // Unknown spell
+  464240: "https://www.wowhead.com/spell=464240", // Unknown spell
+  451763: "https://www.wowhead.com/spell=451763", // Unknown spell
+  1237602: "https://www.wowhead.com/spell=1237602", // Unknown spell
+  438618: "https://www.wowhead.com/spell=438618", // Unknown spell
+  432868: "https://www.wowhead.com/spell=432868", // Unknown spell
+  455588: "https://www.wowhead.com/spell=455588", // Unknown spell
+  441627: "https://www.wowhead.com/spell=441627", // Unknown spell
+  432967: "https://www.wowhead.com/spell=432967", // Unknown spell
+  431364: "https://www.wowhead.com/spell=431364", // Unknown spell
+  427157: "https://www.wowhead.com/spell=427157", // Unknown spell
+  432448: "https://www.wowhead.com/spell=432448", // Unknown spell
+  1241693: "https://www.wowhead.com/spell=1241693", // Unknown spell
+  293729: "https://www.wowhead.com/spell=293729", // Unknown spell
+  450854: "https://www.wowhead.com/spell=450854", // Unknown spell
+  355057: "https://www.wowhead.com/spell=355057", // Unknown spell
+  1231497: "https://www.wowhead.com/spell=1231497", // Unknown spell
+  1235326: "https://www.wowhead.com/spell=1235326", // Unknown spell
+  1221532: "https://www.wowhead.com/spell=1221532", // Unknown spell
+  1237220: "https://www.wowhead.com/spell=1237220", // Unknown spell
+  428563: "https://www.wowhead.com/spell=428563", // Unknown spell
+  1231252: "https://www.wowhead.com/spell=1231252", // Unknown spell
+  326409: "https://www.wowhead.com/spell=326409", // Unknown spell
+  1236614: "https://www.wowhead.com/spell=1236614", // Unknown spell
+  474337: "https://www.wowhead.com/spell=474337", // Unknown spell
+  347721: "https://www.wowhead.com/spell=347721", // Unknown spell
+  324589: "https://www.wowhead.com/spell=324589", // Unknown spell
+  423479: "https://www.wowhead.com/spell=423479", // Unknown spell
+  341977: "https://www.wowhead.com/spell=341977", // Unknown spell
+  355640: "https://www.wowhead.com/spell=355640", // Unknown spell
+  355479: "https://www.wowhead.com/spell=355479", // Unknown spell
+  426145: "https://www.wowhead.com/spell=426145", // Unknown spell
+  280604: "https://www.wowhead.com/spell=280604", // Unknown spell
+  427357: "https://www.wowhead.com/spell=427357", // Unknown spell
+  268797: "https://www.wowhead.com/spell=268797", // Unknown spell
+  355132: "https://www.wowhead.com/spell=355132", // Unknown spell
+  357238: "https://www.wowhead.com/spell=357238", // Unknown spell
+  451097: "https://www.wowhead.com/spell=451097", // Unknown spell
+  447950: "https://www.wowhead.com/spell=447950", // Unknown spell
+  1215412: "https://www.wowhead.com/spell=1215412", // Unknown spell
+  471736: "https://www.wowhead.com/spell=471736", // Unknown spell
+  471733: "https://www.wowhead.com/spell=471733", // Unknown spell
+  1242994: "https://www.wowhead.com/spell=1242994", // Unknown spell
+  433656: "https://www.wowhead.com/spell=433656", // Unknown spell
+  451107: "https://www.wowhead.com/spell=451107", // Unknown spell
   355225: "Waterbolt",
   356843: "Brackish Bolt",
   352347: "Valorous Bolt",
