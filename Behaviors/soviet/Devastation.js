@@ -165,11 +165,19 @@ export class EvokerDevastationBehavior extends Behavior {
       return false;
     }
     // Check if we have a stored Deep Breath target and are within 1 yards
-    if (EvokerDevastationBehavior.deepBreathTarget !== null &&
-      me.distanceTo(EvokerDevastationBehavior.deepBreathTarget) < 1) {
-      // Clear the stored target once we cancel
-      EvokerDevastationBehavior.deepBreathTarget = null;
-      return true;
+    if (EvokerDevastationBehavior.deepBreathTarget !== null) {
+      try {
+        // Validate the cached unit is still valid
+        const distance = me.distanceTo(EvokerDevastationBehavior.deepBreathTarget);
+        if (distance < 1) {
+          // Clear the stored target once we cancel
+          EvokerDevastationBehavior.deepBreathTarget = null;
+          return true;
+        }
+      } catch (error) {
+        // Unit has been invalidated, clear cache
+        EvokerDevastationBehavior.deepBreathTarget = null;
+      }
     }
 
     return false;
