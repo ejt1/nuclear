@@ -6,7 +6,7 @@ export const interrupts = {
   // Grim Batol
   451261: "Earth Bolt",
   451871: "Mass Tremor",
-  76711: "Sear Mind",
+  76711: "Chained Mind",
   447966: "Shadowflame Bolt",
   76369: "Shadowflame Bolt",
 
@@ -137,97 +137,97 @@ export const interrupts = {
   ///////////////////////////////////////////
   // S3
   ///////////////////////////////////////////
-  471352: "https://www.wowhead.com/spell=471352", // Unknown spell
-  325876: "https://www.wowhead.com/spell=325876", // Unknown spell
-  267354: "https://www.wowhead.com/spell=267354", // Unknown spell
-  426283: "https://www.wowhead.com/spell=426283", // Unknown spell - Arcing Void (commented out in Stonevault)
-  448787: "https://www.wowhead.com/spell=448787", // Unknown spell
-  427176: "https://www.wowhead.com/spell=427176", // Unknown spell
-  430109: "https://www.wowhead.com/spell=430109", // Unknown spell
-  268185: "https://www.wowhead.com/spell=268185", // Unknown spell
-  430238: "https://www.wowhead.com/spell=430238", // Unknown spell
-  452806: "https://www.wowhead.com/spell=452806", // Unknown spell
-  448791: "https://www.wowhead.com/spell=448791", // Unknown spell
-  263215: "https://www.wowhead.com/spell=263215", // Unknown spell
-  465813: "https://www.wowhead.com/spell=465813", // Unknown spell
-  355782: "https://www.wowhead.com/spell=355782", // Unknown spell
-  1214780: "https://www.wowhead.com/spell=1214780", // Unknown spell
-  426677: "https://www.wowhead.com/spell=426677", // Unknown spell
-  435156: "https://www.wowhead.com/spell=435156", // Unknown spell
-  1248699: "https://www.wowhead.com/spell=1248699", // Unknown spell
-  355980: "https://www.wowhead.com/spell=355980", // Unknown spell
-  451288: "https://www.wowhead.com/spell=451288", // Unknown spell
-  446700: "https://www.wowhead.com/spell=446700", // Unknown spell
-  357260: "https://www.wowhead.com/spell=357260", // Unknown spell
-  460153: "https://www.wowhead.com/spell=460153", // Unknown spell
-  465827: "https://www.wowhead.com/spell=465827", // Unknown spell
-  451102: "https://www.wowhead.com/spell=451102", // Unknown spell
-  341771: "https://www.wowhead.com/spell=341771", // Unknown spell
-  427260: "https://www.wowhead.com/spell=427260", // Unknown spell
-  453909: "https://www.wowhead.com/spell=453909", // Unknown spell
-  1213805: "https://www.wowhead.com/spell=1213805", // Unknown spell
-  1216611: "https://www.wowhead.com/spell=1216611", // Unknown spell
-  1215850: "https://www.wowhead.com/spell=1215850", // Unknown spell
-  341902: "https://www.wowhead.com/spell=341902", // Unknown spell
-  330810: "https://www.wowhead.com/spell=330810", // Unknown spell
-  326794: "https://www.wowhead.com/spell=326794", // Unknown spell
-  330875: "https://www.wowhead.com/spell=330875", // Unknown spell
-  431349: "https://www.wowhead.com/spell=431349", // Unknown spell
-  330562: "https://www.wowhead.com/spell=330562", // Unknown spell
-  320300: "https://www.wowhead.com/spell=320300", // Unknown spell
-  355429: "https://www.wowhead.com/spell=355429", // Unknown spell
-  451119: "https://www.wowhead.com/spell=451119", // Unknown spell
-  469799: "https://www.wowhead.com/spell=469799", // Unknown spell
-  427342: "https://www.wowhead.com/spell=427342", // Unknown spell
-  427621: "https://www.wowhead.com/spell=427621", // Unknown spell
-  427609: "https://www.wowhead.com/spell=427609", // Unknown spell
-  424431: "https://www.wowhead.com/spell=424431", // Unknown spell
-  465595: "https://www.wowhead.com/spell=465595", // Unknown spell
-  357029: "https://www.wowhead.com/spell=357029", // Unknown spell
-  464240: "https://www.wowhead.com/spell=464240", // Unknown spell
-  451763: "https://www.wowhead.com/spell=451763", // Unknown spell
-  1237602: "https://www.wowhead.com/spell=1237602", // Unknown spell
-  438618: "https://www.wowhead.com/spell=438618", // Unknown spell
-  432868: "https://www.wowhead.com/spell=432868", // Unknown spell
-  455588: "https://www.wowhead.com/spell=455588", // Unknown spell
-  441627: "https://www.wowhead.com/spell=441627", // Unknown spell
-  432967: "https://www.wowhead.com/spell=432967", // Unknown spell
-  431364: "https://www.wowhead.com/spell=431364", // Unknown spell
-  427157: "https://www.wowhead.com/spell=427157", // Unknown spell
-  432448: "https://www.wowhead.com/spell=432448", // Unknown spell
-  1241693: "https://www.wowhead.com/spell=1241693", // Unknown spell
-  293729: "https://www.wowhead.com/spell=293729", // Unknown spell
-  450854: "https://www.wowhead.com/spell=450854", // Unknown spell
-  355057: "https://www.wowhead.com/spell=355057", // Unknown spell
-  1231497: "https://www.wowhead.com/spell=1231497", // Unknown spell
-  1235326: "https://www.wowhead.com/spell=1235326", // Unknown spell
-  1221532: "https://www.wowhead.com/spell=1221532", // Unknown spell
-  1237220: "https://www.wowhead.com/spell=1237220", // Unknown spell
-  428563: "https://www.wowhead.com/spell=428563", // Unknown spell
-  1231252: "https://www.wowhead.com/spell=1231252", // Unknown spell
-  326409: "https://www.wowhead.com/spell=326409", // Unknown spell
-  1236614: "https://www.wowhead.com/spell=1236614", // Unknown spell
-  474337: "https://www.wowhead.com/spell=474337", // Unknown spell
-  347721: "https://www.wowhead.com/spell=347721", // Unknown spell
-  324589: "https://www.wowhead.com/spell=324589", // Unknown spell
-  423479: "https://www.wowhead.com/spell=423479", // Unknown spell
-  341977: "https://www.wowhead.com/spell=341977", // Unknown spell
-  355640: "https://www.wowhead.com/spell=355640", // Unknown spell
-  355479: "https://www.wowhead.com/spell=355479", // Unknown spell
-  426145: "https://www.wowhead.com/spell=426145", // Unknown spell
-  280604: "https://www.wowhead.com/spell=280604", // Unknown spell
-  427357: "https://www.wowhead.com/spell=427357", // Unknown spell
-  268797: "https://www.wowhead.com/spell=268797", // Unknown spell
-  355132: "https://www.wowhead.com/spell=355132", // Unknown spell
-  357238: "https://www.wowhead.com/spell=357238", // Unknown spell
-  451097: "https://www.wowhead.com/spell=451097", // Unknown spell
-  447950: "https://www.wowhead.com/spell=447950", // Unknown spell
-  1215412: "https://www.wowhead.com/spell=1215412", // Unknown spell
-  471736: "https://www.wowhead.com/spell=471736", // Unknown spell
-  471733: "https://www.wowhead.com/spell=471733", // Unknown spell
-  1242994: "https://www.wowhead.com/spell=1242994", // Unknown spell
-  433656: "https://www.wowhead.com/spell=433656", // Unknown spell
-  451107: "https://www.wowhead.com/spell=451107", // Unknown spell
+  471352: "Juice It!",
+  325876: "Mark of Obliteration",
+  267354: "Fan of Knives",
+  426283: "Arcing Void",
+  448787: "Purification",
+  427176: "Drain Light",
+  430109: "Lightning Bolt",
+  268185: "Iced Spritzer",
+  430238: "Void Bolt",
+  452806: "Acidic Eruption",
+  448791: "Sacred Toll",
+  263215: "Tectonic Barrier",
+  465813: "Lethargic Venom",
+  355782: "Force Multiplier",
+  1214780: "Maximum Distortion",
+  426677: "Candleflame Bolt",
+  435156: "Light Expulsion",
+  1248699: "Consume Spirit",
+  355980: "Refraction Shield",
+  451288: "Black Bulwark",
+  446700: "Poison Burst",
+  357260: "Unstable Rift",
+  460153: "Repair",
+  465827: "Warp Blood",
+  451102: "Shadowy Decay",
+  341771: "Grave Spike",
+  427260: "Lightning Surge",
+  453909: "Boiling Flames",
+  1213805: "Nailgun",
+  1216611: "Battery Discharge",
+  1215850: "Earthcrusher",
+  341902: "Unholy Fervor",
+  330810: "Bind Soul",
+  326794: "Dark Communion",
+  330875: "Spirit Frost",
+  431349: "Tormenting Eruption",
+  330562: "Demoralizing Shout",
+  320300: "Necromantic Bolt",
+  355429: "Tidal Stomp",
+  451119: "Abyssal Blast",
+  469799: "Overcharge",
+  427342: "Defend",
+  427621: "Impale",
+  427609: "Disrupting Shout",
+  424431: "Holy Radiance",
+  465595: "Lightning Bolt",
+  357029: "Hyperlight Bomb",
+  464240: "Reflective Shield",
+  451763: "Radiant Flame",
+  1237602: "Gushing Wound",
+  438618: "Venomous Spit",
+  432868: "Bulwark of the Weak",
+  455588: "Blood Bolt",
+  441627: "Rejuvenating Honey",
+  432967: "Alarm Shrill",
+  431364: "Tormenting Ray",
+  427157: "Call Darkspawn",
+  432448: "Stygian Seed",
+  1241693: "Locust Swarm",
+  293729: "Tune Up",
+  450854: "Dark Orb",
+  355057: "Cry of Mrrggllrrgg",
+  1231497: "Overgorged",
+  1235326: "Disrupting Screech",
+  1221532: "Erratic Ritual",
+  1237220: "Stinging Sandstorm",
+  428563: "Flame Bolt",
+  1231252: "Unstable Core",
+  326409: "Thrash",
+  1236614: "Display of Power",
+  474337: "Shreddation",
+  347721: "Open Cage",
+  324589: "Death Bolt",
+  423479: "Wicklighter Bolt",
+  341977: "Meat Shield",
+  355640: "Phalanx Field",
+  355479: "Lethal Force",
+  426145: "Paranoid Mind",
+  280604: "Iced Spritzer",
+  427357: "Holy Smite",
+  268797: "Transmute: Enemy to Goo",
+  355132: "Invigorating Fish Stick",
+  357238: "Wandering Pulsar",
+  451097: "Silken Shell",
+  447950: "Shadowblast",
+  1215412: "Corrosive Gunk",
+  471736: "Jettison Kelp",
+  471733: "Restorative Algae",
+  1242994: "Instability",
+  433656: "Black Blood",
+  451107: "Bursting Cocoon",
   355225: "Waterbolt",
   356843: "Brackish Bolt",
   352347: "Valorous Bolt",
@@ -252,24 +252,15 @@ export const interrupts = {
   1229474: "Gorge",
   1229510: "Arcing Zap",
   1222815: "Arcane Bolt",
-  1214468: "Trick Shot",
-  462771: "Surveying Beam",
   463061: "Bloodthirsty Cackle",
   468631: "Harpoon",
   423536: "Holy Smite",
   427356: "Greater Heal",
   427469: "Fireball",
   424421: "Flash of Light",
-  444743: "Fireball Volley",
   424419: "Battle Cry",
   423051: "Burning Light",
   423665: "Embrace the Light",
-  434786: "Web Bolt",
-  434793: "Resonant Barrage",
-  434802: "Horrifying Shrill",
-  436322: "Poison Bolt",
-  448248: "Revolting Volley",
-  433841: "Venom Volley",
   442210: "Silken Restraints",
   432031: "Grasping Blood",
 
