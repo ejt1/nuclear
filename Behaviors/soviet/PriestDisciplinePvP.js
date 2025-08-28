@@ -341,8 +341,8 @@ export class PriestDisciplinePvP extends Behavior {
       const spellId = spellInfo.spellCastId;
       const castTimeRemaining = spellInfo.castEnd - wow.frameTime;
 
-      // Only counter if the cast will finish soon (within 1.5 seconds)
-      if (castTimeRemaining > 1500) {
+      // Only counter if the cast will finish very soon (within 1000ms)
+      if (castTimeRemaining > 1000) {
         continue;
       }
 
