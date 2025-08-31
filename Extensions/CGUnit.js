@@ -851,7 +851,8 @@ Object.defineProperties(wow.CGUnit.prototype, {
           Specialization.Warrior.Fury,
           Specialization.Warrior.Protection,
           // Hunter - Survival uses melee weapons
-          Specialization.Hunter.Survival
+          Specialization.Hunter.Survival,
+          Specialization.Hunter.Marksmanship
           // Note: Feral Druid is intentionally excluded as they fight in cat form
         ];
 
