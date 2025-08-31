@@ -14,7 +14,8 @@ import { Classification } from "@/Enums/UnitEnums";
 
 const auras = {
   shieldblock: 132404,
-  freeRevenge: 5302
+  freeRevenge: 5302,
+  ignorePain: 190456
 }
 
 export class WarriorProtectionBehavior extends Behavior {
@@ -77,7 +78,7 @@ export class WarriorProtectionBehavior extends Behavior {
   defensiveRotation() {
     return new bt.Selector(
       spell.cast("Shield Block", on => me, req => !me.hasAura(auras.shieldblock) && this.isInDanger()),
-      spell.cast("Ignore Pain", on => me, req => me.pctPower > 65),
+      spell.cast("Ignore Pain", on => me, req => me.pctPower > 65 || !me.hasAura(auras.ignorePain)),
       spell.cast("Spell Reflection", on => me, req => this.shouldSpellReflect()),
       spell.cast("Challenging Shout", on => me, req => this.shouldChallengingShout())
     );
@@ -96,12 +97,11 @@ export class WarriorProtectionBehavior extends Behavior {
   damageRotation() {
     return new bt.Selector(
       common.ensureAutoAttack(),
-      spell.cast("Execute", on => combat.targets.find(unit => unit.pctHealth < 20), req => me.pctPower > 50, { skipUsableCheck: true }),
       spell.cast("Heroic Throw", on => me.targetUnit, req => me.distanceTo(me.targetUnit) > 12),
       spell.cast("Shield Slam", on => me.targetUnit),
-      spell.cast("Revenge", on => me.targetUnit, req => me.hasAura(auras.freeRevenge)),
       spell.cast("Thunder Clap", on => me, req => me.distanceTo(me.targetUnit) < 8),
-
+      spell.cast("Execute", on => combat.targets.find(unit => unit.pctHealth < 20), req => me.pctPower > 50, { skipUsableCheck: true }),
+      spell.cast("Revenge", on => me.targetUnit, req => me.hasAura(auras.freeRevenge)),
     );
   }
 
@@ -110,19 +110,13 @@ export class WarriorProtectionBehavior extends Behavior {
     return combat.targets.find(unit => unit.inCombat() && unit.target && !unit.isTanking());
   }
 
-  findInterruptTarget() {
-    return combat.targets
-      .filter(unit => unit.isCastingOrChanneling && unit.isInterruptible && me.isFacing(unit))
-      .sort((a, b) => b.distanceTo(me) - a.distanceTo(me))[0];
-  }
-
   // Utility methods
   isInDanger() {
     return combat.targets.find(unit => unit.isTanking());
   }
 
   shouldSpellReflect() {
-    return combat.targets.some(unit =>
+    return combat.targets.find(unit =>
       unit.isCastingOrChanneling &&
       unit.spellInfo?.spellTargetGuid?.equals(me.guid) &&
       unit.spellInfo &&
