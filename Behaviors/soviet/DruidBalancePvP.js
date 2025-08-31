@@ -10,6 +10,8 @@ import { PowerType } from "@/Enums/PowerType";
 import { pvpHelpers } from "@/Data/PVPData";
 import drTracker from "@/Core/DRTracker";
 import { RaceType } from "@/Enums/UnitEnums";
+import { DispelPriority } from "@/Data/Dispels";
+import { WoWDispelType } from "@/Enums/Auras";
 
 const auras = {
   moonkinForm: 24858,
@@ -39,6 +41,7 @@ const auras = {
   frenziedRegeneration: 22842,
   faerieSwarm: 209749,
   highWinds: 200931,
+  heartOfTheWild: 319454,
 };
 
 export class DruidBalancePvP extends Behavior {
@@ -73,9 +76,20 @@ export class DruidBalancePvP extends Behavior {
       common.waitForNotMounted(),
       common.waitForCastOrChannel(),
 
-      new bt.Decorator(
-        req => !me.hasAura(auras.moonkinForm) && !me.hasAura(auras.bearForm) && !me.hasAura(auras.prowl),
-        spell.cast("Moonkin Form")
+      // Form management - can go directly from Bear to Moonkin
+      new bt.Selector(
+        // If in Bear Form and not in emergency situation, switch to Moonkin
+        new bt.Decorator(
+          ret => me.hasAura(auras.bearForm) &&
+                 me.effectiveHealthPercent > 70 &&
+                 (me.timeToDeath() === undefined || me.timeToDeath() > 5),
+          spell.cast("Moonkin Form")
+        ),
+        // If not in any form (and not prowling), go to Moonkin
+        new bt.Decorator(
+          req => !me.hasAura(auras.moonkinForm) && !me.hasAura(auras.bearForm) && !me.hasAura(auras.prowl),
+          spell.cast("Moonkin Form")
+        )
       ),
 
       new bt.Decorator(
@@ -94,6 +108,9 @@ export class DruidBalancePvP extends Behavior {
           spell.cast("Regrowth", on => this.findRegrowthTarget(), ret =>
             this.findRegrowthTarget() !== undefined
           ),
+
+          // Dispels
+          spell.dispel("Remove Corruption", true, DispelPriority.Medium, true, WoWDispelType.Curse, WoWDispelType.Poison),
 
           // Stop casting and allow running away when in bear form and low health or low time to death
           new bt.Decorator(
@@ -123,7 +140,7 @@ export class DruidBalancePvP extends Behavior {
 
           // Burst damage when conditions are met
           new bt.Decorator(
-            ret => Combat.burstToggle && me.target,
+            ret => Combat.burstToggle && me.target && me.inCombat(),
             this.burstDamage()
           ),
 
@@ -147,7 +164,7 @@ export class DruidBalancePvP extends Behavior {
       spell.cast("Bear Form", () =>
         Settings.UseDefensiveCooldowns &&
         (me.effectiveHealthPercent <= Settings.BearFormHealth ||
-         (me.timeToDeath() !== undefined && me.timeToDeath() < 3)) &&
+         (me.timeToDeath() !== undefined && me.timeToDeath() < 4)) &&
         !me.hasAura(auras.bearForm)
       ),
 
@@ -161,6 +178,13 @@ export class DruidBalancePvP extends Behavior {
       spell.cast("Frenzied Regeneration", () =>
         me.hasAura(auras.bearForm) &&
         me.effectiveHealthPercent < 80
+      ),
+
+      // Heart of the Wild when in Bear Form and below 50% HP
+      spell.cast("Heart of the Wild", () =>
+        me.hasAura(auras.bearForm) &&
+        me.effectiveHealthPercent < 50 &&
+        !spell.isOnCooldown("Heart of the Wild")
       )
     );
   }
@@ -168,13 +192,19 @@ export class DruidBalancePvP extends Behavior {
   // Burst Damage Rotation
   burstDamage() {
     return new bt.Selector(
-      // Mass Entanglement + Solar Beam on enemy healer before burst
-      spell.cast("Mass Entanglement", on => this.findMassEntanglementComboTarget(), ret =>
-        this.findMassEntanglementComboTarget() !== undefined
-      ),
-
-      spell.cast("Solar Beam", on => this.findSolarBeamTarget(), ret =>
-        this.findSolarBeamTarget() !== undefined
+      // Mass Entanglement + Solar Beam combo sequence on same target
+      new bt.Sequence(
+        // Setup target for the combo
+        new bt.Action(() => {
+          const target = this.findMassEntanglementComboTarget();
+          if (target) {
+            this.comboTarget = target;
+            return bt.Status.Success;
+          }
+          return bt.Status.Failure;
+        }),
+        spell.cast("Mass Entanglement", on => this.comboTarget),
+        spell.cast("Solar Beam", on => this.comboTarget)
       ),
 
       // Major cooldowns
@@ -197,6 +227,9 @@ export class DruidBalancePvP extends Behavior {
       spell.cast("Starsurge", on => me.target, () =>
         this.getAstralPower() >= 40
       ),
+
+      // Dispels
+      spell.dispel("Remove Corruption", true, DispelPriority.Low, true, WoWDispelType.Curse, WoWDispelType.Poison),
 
       // Generate Astral Power - prioritize Wrath
       spell.cast("Wrath", on => me.target)
@@ -224,6 +257,9 @@ export class DruidBalancePvP extends Behavior {
       spell.cast("Starsurge", on => me.target, () =>
         this.getAstralPower() >= 40
       ),
+
+      // Dispels
+      spell.dispel("Remove Corruption", true, DispelPriority.Low, true, WoWDispelType.Curse, WoWDispelType.Poison),
 
       // Default filler - prioritize Wrath over Starfire
       spell.cast("Wrath", on => me.target),
@@ -303,31 +339,6 @@ export class DruidBalancePvP extends Behavior {
     }
     return undefined;
   }
-
-  findSolarBeamTarget() {
-    const enemies = me.getPlayerEnemies(45);
-    for (const enemy of enemies) {
-      if (enemy.isHealer() &&
-          me.withinLineOfSight(enemy) &&
-          enemy.hasAura(auras.massEntanglement) &&
-          drTracker.getDRStacks(enemy.guid, "silence") <= 1) {
-        return enemy;
-      }
-    }
-    return undefined;
-  }
-
-  findEnemyHealer() {
-    const enemies = me.getPlayerEnemies(40);
-    for (const enemy of enemies) {
-      if (enemy.isHealer() &&
-          me.withinLineOfSight(enemy)) {
-        return enemy;
-      }
-    }
-    return undefined;
-  }
-
 
   findRegrowthTarget() {
     // Emergency healing when healer is in trouble

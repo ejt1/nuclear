@@ -454,7 +454,18 @@ export class ShamanRestorationBehavior extends Behavior {
 
   getLowestHealthAlly() {
     if (wow.frameTime < this.cachedLowestHealthExpiry) {
-      return this.cachedLowestHealthAlly;
+      try {
+        // Try to access the cached unit to ensure it's still valid
+        if (this.cachedLowestHealthAlly) {
+          // Test if the unit is still valid by accessing a property
+          this.cachedLowestHealthAlly.effectiveHealthPercent;
+          return this.cachedLowestHealthAlly;
+        }
+      } catch (error) {
+        // Unit has been invalidated, clear cache and fall through to recalculate
+        this.cachedLowestHealthAlly = null;
+        this.cachedLowestHealthExpiry = 0;
+      }
     }
 
     let allies = [...heal.friends.All];

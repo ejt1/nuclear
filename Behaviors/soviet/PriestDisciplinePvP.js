@@ -341,8 +341,8 @@ export class PriestDisciplinePvP extends Behavior {
       const spellId = spellInfo.spellCastId;
       const castTimeRemaining = spellInfo.castEnd - wow.frameTime;
 
-      // Only counter if the cast will finish soon (within 1.5 seconds)
-      if (castTimeRemaining > 1500) {
+      // Only counter if the cast will finish very soon (within 1000ms)
+      if (castTimeRemaining > 1000) {
         continue;
       }
 
@@ -639,7 +639,9 @@ export class PriestDisciplinePvP extends Behavior {
       spell.cast("Mind Control", on => this.findMindControlDPSTarget(), ret =>
         Settings.UseMindControlDPS === true && this.findMindControlDPSTarget() !== undefined
       ),
-      spell.cast("Shadowfiend", on => me.targetUnit, ret => me.pctPowerByType(PowerType.Mana) < 90),
+      spell.cast("Shadowfiend", on => me.targetUnit, ret =>
+        me.targetUnit && me.pctPowerByType(PowerType.Mana) < 90
+      ),
       spell.cast("Shadow Word: Pain", on => this.findShadowWordPainTarget(), ret => this.findShadowWordPainTarget() !== undefined)
     );
   }
@@ -880,6 +882,11 @@ export class PriestDisciplinePvP extends Behavior {
   }
 
   findShadowWordPainTarget() {
+    // Only search for targets when in combat
+    if (!me.inCombat()) {
+      return undefined;
+    }
+
     // Shadow Word: Pain doesn't require facing but needs LOS
     // Prioritize current target if it doesn't have SW:P and isn't immune
     if (me.targetUnit &&

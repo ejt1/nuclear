@@ -7,6 +7,7 @@ import objMgr, { me } from "@/Core/ObjectManager";
 import { PowerType } from "@/Enums/PowerType";
 import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 import Settings from "@/Core/Settings";
+import { RaceType } from "@/Enums/UnitEnums";
 
 export class DeathKnightBloodBehavior extends Behavior {
   context = BehaviorContext.Any;
@@ -30,7 +31,6 @@ export class DeathKnightBloodBehavior extends Behavior {
     { header: "" },
     { header: "Offensive Cooldowns" },
     { type: "slider", uid: "JmrDRWTTD", text: "Dancing Rune Weapon Time to Die", min: 0, max: 100, default: 10 },
-    { type: "slider", uid: "JmrAbomTTD", text: "Abomination Limb Time to Die", min: 0, max: 100, default: 20 },
     { header: "" },
     { header: "Utility" },
     { type: "slider", uid: "JmrDeathGripCharges", text: "Death Grip Charges to Save", min: 0, max: 2, default: 2 },
@@ -251,8 +251,8 @@ export class DeathKnightBloodBehavior extends Behavior {
           spell.cast("Blood Tap", req => (me.powerByType(PowerType.Runes) <= 2 && spell.getCharges("Blood Tap") >= 2) || me.powerByType(PowerType.Runes) < 3),
           spell.cast("Gorefiend's Grasp", req => me.hasAura("Tightening Grasp")),
           spell.cast("Empower Rune Weapon", req => me.powerByType(PowerType.Runes) < 6 && this.runicPowerDeficit() > 5),
-          spell.cast("Abomination Limb", req => this.shouldUseAbom()),
           spell.cast("Dancing Rune Weapon", req => this.shouldUseDRW()),
+          this.useRacials(),
           spell.cast("Arcane Torrent", on => me, req => me.powerByType(PowerType.RunicPower) < 80),
           new bt.Decorator(
             () => this.getEnemiesInRange(12) >= 1 && me.hasVisibleAura("Dancing Rune Weapon"),
@@ -312,10 +312,13 @@ export class DeathKnightBloodBehavior extends Behavior {
     return target.timeToDeath() > Settings.JmrDRWTTD && !me.hasAura("Smothering Shadows");
   }
 
-  shouldUseAbom() {
-    const target = this.getCurrentTarget();
-    return target.timeToDeath() > Settings.JmrAbomTTD && !me.hasAura("Smothering Shadows");
+  // Racial abilities
+  useRacials() {
+    return new bt.Selector(
+      spell.cast("Blood Fury", on => me, req => me.race === RaceType.Orc),
+    );
   }
+
 
   bone_shield_refresh_value() {
     return me.hasAura("Consumption") || me.hasAura("Blooddrinker") ? 4 : 5;

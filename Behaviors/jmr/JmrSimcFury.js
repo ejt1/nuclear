@@ -20,7 +20,7 @@ export class JmrSimcFuryBehavior extends Behavior {
   
   // Runtime toggles for overlay (independent of settings)
   overlayToggles = {
-    showOverlay: new imgui.MutableVariable(true),
+    showOverlay: new imgui.MutableVariable(false),
     interrupts: new imgui.MutableVariable(true),
     recklessness: new imgui.MutableVariable(true),
     avatar: new imgui.MutableVariable(true),
@@ -499,7 +499,7 @@ export class JmrSimcFuryBehavior extends Behavior {
 
       // Defensive abilities with user options
       spell.cast("Rallying Cry", () => Settings.UseRallyingCry && me.pctHealth < Settings.RallyingCryHealthPct),
-      spell.cast("Victory Rush", () => Settings.UseVictoryRush && me.pctHealth < Settings.VictoryRushHealthPct),
+      spell.cast("Victory Rush", () => Settings.UseVictoryRush && me.effectiveHealthPercent < Settings.VictoryRushHealthPct),
       spell.cast("Enraged Regeneration", () => Settings.UseEnragedRegeneration && me.pctHealth < Settings.EnragedRegenerationHealthPct),
       spell.cast("Bloodthirst", () => Settings.UseBloodthirstHealing && me.pctHealth < Settings.BloodthirstHealingHealthPct && me.hasVisibleAura("Enraged Regeneration")),
 
@@ -636,13 +636,13 @@ export class JmrSimcFuryBehavior extends Behavior {
   thaneRotation() {
     return new bt.Selector(
       // actions.thane=recklessness
-      spell.cast("Recklessness", req => Settings.UseRecklessness && this.overlayToggles.recklessness.value && this.shouldUseRecklessness() && me.hasVisibleAura("Enrage") && this.shouldUseBurstAbility()),
+      spell.cast("Recklessness", req => Settings.UseRecklessness && this.overlayToggles.recklessness.value && this.shouldUseRecklessness() && this.shouldUseBurstAbility()),
       
       // actions.thane+=/avatar
-      spell.cast("Avatar", req => Settings.UseAvatar && this.overlayToggles.avatar.value && this.shouldUseAvatar() && me.hasVisibleAura("Enrage") && this.shouldUseBurstAbility()),
+      spell.cast("Avatar", req => Settings.UseAvatar && this.overlayToggles.avatar.value && this.shouldUseAvatar() && this.shouldUseBurstAbility()),
       
       // actions.thane+=/ravager
-      spell.cast("Ravager", req => me.hasVisibleAura("Enrage") && this.shouldUseBurstAbility(), on => this.getCurrentTarget()),
+      spell.cast("Ravager", req => this.shouldUseBurstAbility(), on => this.getCurrentTarget()),
       
       // actions.thane+=/thunder_blast,if=buff.enrage.up&talent.meat_cleaver
       spell.cast("Thunder Blast", req => me.hasVisibleAura("Enrage") && this.hasTalent("Meat Cleaver"), on => this.getCurrentTarget()),
@@ -1045,7 +1045,7 @@ export class JmrSimcFuryBehavior extends Behavior {
       spell.cast("Victory Rush", () => 
         Settings.UseVictoryRush && 
         this.overlayToggles.defensives.value &&
-        me.pctHealth < Settings.VictoryRushHealthPct
+        me.effectiveHealthPercent < Settings.VictoryRushHealthPct
       ),
       spell.cast("Enraged Regeneration", () => 
         Settings.UseEnragedRegeneration && 

@@ -131,74 +131,8 @@ export class DeathKnightUnholy extends Behavior {
     );
   }
 
-  shouldDeathCoil(minPowerForCoil) {
-    return me.power > minPowerForCoil || (me.power > (minPowerForCoil - 20) && me.hasAura(auras.suddenDoom));
-  }
-
   shouldDeathAndDecay() {
     return me.targetUnit && me.isWithinMeleeRange(me.targetUnit) && !me.hasAura(auras.deathAndDecay)
-  }
-
-
-  // Helper methods from PVE version
-  findTargetWithTrollbaneChainsOfIce() {
-    const enemies = me.getEnemies(8);
-
-    for (const enemy of enemies) {
-      const chainsOfIce = enemy.getAuraByMe(auras.trollbaneChainsOfIce);
-      if (me.isFacing(enemy) && chainsOfIce) {
-        return enemy;
-      }
-    }
-
-    return undefined;
-  }
-
-  findTargetWithFesteringWounds() {
-    const enemies = me.getEnemies(8);
-
-    for (const enemy of enemies) {
-      const festeringWounds = enemy.getAuraByMe(auras.festeringWound);
-      if (me.isFacing(enemy) && festeringWounds && festeringWounds.stacks > 0) {
-        return enemy;
-      }
-    }
-
-    return undefined;
-  }
-
-  findTargetWithLeastWounds() {
-    const enemies = me.getEnemies(8);
-    let bestTarget = undefined;
-    let leastWounds = 999;
-
-    for (const enemy of enemies) {
-      if (!me.isFacing(enemy)) continue;
-
-      const festeringWounds = enemy.getAuraByMe(auras.festeringWound);
-      const woundCount = festeringWounds ? festeringWounds.stacks : 0;
-
-      if (woundCount < leastWounds) {
-        bestTarget = enemy;
-        leastWounds = woundCount;
-      }
-    }
-
-    return bestTarget;
-  }
-
-  isDeathRotAboutToExpire() {
-    if (!me.target) {
-      return false;
-    }
-
-    const deathRot = me.target.getAuraByMe(auras.deathRot);
-    return !!(deathRot && deathRot.remaining < 2000);
-  }
-
-  isPlaguebringerAboutToExpire() {
-    const plaguebringer = me.getAura(auras.plagueBringer);
-    return !!(plaguebringer && plaguebringer.remaining < 3000);
   }
 
   strangulateTarget() {

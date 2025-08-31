@@ -25,6 +25,13 @@ Object.defineProperties(wow.CGUnit.prototype, {
     }
   },
 
+  forceUpdateAuras: {
+    value: function () {
+      this._cacheAuras = originalAurasGetter.call(this);
+      this._cacheAurasRefreshTime = wow.frameTime + Settings.AuraCacheTimeMs;
+    }
+  },
+
   auras: {
     get: function () {
       if (this._cacheAuras === undefined || this._cacheAurasRefreshTime < wow.frameTime) {
@@ -619,7 +626,7 @@ Object.defineProperties(wow.CGUnit.prototype, {
      * @returns {boolean} - Returns true if the unit is currently casting or channeling
      */
     get: function () {
-      return (this.currentCast && this.currentCast !== 0) || (me.isChanneling)
+      return (this.currentCast && this.currentCast !== 0) || (this.isChanneling)
     }
   },
 
@@ -851,7 +858,8 @@ Object.defineProperties(wow.CGUnit.prototype, {
           Specialization.Warrior.Fury,
           Specialization.Warrior.Protection,
           // Hunter - Survival uses melee weapons
-          Specialization.Hunter.Survival
+          Specialization.Hunter.Survival,
+          Specialization.Hunter.Marksmanship
           // Note: Feral Druid is intentionally excluded as they fight in cat form
         ];
 

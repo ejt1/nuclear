@@ -7,6 +7,7 @@ class General {
   static tabName = "General";
 
   static lastAutoTargetTime = 0;
+  static lastHealthstone = 0;
 
   static options = [
     // Combat Behavior Settings
@@ -58,8 +59,15 @@ class General {
   }
 
   static handleHealthstone() {
-    if (Settings.HealthstonePercentage > 0 && me.pctHealth <= Settings.HealthstonePercentage) {
-      Common.useItemByName("Healthstone");
+    if (Settings.HealthstonePercentage <= 0 || me.pctHealth > Settings.HealthstonePercentage || me.isDeadOrGhost) {
+      return;
+    }
+    const currentTime = wow.frameTime;
+    if (currentTime - this.lastHealthstone > 750) {
+      if (!Common.useItemByName("Healthstone")) {
+        Common.useItemByName("Invigorating Healing Potion");
+      }
+      this.lastHealthstone = currentTime;
     }
   }
 }
