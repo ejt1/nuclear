@@ -71,6 +71,7 @@ export class WarriorProtNewBehavior extends Behavior {
       spell.cast("Last Stand", () => Boolean(this.shouldUseLastStand() || me.pctHealth < 60) && !me.hasAura("Shield Wall")),
       spell.cast("Ravager"),
       spell.cast("Demoralizing Shout", () => Boolean(me.hasAura("Booming Voice"))),
+      spell.cast("Demolish", () => Boolean(me.getAuraStacks("Colossal Might") >= 3)),
       spell.cast("Champion's Spear"),
       spell.cast("Spear of Bastion"),
       spell.cast("Thunderous Roar"),
@@ -118,6 +119,8 @@ export class WarriorProtNewBehavior extends Behavior {
       spell.cast("Thunder Clap", on => this.getCurrentTarget(), req => this.getDebuffRemainingTime("Rend") <= 4),
       // actions.aoe+=/thunder_blast,if=buff.violent_outburst.up&spell_targets.thunderclap>=2&buff.avatar.up&talent.unstoppable_force.enabled
       spell.cast("Thunder Blast", on => this.getCurrentTarget(), req => me.hasAura("Violent Outburst") && this.getEnemiesInRange(8) >= 2 && me.hasAura("Avatar") && this.hasTalent("Unstoppable Force")),
+      // actions.aoe+=/execute,if=spell_targets.execute>=2&(rage>=50|buff.sudden_death.up)&talent.heavy_handed.enabled
+      spell.cast("Execute", on => this.getCurrentTarget(), req => this.getEnemiesInRange(8) >= 2 && (me.powerByType(PowerType.Rage) >= 50 || me.hasAura("Sudden Death")) && this.hasTalent("Heavy Handed")),
       // actions.aoe+=/thunder_clap,if=buff.violent_outburst.up&spell_targets.thunderclap>=4&buff.avatar.up&talent.unstoppable_force.enabled&talent.crashing_thunder.enabled|buff.violent_outburst.up&spell_targets.thunderclap>6&buff.avatar.up&talent.unstoppable_force.enabled
       spell.cast("Thunder Clap", on => this.getCurrentTarget(), req => me.hasAura("Violent Outburst") && this.getEnemiesInRange(8) >= 4 && me.hasAura("Avatar") && this.hasTalent("Unstoppable Force") && this.hasTalent("Crashing Thunder") || me.hasAura("Violent Outburst") && this.getEnemiesInRange(8) > 6 && me.hasAura("Avatar") && this.hasTalent("Unstoppable Force")),
       // actions.aoe+=/revenge,if=rage>=70&talent.seismic_reverberation.enabled&spell_targets.revenge>=3
