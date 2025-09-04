@@ -9,17 +9,34 @@ import { defaultCombatTargeting as combat } from "@/Targeting/CombatTargeting";
 import { DispelPriority } from "@/Data/Dispels";
 import { WoWDispelType as DispelType } from "@/Enums/Auras";
 import { PowerType } from '@/Enums/PowerType';
+import KeyBinding from "@/Core/KeyBinding";
 
 export class EjtMageArcaneBehavior extends Behavior {
   name = "[ejt] Mage Arcane";
   context = BehaviorContext.Any;
   specialization = Specialization.Mage.Arcane;
 
+  static settings = [
+    {
+      header: "Burst Toggle System",
+      options: [
+        { type: "checkbox", uid: "UseBurstToggle", text: "Use Burst Toggle", default: true },
+        { type: "hotkey", uid: "BurstToggleKeybind", text: "Burst Toggle Key", default: imgui.Key.X },
+        { type: "checkbox", uid: "BurstModeWindow", text: "Use Window Mode (unchecked = Toggle Mode)", default: false },
+        { type: "slider", uid: "BurstWindowDuration", text: "Burst Window Duration (seconds)", min: 5, max: 60, default: 15 }
+      ]
+    },
+  ];
+
   constructor() {
     super();
 
+    // Initialize the burst toggle keybinding with default
+    KeyBinding.setDefault("BurstToggleKeybind", imgui.Key.F1);
+
     /** @type {wow.CGUnit} */
     this.currentTarget = null;
+    this.gcdMax = 1500;
     this.soulBurst = false;
     this.soulcd = false;
     this.aoeTargetCount = 0;
@@ -29,11 +46,23 @@ export class EjtMageArcaneBehavior extends Behavior {
     this.interruptCondition = null;
     this.showOverlay = new imgui.MutableVariable(false);
     this.useSoulBurst = new imgui.MutableVariable(false);
+    this.burstModeActive = false;
+    this.burstToggleTime = 0;
   }
 
   build() {
     return new bt.Selector("Arcane Mage",
       this.renderOverlay(),
+      new bt.Action(_ => {
+        // Handle burst toggle system
+        this.handleBurstToggle();
+
+        // Legacy: Burst mode toggle with X key (if not using burst toggle system)
+        if (!Settings.UseBurstToggle && imgui.isKeyPressed(imgui.Key.X)) {
+          this.burstModeActive = !this.burstModeActive;
+          console.log(`Burst mode ${this.burstModeActive ? 'ACTIVATED' : 'DEACTIVATED'}`);
+        }
+      }),
       this.preCombat(),
       common.waitForNotMounted(),
       new bt.Action(() => {
@@ -69,13 +98,13 @@ export class EjtMageArcaneBehavior extends Behavior {
           // # Enter cooldowns, then action list depending on your hero talent choices.
           // actions+=/call_action_list,name=cd_opener,if=!variable.soul_cd
           new bt.Decorator(
-            req => !this.soulcd,
+            req => !this.soulcd && this.shouldUseBurstAbilities(),
             this.cd_opener(),
             "Cooldown opener no soul"
           ),
           // actions+=/call_action_list,name=cd_opener_soul,if=variable.soul_cd
           new bt.Decorator(
-            req => this.soulcd,
+            req => this.soulcd && this.shouldUseBurstAbilities(),
             this.cd_opener_soul(),
             "Cooldown opener soul"
           ),
@@ -99,6 +128,47 @@ export class EjtMageArcaneBehavior extends Behavior {
         )
       )
     );
+  }
+
+  handleBurstToggle() {
+    if (!Settings.UseBurstToggle) return;
+
+    // Check for keybind press using the KeyBinding system
+    if (KeyBinding.isPressed("BurstToggleKeybind")) {
+
+      if (!Settings.BurstModeWindow) {
+        // Toggle mode: flip the state
+        combat.burstToggle = !combat.burstToggle;
+        this.burstModeActive = combat.burstToggle;
+        console.log(`Burst toggle ${combat.burstToggle ? 'ACTIVATED' : 'DEACTIVATED'} (Toggle mode)`);
+      } else {
+        // Window mode: start the burst window
+        combat.burstToggle = true;
+        this.burstModeActive = true;
+        this.burstToggleTime = wow.frameTime;
+        console.log(`Burst window ACTIVATED for ${Settings.BurstWindowDuration} seconds`);
+      }
+    }
+
+    // Handle burst window timeout - always check if we're in window mode and burst is active
+    if (Settings.BurstModeWindow && combat.burstToggle && this.burstToggleTime > 0) {
+      const elapsed = (wow.frameTime - this.burstToggleTime) / 1000;
+
+      if (elapsed >= Settings.BurstWindowDuration) {
+        combat.burstToggle = false;
+        this.burstModeActive = false;
+        this.burstToggleTime = 0; // Reset the timer
+        console.log(`Burst window EXPIRED after ${elapsed.toFixed(1)}s`);
+      }
+    }
+  }
+
+  shouldUseBurstAbilities() {
+    if (Settings.UseBurstToggle) {
+      return combat.burstToggle;
+    }
+    // Legacy burst mode for X key
+    return this.burstModeActive;
   }
 
   renderOverlay() {
@@ -180,6 +250,7 @@ export class EjtMageArcaneBehavior extends Behavior {
     return new bt.Decorator(
       ret => !me.inCombat(),
       new bt.Action(ret => {
+        this.gcdMax = 1500 * me.modHaste;
         // # Executed before combat begins. Accepts non-harmful actions only.
         // actions.precombat=arcane_intellect
 
@@ -348,6 +419,7 @@ export class EjtMageArcaneBehavior extends Behavior {
 
   sunfury() {
     return new bt.Selector(
+      spell.cast("Touch of the Magi", on => this.currentTarget, req => spell.getCooldown("Arcane Surge")?.timeleft > 40000 && this.arcaneCharges < 4 && this.currentTarget.timeToDeath() > 15),
       // # For Sunfury, Shifting Power only when you're not under the effect of any cooldowns.
       // actions.sunfury=shifting_power,if=((buff.arcane_surge.down & buff.siphon_storm.down & debuff.touch_of_the_magi.down & cooldown.evocation.remains > 15 & cooldown.touch_of_the_magi.remains > 10) & fight_remains > 10) & buff.arcane_soul.down & (buff.intuition.react = 0 | (buff.intuition.react & buff.intuition.remains > cast_time))
       spell.cast("Shifting Power", on => me, req => ((!me.hasVisibleAura("Arcane Surge") && !me.hasVisibleAura("Siphon Storm") && !this.currentTarget.hasVisibleAuraByMe("Touch of the Magi") && spell.getCooldown("Evocation")?.timeleft > 15000 && spell.getCooldown("Touch of the Magi")?.timeleft > 10000) && this.currentTarget.timeToDeath() > 10) && !me.hasVisibleAura("Arcane Soul") && (!me.hasVisibleAura("Intuition") || (me.hasVisibleAura("Intuition") && me.getVisibleAura("Intuition")?.remaining > 3000/* Shifting power cast time */))),
